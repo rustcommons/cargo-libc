@@ -7,6 +7,16 @@ pub struct Version {
     pub patch: u32,
 }
 
+impl Version {
+    /// Validate a selected target release, not an individual ABI symbol version.
+    pub fn validate_glibc_target(self) -> Result<Self, String> {
+        if self.major != 2 || self.minor < 17 {
+            return Err("supported glibc target releases start at 2.17 (glibc 2.x only)".into());
+        }
+        Ok(self)
+    }
+}
+
 impl FromStr for Version {
     type Err = String;
 
@@ -49,6 +59,27 @@ impl fmt::Display for Version {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn target_floor_does_not_reject_historical_symbol_versions() {
+        let old: Version = "2.2.5".parse().unwrap();
+        assert!(old.validate_glibc_target().is_err());
+        assert!("2.16"
+            .parse::<Version>()
+            .unwrap()
+            .validate_glibc_target()
+            .is_err());
+        assert!("3.0"
+            .parse::<Version>()
+            .unwrap()
+            .validate_glibc_target()
+            .is_err());
+        assert!("2.17"
+            .parse::<Version>()
+            .unwrap()
+            .validate_glibc_target()
+            .is_ok());
+    }
 
     #[test]
     fn compares_versions_numerically() {

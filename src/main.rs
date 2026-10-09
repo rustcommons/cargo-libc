@@ -2,10 +2,10 @@
 
 fn main() {
     let args = std::env::args_os().skip(1);
-    match cargo_glibc::cli::run(args) {
+    match cargo_libc::cli::run(args) {
         Ok(code) => std::process::exit(code),
         Err(error) => {
-            eprintln!("cargo-glibc: {error}");
+            eprintln!("cargo-libc: {error}");
             std::process::exit(1);
         }
     }

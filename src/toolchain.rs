@@ -10,10 +10,10 @@ use std::{
 
 pub const TARGET: &str = "x86_64-unknown-linux-gnu";
 pub const LOADER: &str = "/lib64/ld-linux-x86-64.so.2";
-const SYSROOT_ENV: &str = "CARGO_GLIBC_SYSROOT";
-const GCC_ENV: &str = "CARGO_GLIBC_GCC_RUNTIME";
-const CC_ENV: &str = "CARGO_GLIBC_CC";
-const LD_ENV: &str = "CARGO_GLIBC_LD";
+const SYSROOT_ENV: &str = "CARGO_LIBC_SYSROOT";
+const GCC_ENV: &str = "CARGO_LIBC_GCC_RUNTIME";
+const CC_ENV: &str = "CARGO_LIBC_CC";
+const LD_ENV: &str = "CARGO_LIBC_LD";
 
 #[derive(Clone, Debug)]
 pub struct Toolchain {
@@ -75,9 +75,7 @@ impl Toolchain {
         if !cfg!(all(target_os = "linux", target_arch = "x86_64")) {
             return Err("the build coordinator currently supports x86-64 Linux hosts only".into());
         }
-        if ceiling.major != 2 {
-            return Err("this prototype supports glibc 2.x targets only".into());
-        }
+        ceiling.validate_glibc_target()?;
         let sysroot = canonical(&sysroot, "sysroot")?;
         let gcc_runtime = canonical(&gcc_runtime, "GCC runtime directory")?;
         if !sysroot.is_dir() || !gcc_runtime.is_dir() {
@@ -230,7 +228,7 @@ impl Toolchain {
             "-C".into(),
             format!("link-arg=-fuse-ld={}", text_path(&self.ld)?),
             "--cfg".into(),
-            format!("cargo_glibc_profile=\"{}\"", self.profile_fingerprint()?),
+            format!("cargo_libc_profile=\"{}\"", self.profile_fingerprint()?),
         ];
         Ok(flags.join("\u{1f}").into())
     }
@@ -298,7 +296,7 @@ pub fn build(
     let driver = executable
         .parent()
         .ok_or("cannot locate sibling linker driver")?
-        .join("glibc-linker");
+        .join("libc-linker");
     if !driver.is_file() {
         return Err(format!(
             "missing Rust linker driver {}; install/build both binaries",
@@ -454,9 +452,8 @@ fn remove_search_overrides(cmd: &mut Command) {
 
 pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
     let required = |key: &str| {
-        env::var_os(key).ok_or_else(|| {
-            format!("{key} is missing; this helper is launched by cargo glibc build")
-        })
+        env::var_os(key)
+            .ok_or_else(|| format!("{key} is missing; this helper is launched by cargo libc build"))
     };
     let cc = required(CC_ENV)?;
     let root = required(SYSROOT_ENV)?;
@@ -565,7 +562,7 @@ mod tests {
         assert!(cfg
             .driver_args()
             .contains(&OsString::from("--sysroot=/sdk root")));
-        let flags = cfg.rustflags(Path::new("/tool path/glibc-linker")).unwrap();
+        let flags = cfg.rustflags(Path::new("/tool path/libc-linker")).unwrap();
         assert!(flags
             .to_str()
             .unwrap()

@@ -5,18 +5,18 @@ use crate::{
 };
 use std::{ffi::OsString, path::PathBuf};
 
-const HELP: &str = r#"cargo-glibc — explicit sysroot builds and native ELF inspection
+const HELP: &str = r#"cargo-libc — explicit sysroot builds and native ELF inspection
 
 USAGE
-  cargo glibc doctor --sysroot DIR --gcc-runtime DIR --glibc VERSION [OPTIONS]
-  cargo glibc build  --sysroot DIR --gcc-runtime DIR --glibc VERSION
+  cargo libc doctor --sysroot DIR --gcc-runtime DIR --glibc VERSION [OPTIONS]
+  cargo libc build  --sysroot DIR --gcc-runtime DIR --glibc VERSION
                     --artifact FILE [OPTIONS] -- [CARGO BUILD ARGUMENTS]
-  cargo glibc inspect FILE [--max-glibc VERSION] [--json]
+  cargo libc inspect FILE [--max-glibc VERSION] [--json]
 
 BUILD / DOCTOR OPTIONS
   --sysroot DIR      Target development filesystem, including glibc and GCC runtime
   --gcc-runtime DIR  Absolute GCC runtime directory inside that sysroot
-  --glibc VERSION    Maximum permitted glibc version, for example 2.22
+  --glibc VERSION    Maximum permitted glibc version, at least 2.17 (e.g. 2.22)
   --cc FILE          Host Clang driver (default: /usr/bin/clang)
   --ld FILE          Host native linker (default: /usr/bin/ld.bfd)
   --artifact FILE    Exact executable from this Cargo build to inspect (build only)
@@ -36,7 +36,7 @@ It does not resolve dependent libraries or replace testing on the target OS.
 Native C/C++ dependencies need their own target configuration in this version.
 
 Use separate values for options, e.g. --glibc 2.22 (not --glibc=2.22).
-Direct invocation as `cargo-glibc ...` is also supported.
+Direct invocation as `cargo-libc ...` is also supported.
 "#;
 
 #[derive(Debug)]
@@ -93,12 +93,13 @@ fn parse_version(value: OsString, flag: &str) -> Result<Version, String> {
     value
         .to_str()
         .ok_or_else(|| format!("{flag} must be UTF-8"))?
-        .parse()
+        .parse::<Version>()?
+        .validate_glibc_target()
 }
 
 fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     // Cargo includes the external subcommand's name in argv.
-    if args.first().is_some_and(|arg| arg == "glibc") {
+    if args.first().is_some_and(|arg| arg == "libc") {
         args.remove(0);
     }
     let Some(command) = args.first() else {
@@ -111,7 +112,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         Some("doctor" | "build") => {}
         _ => {
             return Err(format!(
-                "unknown command {command:?}; run cargo glibc --help"
+                "unknown command {command:?}; run cargo libc --help"
             ))
         }
     }
@@ -234,7 +235,7 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
             Ok(0)
         }
         ParsedCommand::Version => {
-            println!("cargo-glibc {}", env!("CARGO_PKG_VERSION"));
+            println!("cargo-libc {}", env!("CARGO_PKG_VERSION"));
             Ok(0)
         }
         ParsedCommand::Doctor(raw) => {
@@ -266,7 +267,7 @@ mod tests {
     #[test]
     fn cargo_subcommand_preserves_paths_and_passthrough() {
         let parsed = parse(args(&[
-            "glibc",
+            "libc",
             "build",
             "--sysroot",
             "/sdk root",

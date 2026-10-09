@@ -1,4 +1,23 @@
-# cargo-glibc — a Rust prototype for explicit glibc sysroot builds
+![cargo-libc: an orange gear and Cargo-to-ELF diagram](docs/assets/banner.svg)
+
+# cargo-libc
+
+**Build for the libc you choose.**
+
+[![CI](https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml/badge.svg)](https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml)
+![Rust 1.90+](https://img.shields.io/badge/Rust-1.90%2B-orange)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![Status: prototype](https://img.shields.io/badge/status-prototype-yellow)
+
+Cargo integration for selecting a libc build environment and inspecting ELF
+requirements. **Initial scope: x86_64 Linux and glibc 2.17 or later.**
+Other libc implementations are planned. This is the renamed `cargo-glibc`
+prototype; the commands are now `cargo libc` and the helper is `libc-linker`.
+
+The companion [libc-abi-tools](https://github.com/rustcommons/libc-abi-tools)
+ports the glibc metadata work of **Zig's contributors** to Rust. That generated
+provider is not integrated here yet. See [attribution](NOTICE.md), the
+[implementation plan](docs/ROADMAP.md), and the [migration record](docs/MIGRATION.md).
 
 This project replaces the Zig dependency in a deliberately narrow build path:
 build an **x86-64 dynamically linked Rust executable** with Cargo/rustc, a host
@@ -16,9 +35,9 @@ tested and [ARCHITECTURE.md](ARCHITECTURE.md) for the next component.
 
 | Responsibility | Implementation in this project |
 | --- | --- |
-| Parse commands and coordinate Cargo | Rust `cargo-glibc` executable |
+| Parse commands and coordinate Cargo | Rust `cargo-libc` executable |
 | Select the target's sysroot and GCC runtime | Rust configuration and input probes |
-| Forward rustc's native link command | Rust `glibc-linker` executable; no shell |
+| Forward rustc's native link command | Rust `libc-linker` executable; no shell |
 | Compile Rust application code | Your installed `rustc` |
 | Select CRT objects and invoke the native linker | Your installed Clang driver |
 | Produce the final ELF executable | Your selected linker; GNU `ld.bfd` was tested |
@@ -52,10 +71,10 @@ From the directory containing this README:
 ```sh
 cargo test --locked --offline
 cargo install --path . --locked --offline
-cargo glibc --help
+cargo libc --help
 ```
 
-This installs both `cargo-glibc` and `glibc-linker` into Cargo's bin directory.
+This installs both `cargo-libc` and `libc-linker` into Cargo's bin directory.
 They must remain together because the coordinator locates its sibling helper.
 The package has `publish = false`; these commands install the local source.
 Ensure Cargo's bin directory is on your shell's `PATH`.
@@ -64,7 +83,7 @@ To use the project without installation:
 
 ```sh
 cargo build --locked --offline --release
-./target/release/cargo-glibc --help
+./target/release/cargo-libc --help
 ```
 
 ## Use for Rocky Linux 9 → SLES 12 SP5
@@ -96,7 +115,7 @@ to the current build tools.
 ### 1. Check the target inputs
 
 ```sh
-cargo glibc doctor \
+cargo libc doctor \
   --sysroot /opt/sysroots/sles12sp5 \
   --gcc-runtime /opt/sysroots/sles12sp5/ACTUAL-GCC-RUNTIME-DIRECTORY \
   --glibc 2.22 \
@@ -114,7 +133,7 @@ Run this in your application's Cargo project, replacing `myapp` with its
 executable name:
 
 ```sh
-cargo glibc build \
+cargo libc build \
   --sysroot /opt/sysroots/sles12sp5 \
   --gcc-runtime /opt/sysroots/sles12sp5/ACTUAL-GCC-RUNTIME-DIRECTORY \
   --glibc 2.22 \
@@ -140,7 +159,7 @@ building. It does not check the selected artifact.
 ### 3. Inspect a binary independently
 
 ```sh
-cargo glibc inspect \
+cargo libc inspect \
   target/sles12sp5/x86_64-unknown-linux-gnu/release/myapp \
   --max-glibc 2.22
 ```
@@ -148,7 +167,7 @@ cargo glibc inspect \
 For machine-readable inspection:
 
 ```sh
-cargo glibc inspect ./myapp --max-glibc 2.22 --json
+cargo libc inspect ./myapp --max-glibc 2.22 --json
 ```
 
 The report includes the interpreter, `DT_NEEDED`, RPATH/RUNPATH, and version
@@ -253,7 +272,7 @@ Primary documentation used for the design:
 - [Cargo JSON artifact messages](https://doc.rust-lang.org/cargo/reference/external-tools.html#json-messages)
 - [rustc code generation/linker options](https://doc.rust-lang.org/rustc/codegen-options/index.html)
 - [Clang command-line options](https://clang.llvm.org/docs/ClangCommandLineReference.html)
-- [Zig's glibc support design](https://github.com/ziglang/zig/blob/master/lib/libc/glibc/README.md)
+- [Zig's glibc support design](https://codeberg.org/ziglang/zig/src/branch/master/lib/libc/glibc/README.md)
 - [LSB ELF symbol versioning](https://refspecs.linuxfoundation.org/LSB_3.1.1/LSB-Core-generic/LSB-Core-generic/symversion.html)
 
 The source in this package is MIT licensed. No glibc implementation, headers,

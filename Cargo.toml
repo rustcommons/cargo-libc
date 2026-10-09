@@ -1,26 +1,26 @@
 [package]
-name = "cargo-glibc"
+name = "cargo-libc"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.90"
-description = "Explicit sysroot builds and direct ELF glibc requirement inspection"
+description = "Build for a selected libc environment and inspect ELF requirements; glibc first"
+repository = "https://github.com/rustcommons/cargo-libc"
 license = "MIT"
 publish = false
 
 [lib]
-name = "cargo_glibc"
+name = "cargo_libc"
 path = "src/lib.rs"
 
 [[bin]]
-name = "cargo-glibc"
+name = "cargo-libc"
 path = "src/main.rs"
 
 [[bin]]
-name = "glibc-linker"
-path = "src/bin/glibc-linker.rs"
+name = "libc-linker"
+path = "src/bin/libc-linker.rs"
 
 [profile.release]
 strip = true
 
 [dependencies]
-

@@ -1,5 +1,10 @@
 # Architecture and the path to generated glibc ABI support
 
+The original coordinator is now named `cargo-libc`. Its companion
+[libc-abi-tools](https://github.com/rustcommons/libc-abi-tools) has begun the
+metadata collection/parsing phase; generated libraries and provider integration
+remain future work. See [ROADMAP.md](docs/ROADMAP.md).
+
 ## The decision
 
 Use a real target sysroot for version 0.1. The first deliverable removes Zig
@@ -14,7 +19,7 @@ toolchain's glibc targeting, not the language used for its Cargo wrapper.
 
 ### Coordinator
 
-`cargo-glibc` parses a target profile and resolves paths before starting Cargo.
+`cargo-libc` parses a target profile and resolves paths before starting Cargo.
 It rejects an obviously newer glibc header set, checks the startup and runtime
 inputs selected by Clang, then supplies target-only linker flags to rustc.
 It accepts an explicit executable selection and matches it against Cargo's
@@ -25,7 +30,7 @@ access, package install step, or configuration file modification.
 
 ### Native linker helper
 
-`glibc-linker` is a second Rust binary. Cargo/rustc invokes it as a compiler
+`libc-linker` is a second Rust binary. Cargo/rustc invokes it as a compiler
 driver. It forwards arguments without passing them through a shell and invokes
 the chosen Clang driver with the target profile selections.
 
@@ -157,8 +162,8 @@ that remain useful while that provider is developed.
 ## Primary references
 
 - [cargo-zigbuild's Rust package](https://github.com/rust-cross/cargo-zigbuild/blob/main/Cargo.toml)
-- [Zig glibc stubs, headers, and real CRT/nonshared components](https://github.com/ziglang/zig/blob/master/lib/libc/glibc/README.md)
-- [libc ABI collection tooling and dataset format](https://github.com/ziglang/libc-abi-tools)
+- [Zig glibc stubs, headers, and real CRT/nonshared components](https://codeberg.org/ziglang/zig/src/branch/master/lib/libc/glibc/README.md)
+- [libc ABI collection tooling and dataset format](https://codeberg.org/ziglang/libc-abi-tools)
 - [Cargo Rust flag precedence](https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags)
 - [Cargo host/target linker behavior](https://doc.rust-lang.org/cargo/reference/unstable.html#target-applies-to-host)
 - [Clang driver options](https://clang.llvm.org/docs/ClangCommandLineReference.html)
