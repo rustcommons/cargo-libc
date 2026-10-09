@@ -1,0 +1,26 @@
+[package]
+name = "cargo-glibc"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.90"
+description = "Explicit sysroot builds and direct ELF glibc requirement inspection"
+license = "MIT"
+publish = false
+
+[lib]
+name = "cargo_glibc"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cargo-glibc"
+path = "src/main.rs"
+
+[[bin]]
+name = "glibc-linker"
+path = "src/bin/glibc-linker.rs"
+
+[profile.release]
+strip = true
+
+[dependencies]
+

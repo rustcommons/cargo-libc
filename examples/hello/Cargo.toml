@@ -1,0 +1,10 @@
+[package]
+name = "glibc-hello"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+hello-macro = { path = "hello-macro" }
+
+[workspace]
