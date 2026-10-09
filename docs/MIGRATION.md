@@ -24,6 +24,8 @@ with `cargo install --path . --locked --offline`, then use `cargo libc --help`.
 Both binaries must be installed together. Removing the old source folder does not
 uninstall any old binaries already present in a user's Cargo bin directory.
 
-The original source folder is removed only after the migration is tested and
-committed, with a final comparison against the preserved import to ensure no new
-source changes would be discarded. See [validation](../VALIDATION.md).
+The original `cargo-glibc` source folder was removed on 2026-10-09 after the
+migration passed validation and was committed as `e2dd2d1`. Immediately before
+removal, all 22 original files were compared against the Git blobs in `be7dee4`;
+every file matched. The resolved deletion path and absence of reparse points were
+also checked. See [validation](../VALIDATION.md).

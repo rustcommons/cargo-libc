@@ -10,6 +10,8 @@ Plan established 2026-10-09. Initial scope confirmed: x86_64 Linux, glibc 2.17+.
 - [x] Retain sysroot builds, host/target separation, and direct ELF inspection.
 - [x] Enforce the selected glibc target floor without dropping old symbol tags.
 - [x] Add README artwork, attribution, CI configuration, and migration notes.
+- [x] Remove the original cargo-glibc folder after tests, commits, and a final
+  file-by-file comparison against the preserved import.
 - [ ] Qualify on an actual Rocky Linux 9 build host and SLES 12 SP5 runtime.
 
 ## 2. Generated glibc provider
