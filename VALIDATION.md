@@ -44,3 +44,24 @@ Hosted evidence: [companion CI](https://github.com/rustcommons/cargo-libc/action
 Local Rust 1.99.0 / Clang 18.1.3 / binutils 2.42 Cargo validation passed with the pinned GNU 2.22 source-built inputs. Host build scripts/procedural macros and the target thread ran, incompatible 2.17 selection failed, and all shared link/runtime inputs stayed in approved trees. Highest directly required GLIBC symbol tag was 2.18; this is not qualification for a 2.18 runtime. Both original 2.17 routes were rechecked successfully. Hosted Clang 21/24 qualification passed with Rust 1.99 on 2026-10-10 for both release profiles. Actual SLES qualification is separate.
 
 Extended [provider/runtime evidence](https://github.com/rustcommons/libc-abi-tools/actions/runs/38058240922) qualified companion commit 695ac536a791650d0d351c74562e008c47a82392 with producer commit 39101a0bdf9d824e3fb89931552b0a771fee5e0e. Cargo rejected memfd_create through the target linker for both 2.17 routes and the 2.22 source route.
+
+## GNU glibc 2.18 qualification
+
+Consumer commit `edfca5b9f9fb811069f302e8d2d5ef2f99f7fd33` accepts explicit 2.18
+provider selection with the unchanged six-field descriptor. Local Rust 1.99.0,
+Clang 18.1.3, and GNU binutils 2.42 passed Cargo host build/proc-macro separation,
+target threading, real 2.18 loader execution, link/runtime path auditing,
+mismatched-selection rejection, and actual too-new memfd_create linker failure.
+Both 2.17 routes and source-built 2.22 passed again. The highest direct GLIBC
+import tag for this 2.18 executable was 2.18; matching-runtime execution was
+actually tested, separately from that import measurement.
+
+All six [hosted provider jobs](https://github.com/rustcommons/libc-abi-tools/actions/runs/38066726167)
+passed under Clang 21/24 for 2.17/2.18/2.22 with producer commit
+`75945c278187899c537af636fdc311a07e27132f`. The producer also qualified the
+pthread default-attribute boundary, exhaustive isolated linking and defaults,
+and five focused real-library behavior suites for each real input profile.
+[Companion CI](https://github.com/rustcommons/cargo-libc/actions/runs/38066613985)
+passed Windows/Linux Rust 1.99 tests, Rust 1.90 checks, and conventional sysroot
+smoke tests. Distribution/kernel, native dependency, and SDK qualification remain
+separate work. The next provider in the producer roadmap is 2.19.

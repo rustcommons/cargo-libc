@@ -73,7 +73,7 @@ Live repository settings, pushes, and releases are not part of this local bootst
 - [x] Accept explicit 2.18 descriptors and reject every mismatched release selection.
 - [x] Pass local Cargo host-unit, target thread, real-loader, path, and too-new-symbol checks.
 - [x] Recheck both 2.17 routes and source-built 2.22 with the extended consumer.
-- [ ] Observe the six-job 2.17/2.18/2.22 Clang 21/24 provider matrix passing.
+- [x] Observe all six 2.17/2.18/2.22 Clang 21/24 provider jobs passing with producer `75945c2` and consumer `edfca5b` ([run](https://github.com/rustcommons/libc-abi-tools/actions/runs/38066726167)).
 - [ ] Qualify actual target distributions, kernels, native dependencies, and release SDK packaging.
 
 The producer's [2.18 provider reference](https://github.com/rustcommons/libc-abi-tools/blob/main/docs/GLIBC-2.18.md)
