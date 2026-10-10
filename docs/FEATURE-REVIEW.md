@@ -189,7 +189,7 @@ See [ROADMAP.md](ROADMAP.md) for implemented checkpoints and ongoing work.
 
 F01 implementation and qualification completed following the proceed instructions.
 Producer cbf31dd / consumer ed4c997 passed the current Rust 1.99/Clang 21/24
-provider matrix ([evidence](https://github.com/rustcommons/libc-abi-tools/actions/runs/38076305526)).
+provider matrix ([evidence](https://github.com/rustcommons/linux-abi-tools/actions/runs/38076305526)).
 Other feature decisions remain pending; F01 does not add automatic acquisition.
 
-F02 qualification completed following the proceed instruction; see [Cargo workflows](CARGO-WORKFLOWS.md) and [the passing real-provider matrix](https://github.com/rustcommons/libc-abi-tools/actions/runs/38077381465). Other proposed feature decisions remain pending.
+F02 qualification completed following the proceed instruction; see [Cargo workflows](CARGO-WORKFLOWS.md) and [the passing real-provider matrix](https://github.com/rustcommons/linux-abi-tools/actions/runs/38077381465). Other proposed feature decisions remain pending.

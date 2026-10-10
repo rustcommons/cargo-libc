@@ -37,13 +37,13 @@ locally; hosted CI results remain pending the first push.
 
 Rust 1.99.0/Clang 18.1.3/GNU binutils 2.42 passed both prebuilt and source-built glibc 2.17 Cargo examples in WSL. Host build scripts and procedural macros ran; target threads passed under each real loader. Highest direct GLIBC requirement was 2.16; no RPATH/RUNPATH. Independent link-map and runtime-path audits passed. Hosted Clang 21.1.8 and Clang 24.0.0 development-snapshot jobs passed both real 2.17 routes on 2026-10-10. The highest directly required symbol tag of 2.16 does not establish glibc 2.16 runtime support; the tested target remains 2.17. See [provider contract](docs/PROVIDER-CONTRACT.md).
 
-Hosted evidence: [companion CI](https://github.com/rustcommons/cargo-libc/actions/runs/38055844632) at commit 7980d63873282cb9fef68bcaf08f8123546387ac and [provider/runtime CI](https://github.com/rustcommons/libc-abi-tools/actions/runs/38055872917) at commit 084d2b6316a3af6ab16f3d25cdd67187e0b852c3. Rust 1.99 Windows/Linux, Rust 1.90 all-targets check, and conventional sysroot smoke tests passed. Actual old distro/kernel qualification remains open.
+Hosted evidence: [companion CI](https://github.com/rustcommons/cargo-libc/actions/runs/38055844632) at commit 7980d63873282cb9fef68bcaf08f8123546387ac and [provider/runtime CI](https://github.com/rustcommons/linux-abi-tools/actions/runs/38055872917) at commit 084d2b6316a3af6ab16f3d25cdd67187e0b852c3. Rust 1.99 Windows/Linux, Rust 1.90 all-targets check, and conventional sysroot smoke tests passed. Actual old distro/kernel qualification remains open.
 
 ## GNU glibc 2.22 extension
 
 Local Rust 1.99.0 / Clang 18.1.3 / binutils 2.42 Cargo validation passed with the pinned GNU 2.22 source-built inputs. Host build scripts/procedural macros and the target thread ran, incompatible 2.17 selection failed, and all shared link/runtime inputs stayed in approved trees. Highest directly required GLIBC symbol tag was 2.18; this is not qualification for a 2.18 runtime. Both original 2.17 routes were rechecked successfully. Hosted Clang 21/24 qualification passed with Rust 1.99 on 2026-10-10 for both release profiles. Actual SLES qualification is separate.
 
-Extended [provider/runtime evidence](https://github.com/rustcommons/libc-abi-tools/actions/runs/38058240922) qualified companion commit 695ac536a791650d0d351c74562e008c47a82392 with producer commit 39101a0bdf9d824e3fb89931552b0a771fee5e0e. Cargo rejected memfd_create through the target linker for both 2.17 routes and the 2.22 source route.
+Extended [provider/runtime evidence](https://github.com/rustcommons/linux-abi-tools/actions/runs/38058240922) qualified companion commit 695ac536a791650d0d351c74562e008c47a82392 with producer commit 39101a0bdf9d824e3fb89931552b0a771fee5e0e. Cargo rejected memfd_create through the target linker for both 2.17 routes and the 2.22 source route.
 
 ## GNU glibc 2.18 qualification
 
@@ -56,7 +56,7 @@ Both 2.17 routes and source-built 2.22 passed again. The highest direct GLIBC
 import tag for this 2.18 executable was 2.18; matching-runtime execution was
 actually tested, separately from that import measurement.
 
-All six [hosted provider jobs](https://github.com/rustcommons/libc-abi-tools/actions/runs/38066726167)
+All six [hosted provider jobs](https://github.com/rustcommons/linux-abi-tools/actions/runs/38066726167)
 passed under Clang 21/24 for 2.17/2.18/2.22 with producer commit
 `75945c278187899c537af636fdc311a07e27132f`. The producer also qualified the
 pthread default-attribute boundary, exhaustive isolated linking and defaults,
@@ -70,7 +70,7 @@ separate work. The next provider in the producer roadmap is 2.19.
 
 Producer `8939827c12bf0354b81c8c2f2707d0a2b7985b1b` passed all three shared
 preparation jobs and six Rust 1.99/Clang 21 or 24 application jobs for
-2.17/2.18/2.22 ([run](https://github.com/rustcommons/libc-abi-tools/actions/runs/38069527581)).
+2.17/2.18/2.22 ([run](https://github.com/rustcommons/linux-abi-tools/actions/runs/38069527581)).
 The unchanged consumer pin `edfca5b9f9fb811069f302e8d2d5ef2f99f7fd33` generated
 new runner-local descriptors from restored target headers/CRT/stubs/real runtimes
 and explicitly selected local GCC startup files. Cargo host build/proc-macro,
@@ -81,9 +81,9 @@ and rematerialization; user SDK publication remains separate work; version-suffi
 ## Versioned target syntax
 
 Consumer ed4c997 passed [companion CI](https://github.com/rustcommons/cargo-libc/actions/runs/38074429107).
-Producer cbf31dd pinned that revision and passed [all nine provider jobs](https://github.com/rustcommons/libc-abi-tools/actions/runs/38076305526): three preparations and six Rust 1.99/Clang 21 or 24 application jobs across 2.17/2.18/2.22, including both 2.17 routes.
+Producer cbf31dd pinned that revision and passed [all nine provider jobs](https://github.com/rustcommons/linux-abi-tools/actions/runs/38076305526): three preparations and six Rust 1.99/Clang 21 or 24 application jobs across 2.17/2.18/2.22, including both 2.17 routes.
 Suffix builds retained ordinary Cargo target artifact paths, host scripts/proc macros, target threading, direct ELF/path checks and real-loader execution. Provider mismatch, suffix/explicit-version conflict and too-new memfd_create rejection passed. SDK acquisition, new platforms and actual old-kernel/distribution qualification remain separate.
 
 ## Cargo workflow qualification (F02)
 
-Producer c442310 with consumer 6b07260 passed [all nine provider jobs](https://github.com/rustcommons/libc-abi-tools/actions/runs/38077381465) under Rust 1.99 and Clang 21/24 across glibc 2.17/2.18/2.22, including both 2.17 input routes. Workspace/exclusion, binary/example and package selection, feature/no-default-feature options, release/custom profiles, locked/offline and fresh cached builds passed. Real runtimes executed all three fixture programs. Selecting an existing executable absent from the current Cargo invocation was rejected. The wrapper still validates one explicitly selected executable, not every workspace output.
+Producer c442310 with consumer 6b07260 passed [all nine provider jobs](https://github.com/rustcommons/linux-abi-tools/actions/runs/38077381465) under Rust 1.99 and Clang 21/24 across glibc 2.17/2.18/2.22, including both 2.17 input routes. Workspace/exclusion, binary/example and package selection, feature/no-default-feature options, release/custom profiles, locked/offline and fresh cached builds passed. Real runtimes executed all three fixture programs. Selecting an existing executable absent from the current Cargo invocation was rejected. The wrapper still validates one explicitly selected executable, not every workspace output.

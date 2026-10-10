@@ -1,7 +1,7 @@
 # Architecture and the path to generated glibc ABI support
 
 The original coordinator is now named `cargo-libc`. Its companion
-[libc-abi-tools](https://github.com/rustcommons/libc-abi-tools) has begun the
+[libc-abi-tools](https://github.com/rustcommons/linux-abi-tools) has begun the
 metadata collection/parsing phase; the local 2.17 provider now integrates via
 --provider. Authenticated SDKs and additional versions
 remain future work. See [ROADMAP.md](docs/ROADMAP.md).
@@ -71,10 +71,15 @@ Use upstream ABI lists and/or systematically collected metadata from trusted
 reference builds. Preserve data provenance and applicable licenses. A text list
 of function names and a single “introduced in” field is not enough.
 
-Zig's libc-abi-tools repository is a useful format/design reference, but its
-format is not a stable protocol this project currently consumes. Independent
-Rust implementations can read their own normalized database. Reusing data
-does not require executing the Zig programming language or compiler.
+Zig's libc-abi-tools repository inspired this approach and is a useful
+format/design reference, but its format is not a stable protocol this project
+consumes, and no data is taken from it. The ABI lists come directly from
+glibc's own repository at its signed release tags, collected with
+per-release and per-file provenance by
+[glibc-abilists](https://github.com/rustcommons/glibc-abilists)
+(LGPL-2.1-or-later). `libc-abi-tools` normalizes them into its own database;
+it depends on glibc-abilists by default (`bundled-glibc-data` feature) and can
+read a data directory instead.
 
 ### 2. Rust-generated link-only shared objects
 

@@ -14,8 +14,12 @@ requirements. **Initial scope: x86_64 Linux and glibc 2.17 or later.**
 Other libc implementations are planned. This is the renamed `cargo-glibc`
 prototype; the commands are now `cargo libc` and the helper is `libc-linker`.
 
-The companion [libc-abi-tools](https://github.com/rustcommons/libc-abi-tools)
-ports the glibc metadata work of **Zig's contributors** to Rust. That generated
+The companion `libc-abi-tools` crate in
+[linux-abi-tools](https://github.com/rustcommons/linux-abi-tools) generates
+glibc metadata and link stubs in Rust, an approach inspired by the work of
+**Zig's contributors**. Its glibc ABI data comes directly from glibc's signed
+release tags through [glibc-abilists](https://github.com/rustcommons/glibc-abilists)
+(LGPL-2.1-or-later), compiled in by default and optional. That generated
 provider now integrates through experimental `--provider` selection for 2.17 and source-built GNU 2.18/2.22. See [attribution](NOTICE.md), the
 [implementation plan](docs/ROADMAP.md), [feature and naming review](docs/FEATURE-REVIEW.md), and the [migration record](docs/MIGRATION.md).
 

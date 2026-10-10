@@ -7,7 +7,7 @@ This file provides working guidance for any coding agent.
 `cargo-libc` is rustcommons' Rust Cargo integration for selecting libc build
 environments and inspecting binary requirements. It starts with the
 `cargo-glibc` prototype and glibc support; other libc implementations are future
-work. Its companion repository is `rustcommons/libc-abi-tools`.
+work. Its companion repository is `rustcommons/linux-abi-tools`.
 
 ## Scope and implementation
 

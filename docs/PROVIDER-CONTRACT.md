@@ -71,7 +71,7 @@ SHA-256 logs are evidence, not authenticated SDK manifests.
 
 For 2.22, set `ABI_GLIBC_RELEASE=2.22` and use `--example provider_glibc -- DATA
 2.22 SYSROOT STUBS GCC_STARTUP COMPILER_RUNTIME NEW_DESCRIPTOR`. Only the pinned
-source-built target route is used. See the [2.22 experiment](https://github.com/rustcommons/libc-abi-tools/blob/main/docs/GLIBC-2.22.md).
+source-built target route is used. See the [2.22 experiment](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/GLIBC-2.22.md).
 
 Future release packaging requires relative bundle paths, complete inventories,
 integrity validation, provenance/licenses, stable compiler-runtime policy, and

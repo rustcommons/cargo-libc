@@ -27,7 +27,7 @@ platforms and old-kernel/distribution qualification remain open. No user release
 has been published.
 
 Latest qualified code: producer c442310 and consumer 6b07260;
-[all nine provider jobs passed](https://github.com/rustcommons/libc-abi-tools/actions/runs/38077381465).
+[all nine provider jobs passed](https://github.com/rustcommons/linux-abi-tools/actions/runs/38077381465).
 Producer CI pins the full consumer revision 6b072609e1eafd27904ee3102bb40d2374f63270.
 Subsequent changes are documentation only. Read CLAUDE.md before starting work.
 
@@ -164,10 +164,10 @@ Repository pushes and hosted validation are complete; user release publication r
 - [x] Accept explicit 2.18 descriptors and reject every mismatched release selection.
 - [x] Pass local Cargo host-unit, target thread, real-loader, path, and too-new-symbol checks.
 - [x] Recheck both 2.17 routes and source-built 2.22 with the extended consumer.
-- [x] Observe all six 2.17/2.18/2.22 Clang 21/24 provider jobs passing with producer `75945c2` and consumer `edfca5b` ([run](https://github.com/rustcommons/libc-abi-tools/actions/runs/38066726167)).
+- [x] Observe all six 2.17/2.18/2.22 Clang 21/24 provider jobs passing with producer `75945c2` and consumer `edfca5b` ([run](https://github.com/rustcommons/linux-abi-tools/actions/runs/38066726167)).
 - [ ] Qualify actual target distributions, kernels, native dependencies, and release SDK packaging.
 
-The producer's [2.18 provider reference](https://github.com/rustcommons/libc-abi-tools/blob/main/docs/GLIBC-2.18.md)
+The producer's [2.18 provider reference](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/GLIBC-2.18.md)
 records pinned real inputs, all-eight-library ABI evidence, exhaustive relocation
 coverage, and the new pthread default-attribute boundary fixture.
 
@@ -178,7 +178,7 @@ exhaustive relocations, and transfers checked inputs to Rust 1.99/Clang 21 and 2
 application jobs. Each application job builds Rust, creates a fresh local v1
 descriptor after extraction, and verifies Cargo linking and real execution.
 These workflow bundles are CI inputs, not published user SDK releases.
-See [CI and release artifacts](https://github.com/rustcommons/libc-abi-tools/blob/main/docs/CI-AND-RELEASE-ARTIFACTS.md).
+See [CI and release artifacts](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/CI-AND-RELEASE-ARTIFACTS.md).
 
 - [x] Add coordinator syntax such as `--target x86_64-unknown-linux-gnu.2.17`, splitting the normal Rust triple from exact glibc selection; reject conflicting/unsupported selections.
 - [ ] Resolve qualified providers through an authenticated inventory, reproducible cache identity, and an installable artifact layout.
@@ -192,8 +192,8 @@ Version-suffixed target parsing is implemented, unit-tested, and qualified again
 - [x] Pass real-provider suffix builds, host-unit/thread execution, ordinary-triple artifact checks, path audits and too-new-symbol rejection for 2.17/2.18/2.22 with Rust 1.99 and Clang 21/24, including both 2.17 routes.
 - [x] Reject provider mismatches and conflicting suffix/explicit version requests with expected diagnostics.
 
-Qualified producer cbf31dd with consumer ed4c997: [all nine jobs passed](https://github.com/rustcommons/libc-abi-tools/actions/runs/38076305526).
+Qualified producer cbf31dd with consumer ed4c997: [all nine jobs passed](https://github.com/rustcommons/linux-abi-tools/actions/runs/38076305526).
 
 ## Cargo workflow qualification (F02)
 
-Producer c442310 with consumer 6b07260 passed [all nine provider jobs](https://github.com/rustcommons/libc-abi-tools/actions/runs/38077381465) under Rust 1.99 and Clang 21/24 across glibc 2.17/2.18/2.22, including both 2.17 input routes. Workspace/exclusion, binary/example and package selection, feature/no-default-feature options, release/custom profiles, locked/offline and fresh cached builds passed. Real runtimes executed all three fixture programs. Selecting an existing executable absent from the current Cargo invocation was rejected. The wrapper still validates one explicitly selected executable, not every workspace output.
+Producer c442310 with consumer 6b07260 passed [all nine provider jobs](https://github.com/rustcommons/linux-abi-tools/actions/runs/38077381465) under Rust 1.99 and Clang 21/24 across glibc 2.17/2.18/2.22, including both 2.17 input routes. Workspace/exclusion, binary/example and package selection, feature/no-default-feature options, release/custom profiles, locked/offline and fresh cached builds passed. Real runtimes executed all three fixture programs. Selecting an existing executable absent from the current Cargo invocation was rejected. The wrapper still validates one explicitly selected executable, not every workspace output.

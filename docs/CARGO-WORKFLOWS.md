@@ -45,4 +45,4 @@ features (F10/F11). Native C/C++ dependencies still need their own configuration
 Build flags not exercised by these fixtures are forwarded, but this document
 does not claim qualification of every Cargo flag or compiler combination.
 
-Qualified with producer c442310 and consumer 6b07260: [all nine provider jobs passed](https://github.com/rustcommons/libc-abi-tools/actions/runs/38077381465). See [VALIDATION.md](../VALIDATION.md) and [the roadmap](ROADMAP.md).
+Qualified with producer c442310 and consumer 6b07260: [all nine provider jobs passed](https://github.com/rustcommons/linux-abi-tools/actions/runs/38077381465). See [VALIDATION.md](../VALIDATION.md) and [the roadmap](ROADMAP.md).
