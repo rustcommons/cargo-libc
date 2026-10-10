@@ -23,7 +23,7 @@ claim general cargo-zigbuild parity.
 | Host versus target separation | Explicit Cargo target and encoded target rustflags; build-script/proc-macro tests pass | Preserve this in every adapter and plain-Cargo recipe |
 | Build fingerprints | Selected paths, descriptor contents, and version selection participate | Immutable package identity and authenticated provider cache; current fingerprint does not hash every SDK file |
 | Built-artifact validation | Requires the selected executable to be reported by Cargo; checks direct GLIBC requirements, interpreter, and build-sysroot search-path leakage | Workspace-wide selection/checks and full dependency-closure policy |
-| Friendly versioned target syntax | Explicit `--glibc` / `--provider` today | Parse suffixes such as `x86_64-unknown-linux-gnu.2.17` and forward the ordinary Rust triple |
+| Friendly versioned target syntax | Version suffix or explicit glibc selection; provider remains explicit | Authenticated acquisition and additional qualified targets |
 | Provider acquisition | User supplies existing inputs | Discovery, download, verification, installation, cache identity, and offline reuse |
 | Target compatibility evidence | Qualified examples and CI for three glibc releases / four real input profiles, including both 2.17 routes | Actual intended distributions/kernels and broader native-dependency/runtime coverage |
 
@@ -155,5 +155,12 @@ See [CI and release artifacts](https://github.com/rustcommons/libc-abi-tools/blo
 - [ ] Resolve qualified providers through an authenticated inventory, reproducible cache identity, and an installable artifact layout.
 - [ ] Publish tool and build-provider releases only after host/target, compiler support, source/license, and package qualification.
 
-Version-suffixed target parsing is implemented and unit-tested; real-provider hosted qualification of the shorthand remains pending. Provider selection remains explicit; builds also support
+Version-suffixed target parsing is implemented, unit-tested, and qualified against the current real providers. Provider selection remains explicit; builds also support
 `--glibc` and `--provider` selection; the provider contract is unchanged.
+
+## Versioned-target qualification
+
+- [x] Pass real-provider suffix builds, host-unit/thread execution, ordinary-triple artifact checks, path audits and too-new-symbol rejection for 2.17/2.18/2.22 with Rust 1.99 and Clang 21/24, including both 2.17 routes.
+- [x] Reject provider mismatches and conflicting suffix/explicit version requests with expected diagnostics.
+
+Qualified producer cbf31dd with consumer ed4c997: [all nine jobs passed](https://github.com/rustcommons/libc-abi-tools/actions/runs/38076305526).

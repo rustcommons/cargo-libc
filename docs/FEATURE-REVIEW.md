@@ -74,7 +74,7 @@ These are estimates, not delivery dates. Each row includes a completion test.
 
 | ID / scope | Feature and upstream evidence | Our current state | Proposal / cost | Acceptance or review gate |
 | --- | --- | --- | --- | --- |
-| F01 Core | Version-suffixed targets (S1/S3/S4) | Suffix implemented and unit-tested; provider still explicit | Qualify / M | Strip suffix for rustc; exact provider selected; reject conflicts/unknown releases |
+| F01 Core | Version-suffixed targets (S1/S3/S4) | Suffix implemented and real-provider qualified; provider still explicit | Retain / M | Strip suffix for rustc; exact provider selected; reject conflicts/unknown releases |
 | F02 Adjacent | Normal build flags/workspaces (S7) | Cargo arguments forwarded after `--`; some settings deliberately managed | Next / M | Profiles/features/bin/example/workspace/locked/offline options preserved; managed target cannot be overridden |
 | F03 Adjacent | `check` (S2) | Build/doctor/inspect only | Next / S | No final-ELF requirement for checking; correct host/target units; honest lack of link/runtime evidence |
 | F04 Adjacent | `clippy` (S2) | Use ordinary Cargo separately | Later / S | Same target context; normal diagnostic output and exit status |
@@ -185,3 +185,8 @@ workflow. A feature review does not authorize a rename or SDK publication.
 | Product mission / `cargo-libc` name | Retain for libc compatibility and optional coordination | Pending review of expanded scope | Revisit if broader toolchain/platform management becomes primary |
 
 See [ROADMAP.md](ROADMAP.md) for implemented checkpoints and ongoing work.
+
+F01 implementation and qualification completed following the proceed instructions.
+Producer cbf31dd / consumer ed4c997 passed the current Rust 1.99/Clang 21/24
+provider matrix ([evidence](https://github.com/rustcommons/libc-abi-tools/actions/runs/38076305526)).
+Other feature decisions remain pending; F01 does not add automatic acquisition.

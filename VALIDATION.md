@@ -76,5 +76,10 @@ new runner-local descriptors from restored target headers/CRT/stubs/real runtime
 and explicitly selected local GCC startup files. Cargo host build/proc-macro,
 target threading, real execution, path auditing, mismatched-version and newer-API
 negative tests passed. Both 2.17 routes are retained. This qualifies CI transfer
-and rematerialization; user SDK publication and version-suffixed target parsing
-remain future work.
+and rematerialization; user SDK publication remains separate work; version-suffixed parsing is qualified below.
+
+## Versioned target syntax
+
+Consumer ed4c997 passed [companion CI](https://github.com/rustcommons/cargo-libc/actions/runs/38074429107).
+Producer cbf31dd pinned that revision and passed [all nine provider jobs](https://github.com/rustcommons/libc-abi-tools/actions/runs/38076305526): three preparations and six Rust 1.99/Clang 21 or 24 application jobs across 2.17/2.18/2.22, including both 2.17 routes.
+Suffix builds retained ordinary Cargo target artifact paths, host scripts/proc macros, target threading, direct ELF/path checks and real-loader execution. Provider mismatch, suffix/explicit-version conflict and too-new memfd_create rejection passed. SDK acquisition, new platforms and actual old-kernel/distribution qualification remain separate.
