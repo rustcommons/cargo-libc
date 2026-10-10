@@ -79,3 +79,19 @@ Live repository settings, pushes, and releases are not part of this local bootst
 The producer's [2.18 provider reference](https://github.com/rustcommons/libc-abi-tools/blob/main/docs/GLIBC-2.18.md)
 records pinned real inputs, all-eight-library ABI evidence, exhaustive relocation
 coverage, and the new pthread default-attribute boundary fixture.
+
+## Shared provider preparation and future target selection
+
+The producer prepares each supported glibc release once, audits the ABI and
+exhaustive relocations, and transfers checked inputs to Rust 1.99/Clang 21 and 24
+application jobs. Each application job builds Rust, creates a fresh local v1
+descriptor after extraction, and verifies Cargo linking and real execution.
+These workflow bundles are CI inputs, not published user SDK releases.
+See [CI and release artifacts](https://github.com/rustcommons/libc-abi-tools/blob/main/docs/CI-AND-RELEASE-ARTIFACTS.md).
+
+- [ ] Add coordinator syntax such as `--target x86_64-unknown-linux-gnu.2.17`, splitting the normal Rust triple from exact glibc selection; reject conflicting/unsupported selections.
+- [ ] Resolve qualified providers through an authenticated inventory, reproducible cache identity, and an installable artifact layout.
+- [ ] Publish tool and build-provider releases only after host/target, compiler support, source/license, and package qualification.
+
+Version-suffixed target syntax remains planned. Current builds use explicit
+`--glibc` and `--provider` selection; the provider contract is unchanged.

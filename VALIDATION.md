@@ -65,3 +65,16 @@ and five focused real-library behavior suites for each real input profile.
 passed Windows/Linux Rust 1.99 tests, Rust 1.90 checks, and conventional sysroot
 smoke tests. Distribution/kernel, native dependency, and SDK qualification remain
 separate work. The next provider in the producer roadmap is 2.19.
+
+## Shared CI provider inputs
+
+Producer `8939827c12bf0354b81c8c2f2707d0a2b7985b1b` passed all three shared
+preparation jobs and six Rust 1.99/Clang 21 or 24 application jobs for
+2.17/2.18/2.22 ([run](https://github.com/rustcommons/libc-abi-tools/actions/runs/38069527581)).
+The unchanged consumer pin `edfca5b9f9fb811069f302e8d2d5ef2f99f7fd33` generated
+new runner-local descriptors from restored target headers/CRT/stubs/real runtimes
+and explicitly selected local GCC startup files. Cargo host build/proc-macro,
+target threading, real execution, path auditing, mismatched-version and newer-API
+negative tests passed. Both 2.17 routes are retained. This qualifies CI transfer
+and rematerialization; user SDK publication and version-suffixed target parsing
+remain future work.
