@@ -48,6 +48,16 @@ There is no Zig, Python runtime, PyPI package, or third-party Cargo dependency i
 the tool. Clang and the native linker remain external executables. The project
 does not attempt to replace Rust's compiler backend or reimplement glibc.
 
+## Versioned target shorthand
+
+    cargo libc build --target x86_64-unknown-linux-gnu.2.17 --provider /path/to/provider.txt --artifact target/x86_64-unknown-linux-gnu/release/app -- --release
+
+The suffix supplies the glibc selection. Cargo receives the ordinary
+x86_64-unknown-linux-gnu target; artifact paths therefore use that triple.
+Matching explicit --glibc values are allowed; conflicting versions and unsupported
+architectures are rejected. Without a suffix, --glibc is still required.
+The provider must already exist and match the requested release.
+
 ## Requirements
 
 - x86-64 Linux build host.

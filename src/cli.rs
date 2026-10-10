@@ -18,6 +18,7 @@ BUILD / DOCTOR OPTIONS
   --sysroot DIR      Target development filesystem, including glibc and GCC runtime
   --gcc-runtime DIR  Absolute GCC runtime directory inside that sysroot
   --glibc VERSION    Maximum permitted glibc version, at least 2.17 (e.g. 2.22)
+  --target TARGET    x86_64-unknown-linux-gnu[.GLIBC]; suffix supplies --glibc
   --cc FILE          Host Clang driver (default: /usr/bin/clang)
   --ld FILE          Host native linker (default: /usr/bin/ld.bfd)
   --artifact FILE    Exact executable from this Cargo build to inspect (build only)
@@ -126,6 +127,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     let mut sysroot = None;
     let mut gcc_runtime = None;
     let mut ceiling = None;
+    let mut target = None;
     let mut cc = PathBuf::from("/usr/bin/clang");
     let mut ld = PathBuf::from("/usr/bin/ld.bfd");
     let mut artifact = None;
@@ -149,7 +151,31 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
             }
             Some("--cc") => cc = PathBuf::from(next_value(&args, &mut i, "--cc")?),
             Some("--ld") => ld = PathBuf::from(next_value(&args, &mut i, "--ld")?),
+            Some("--target") => {
+                if target.is_some() {
+                    return Err("duplicate --target".into());
+                }
+                let value = next_value(&args, &mut i, "--target")?;
+                let text = value.to_str().ok_or("--target must be UTF-8")?;
+                let (triple, suffix) = text
+                    .split_once('.')
+                    .map_or((text, None), |(t, v)| (t, Some(v)));
+                if triple != toolchain::TARGET {
+                    return Err(format!(
+                        "unsupported target {triple:?}; expected {}",
+                        toolchain::TARGET
+                    ));
+                }
+                target = Some(
+                    suffix
+                        .map(|v| parse_version(v.into(), "--target"))
+                        .transpose()?,
+                );
+            }
             Some("--glibc") => {
+                if ceiling.is_some() {
+                    return Err("duplicate --glibc".into());
+                }
                 ceiling = Some(parse_version(
                     next_value(&args, &mut i, "--glibc")?,
                     "--glibc",
@@ -174,6 +200,12 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     }
     if provider.is_some() && (sysroot.is_some() || gcc_runtime.is_some()) {
         return Err("--provider conflicts with --sysroot and --gcc-runtime".into());
+    }
+    if let Some(Some(version)) = target {
+        if ceiling.is_some_and(|explicit| explicit != version) {
+            return Err("--target version conflicts with --glibc".into());
+        }
+        ceiling = Some(version);
     }
     let config = RawConfig {
         provider: provider.clone(),
@@ -308,6 +340,80 @@ mod tests {
         }
         assert!(parse(args(&["doctor", "--provider", "/sdk/provider.txt"])).is_err());
     }
+    #[test]
+    fn versioned_target_selects_ceiling_and_preserves_cargo_arguments() {
+        for version in ["2.17", "2.18", "2.22"] {
+            let target = format!("{}.{}", toolchain::TARGET, version);
+            let ParsedCommand::Build {
+                config, cargo_args, ..
+            } = parse(args(&[
+                "build",
+                "--provider",
+                "/sdk/provider.txt",
+                "--target",
+                &target,
+                "--artifact",
+                "target/app",
+                "--",
+                "--release",
+            ]))
+            .unwrap()
+            else {
+                panic!("wrong command")
+            };
+            assert_eq!(config.ceiling, version.parse().unwrap());
+            assert_eq!(cargo_args, args(&["--release"]));
+        }
+    }
+
+    #[test]
+    fn target_selection_rejects_conflicts_and_malformed_requests() {
+        for extra in [
+            vec!["--target", "x86_64-unknown-linux-gnu.2.18"],
+            vec!["--target", "aarch64-unknown-linux-gnu.2.17"],
+            vec!["--target", "x86_64-unknown-linux-gnu."],
+            vec!["--target", "x86_64-unknown-linux-gnu.2.16"],
+            vec!["--target", "x86_64-unknown-linux-gnu.2.17.extra"],
+            vec![
+                "--target",
+                "x86_64-unknown-linux-gnu",
+                "--target",
+                "x86_64-unknown-linux-gnu",
+            ],
+            vec!["--glibc", "2.17"],
+        ] {
+            let mut argv = vec![
+                "doctor",
+                "--provider",
+                "/sdk/provider.txt",
+                "--glibc",
+                "2.17",
+            ];
+            argv.extend(extra);
+            assert!(parse(args(&argv)).is_err(), "{argv:?}");
+        }
+        for target in ["x86_64-unknown-linux-gnu", "x86_64-unknown-linux-gnu.2.17"] {
+            assert!(parse(args(&[
+                "doctor",
+                "--provider",
+                "/sdk/provider.txt",
+                "--glibc",
+                "2.17",
+                "--target",
+                target
+            ]))
+            .is_ok());
+        }
+        assert!(parse(args(&[
+            "doctor",
+            "--provider",
+            "/sdk/provider.txt",
+            "--target",
+            toolchain::TARGET
+        ]))
+        .is_err());
+    }
+
     fn args(values: &[&str]) -> Vec<OsString> {
         values.iter().map(OsString::from).collect()
     }
