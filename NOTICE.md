@@ -17,8 +17,12 @@ can opt out (`default-features = false`) and read a data directory instead
 
 **Credit belongs to the Zig contributors** for the idea and approach:
 [Zig's libc ABI tools](https://codeberg.org/ziglang/libc-abi-tools), its ABI
-metadata design, and its glibc compatibility work. The companion repository
-preserves the Zig tooling license for the code it adapted from that design.
+metadata design, and its glibc compatibility work, as of commit
+`9217cf899bf12bbb24a8a3de4cc2de682de0379d` ("update to Zig 0.17.0",
+2026-10-02). The companion repository preserves the Zig tooling license for the
+code it adapted from that commit; its
+[NOTICE](https://github.com/rustcommons/linux-abi-tools/blob/main/NOTICE.md)
+holds the full attribution record.
 
 This repository currently contains no copied Zig source or glibc ABI dataset.
 It uses the caller's real sysroot; the generated provider is not integrated yet.
