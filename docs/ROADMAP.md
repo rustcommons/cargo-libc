@@ -59,3 +59,11 @@ Live repository settings, pushes, and releases are not part of this local bootst
 - [x] Pin the tested companion commit in libc-abi-tools CI.
 - [ ] Qualify additional glibc versions listed in libc-abi-tools' roadmap.
 - [ ] Add authenticated relocatable SDK inventory, licenses, and actual target distro/kernel qualification.
+
+## GNU glibc 2.22 checkpoint
+
+- [x] Accept explicit 2.22 descriptors and reject mismatched release selections.
+- [x] Pass local host build-script/proc-macro, target thread, real loader, and link/runtime path checks.
+- [x] Recheck both 2.17 provider routes with the extended consumer.
+- [ ] Observe the extended Clang 21/24 hosted provider matrix in libc-abi-tools.
+- [ ] Qualify actual SLES 12 SP5 inputs and native dependencies; generic GNU 2.22 is a separate environment.

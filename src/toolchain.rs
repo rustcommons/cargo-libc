@@ -75,10 +75,9 @@ impl Toolchain {
         if !cfg!(all(target_os = "linux", target_arch = "x86_64")) {
             return Err("provider builds require x86-64 Linux".into());
         }
-        if ceiling != "2.17".parse()? {
-            return Err("provider v1 only supports --glibc 2.17".into());
-        }
+
         let provider = crate::provider::Provider::load(path)?;
+        provider.validate_selection(ceiling)?;
         provider.validate_files()?;
         let sysroot = canonical(&provider.sysroot, "provider sysroot")?;
         let gcc_runtime = canonical(&provider.gcc_startup, "provider GCC startup")?;
@@ -174,7 +173,10 @@ impl Toolchain {
         if let Some(provider) = &self.provider {
             provider.validate_files()?;
             if header_version != self.ceiling {
-                return Err("provider headers must match glibc 2.17 exactly".into());
+                return Err(format!(
+                    "provider headers must match glibc {} exactly",
+                    self.ceiling
+                ));
             }
             for name in ["crt1.o", "crti.o", "crtn.o"] {
                 let path = inside_file(&self.sysroot.join("usr/lib64").join(name), &self.sysroot)?;
