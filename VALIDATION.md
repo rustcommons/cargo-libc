@@ -32,3 +32,7 @@ Native dependency closure and generated compatibility libraries remain future wo
 
 Rust 1.90 remains the declared minimum. Its dedicated CI check has not been run
 locally; hosted CI results remain pending the first push.
+
+## Experimental glibc 2.17 provider
+
+Rust 1.99.0/Clang 18.1.3/GNU binutils 2.42 passed both prebuilt and source-built glibc 2.17 Cargo examples in WSL. Host build scripts and procedural macros ran; target threads passed under each real loader. Highest direct GLIBC requirement was 2.16; no RPATH/RUNPATH. Independent link-map and runtime-path audits passed. Clang 21/23 hosted jobs live in the companion libc-abi-tools workflow and remain unobserved. See [provider contract](docs/PROVIDER-CONTRACT.md).

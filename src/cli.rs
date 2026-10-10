@@ -14,6 +14,7 @@ USAGE
   cargo libc inspect FILE [--max-glibc VERSION] [--json]
 
 BUILD / DOCTOR OPTIONS
+  --provider FILE    Experimental glibc 2.17 provider descriptor instead of sysroot/GCC options
   --sysroot DIR      Target development filesystem, including glibc and GCC runtime
   --gcc-runtime DIR  Absolute GCC runtime directory inside that sysroot
   --glibc VERSION    Maximum permitted glibc version, at least 2.17 (e.g. 2.22)
@@ -41,6 +42,7 @@ Direct invocation as `cargo-libc ...` is also supported.
 
 #[derive(Debug)]
 struct RawConfig {
+    provider: Option<PathBuf>,
     sysroot: PathBuf,
     gcc_runtime: PathBuf,
     cc: PathBuf,
@@ -50,6 +52,9 @@ struct RawConfig {
 
 impl RawConfig {
     fn resolve(self) -> Result<Toolchain, String> {
+        if let Some(path) = self.provider {
+            return Toolchain::from_provider(&path, self.cc, self.ld, self.ceiling);
+        }
         Toolchain::new(
             self.sysroot,
             self.gcc_runtime,
@@ -117,6 +122,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         }
     }
     let build = command == "build";
+    let mut provider = None;
     let mut sysroot = None;
     let mut gcc_runtime = None;
     let mut ceiling = None;
@@ -129,6 +135,12 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     while i < args.len() {
         match args[i].to_str() {
             Some("-h" | "--help") => return Ok(ParsedCommand::Help),
+            Some("--provider") => {
+                if provider.is_some() {
+                    return Err("duplicate --provider".into());
+                }
+                provider = Some(PathBuf::from(next_value(&args, &mut i, "--provider")?));
+            }
             Some("--sysroot") => {
                 sysroot = Some(PathBuf::from(next_value(&args, &mut i, "--sysroot")?))
             }
@@ -160,9 +172,21 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         }
         i += 1;
     }
+    if provider.is_some() && (sysroot.is_some() || gcc_runtime.is_some()) {
+        return Err("--provider conflicts with --sysroot and --gcc-runtime".into());
+    }
     let config = RawConfig {
-        sysroot: sysroot.ok_or("--sysroot is required")?,
-        gcc_runtime: gcc_runtime.ok_or("--gcc-runtime is required")?,
+        provider: provider.clone(),
+        sysroot: if provider.is_some() {
+            PathBuf::new()
+        } else {
+            sysroot.ok_or("--sysroot is required")?
+        },
+        gcc_runtime: if provider.is_some() {
+            PathBuf::new()
+        } else {
+            gcc_runtime.ok_or("--gcc-runtime is required")?
+        },
         cc,
         ld,
         ceiling: ceiling.ok_or("--glibc is required")?,
@@ -260,6 +284,30 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn provider_selection_is_explicit_and_excludes_sysroot_options() {
+        let base = [
+            "doctor",
+            "--provider",
+            "/sdk/provider.txt",
+            "--glibc",
+            "2.17",
+        ];
+        let ParsedCommand::Doctor(config) = parse(args(&base)).unwrap() else {
+            panic!("wrong command")
+        };
+        assert_eq!(config.provider, Some(PathBuf::from("/sdk/provider.txt")));
+        for extra in [
+            ["--sysroot", "/sdk"],
+            ["--gcc-runtime", "/sdk/gcc"],
+            ["--provider", "/other"],
+        ] {
+            let mut values = base.to_vec();
+            values.extend(extra);
+            assert!(parse(args(&values)).is_err());
+        }
+        assert!(parse(args(&["doctor", "--provider", "/sdk/provider.txt"])).is_err());
+    }
     fn args(values: &[&str]) -> Vec<OsString> {
         values.iter().map(OsString::from).collect()
     }

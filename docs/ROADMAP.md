@@ -49,3 +49,12 @@ Plan established 2026-10-09. Initial scope confirmed: x86_64 Linux, glibc 2.17+.
 - [ ] Publish a release only after its supported environment is qualified.
 
 Live repository settings, pushes, and releases are not part of this local bootstrap.
+
+## Experimental provider checkpoint
+
+- [x] Consume the libc-abi-tools version-1 glibc 2.17 local descriptor via --provider.
+- [x] Preserve original sysroot mode and host build scripts/procedural macros.
+- [x] Verify both real 2.17 input routes, target threads, and link/runtime paths locally.
+- [ ] Observe Rust 1.99/Clang 21 and 23 hosted integration jobs in libc-abi-tools after both changes land.
+- [ ] Pin the tested companion commit and qualify additional glibc versions listed in libc-abi-tools' roadmap.
+- [ ] Add authenticated relocatable SDK inventory, licenses, and actual target distro/kernel qualification.

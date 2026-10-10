@@ -17,6 +17,7 @@ const LD_ENV: &str = "CARGO_LIBC_LD";
 
 #[derive(Clone, Debug)]
 pub struct Toolchain {
+    pub provider: Option<crate::provider::Provider>,
     pub sysroot: PathBuf,
     pub gcc_runtime: PathBuf,
     pub cc: PathBuf,
@@ -65,6 +66,43 @@ pub fn text_path(path: &Path) -> Result<&str, String> {
 }
 
 impl Toolchain {
+    pub fn from_provider(
+        path: &Path,
+        cc: PathBuf,
+        ld: PathBuf,
+        ceiling: Version,
+    ) -> Result<Self, String> {
+        if !cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+            return Err("provider builds require x86-64 Linux".into());
+        }
+        if ceiling != "2.17".parse()? {
+            return Err("provider v1 only supports --glibc 2.17".into());
+        }
+        let provider = crate::provider::Provider::load(path)?;
+        provider.validate_files()?;
+        let sysroot = canonical(&provider.sysroot, "provider sysroot")?;
+        let gcc_runtime = canonical(&provider.gcc_startup, "provider GCC startup")?;
+        let cc = canonical(&cc, "Clang driver")?;
+        let ld = canonical(&ld, "linker")?;
+        for path in [
+            &sysroot,
+            &gcc_runtime,
+            &provider.stubs,
+            &provider.compiler_runtime,
+            &cc,
+            &ld,
+        ] {
+            text_path(path)?;
+        }
+        Ok(Self {
+            provider: Some(provider),
+            sysroot,
+            gcc_runtime,
+            cc,
+            ld,
+            ceiling,
+        })
+    }
     pub fn new(
         sysroot: PathBuf,
         gcc_runtime: PathBuf,
@@ -93,6 +131,7 @@ impl Toolchain {
             text_path(path)?;
         }
         Ok(Self {
+            provider: None,
             sysroot,
             gcc_runtime,
             cc,
@@ -132,6 +171,33 @@ impl Toolchain {
         }
         let linker_version = tool_version(&self.ld)?;
         let mut files = Vec::new();
+        if let Some(provider) = &self.provider {
+            provider.validate_files()?;
+            if header_version != self.ceiling {
+                return Err("provider headers must match glibc 2.17 exactly".into());
+            }
+            for name in ["crt1.o", "crti.o", "crtn.o"] {
+                let path = inside_file(&self.sysroot.join("usr/lib64").join(name), &self.sysroot)?;
+                validate_x86_object(&path)?;
+                files.push((name.into(), path));
+            }
+            for name in ["crtbegin.o", "crtend.o"] {
+                let path = inside_file(&self.gcc_runtime.join(name), &self.gcc_runtime)?;
+                validate_x86_object(&path)?;
+                files.push((name.into(), path));
+            }
+            for name in crate::provider::SONAMES {
+                let path = provider.stubs.join(name);
+                validate_x86_object(&path)?;
+                files.push((name.into(), path));
+            }
+            return Ok(Diagnostics {
+                header_version,
+                compiler_version,
+                linker_version,
+                files,
+            });
+        }
         for name in [
             "Scrt1.o",
             "crt1.o",
@@ -209,7 +275,7 @@ impl Toolchain {
     pub fn rustflags(&self, driver: &Path) -> Result<OsString, String> {
         // These input paths deliberately also appear in rustc flags: Cargo then sees
         // profile-path changes in its fingerprints rather than only hidden env vars.
-        let flags = vec![
+        let mut flags = vec![
             "-C".to_string(),
             format!("linker={}", text_path(driver)?),
             "-C".into(),
@@ -230,6 +296,9 @@ impl Toolchain {
             "--cfg".into(),
             format!("cargo_libc_profile=\"{}\"", self.profile_fingerprint()?),
         ];
+        if self.provider.is_some() {
+            flags.extend(["-C".into(), "relocation-model=static".into()]);
+        }
         Ok(flags.join("\u{1f}").into())
     }
 
@@ -249,10 +318,20 @@ impl Toolchain {
                 hash = (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3);
             }
         }
+        if let Some(provider) = &self.provider {
+            for byte in provider.descriptor.bytes() {
+                hash = (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3);
+            }
+        }
         Ok(format!("{hash:016x}"))
     }
 
     pub fn set_environment(&self, cmd: &mut Command) {
+        if let Some(provider) = &self.provider {
+            cmd.env("CARGO_LIBC_PROVIDER_DESCRIPTOR", &provider.descriptor);
+        } else {
+            cmd.env_remove("CARGO_LIBC_PROVIDER_DESCRIPTOR");
+        }
         cmd.env(SYSROOT_ENV, &self.sysroot)
             .env(GCC_ENV, &self.gcc_runtime)
             .env(CC_ENV, &self.cc)
@@ -460,12 +539,38 @@ pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
     let gcc = required(GCC_ENV)?;
     let ld = required(LD_ENV)?;
     let mut cmd = Command::new(cc);
-    cmd.args(args);
+    if let Some(descriptor) = env::var_os("CARGO_LIBC_PROVIDER_DESCRIPTOR") {
+        let provider = crate::provider::Provider::parse(
+            descriptor
+                .to_str()
+                .ok_or("provider descriptor must be UTF-8")?,
+        )?;
+        provider.validate_files()?;
+        cmd.arg("-nostdlib").arg("-no-pie");
+        if let Some(path) = env::var_os("CARGO_LIBC_PROVIDER_LINK_MAP") {
+            cmd.arg(prefixed_path("-Wl,-Map=", Path::new(&path)));
+        }
+        cmd.arg(prefixed_path("-L", &provider.stubs));
+        cmd.arg(prefixed_path("-L", &provider.compiler_runtime));
+        cmd.arg(provider.sysroot.join("usr/lib64/crt1.o"));
+        cmd.arg(provider.sysroot.join("usr/lib64/crti.o"));
+        cmd.arg(provider.gcc_startup.join("crtbegin.o"));
+        cmd.args(args);
+        cmd.arg(provider.sysroot.join("usr/lib64/libc_nonshared.a"));
+        cmd.arg(provider.sysroot.join("usr/lib64/libpthread_nonshared.a"));
+        cmd.arg(provider.gcc_startup.join("crtend.o"));
+        cmd.arg(provider.sysroot.join("usr/lib64/crtn.o"));
+        cmd.arg(format!("-Wl,--dynamic-linker={LOADER}"));
+    } else {
+        cmd.args(args);
+    }
     // Fixed profile selections come last, after any arguments from rustc.
     cmd.arg(format!("--target={TARGET}"));
     cmd.arg(prefixed_path("--sysroot=", Path::new(&root)));
     cmd.arg(prefixed_path("--gcc-install-dir=", Path::new(&gcc)));
-    cmd.arg("--rtlib=libgcc");
+    if env::var_os("CARGO_LIBC_PROVIDER_DESCRIPTOR").is_none() {
+        cmd.arg("--rtlib=libgcc");
+    }
     cmd.arg(prefixed_path("-fuse-ld=", Path::new(&ld)));
     remove_search_overrides(&mut cmd);
     let status = cmd
@@ -553,6 +658,7 @@ mod tests {
     #[test]
     fn path_with_spaces_is_one_driver_argument() {
         let cfg = Toolchain {
+            provider: None,
             sysroot: "/sdk root".into(),
             gcc_runtime: "/sdk root/gcc".into(),
             cc: "/usr/bin/clang".into(),

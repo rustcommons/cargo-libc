@@ -4,6 +4,7 @@ set -euo pipefail
 repo_dir=$(cd "$(dirname "$0")/.." && pwd)
 test_dir=$(mktemp -d /tmp/cargo-libc-smoke.XXXXXXXX)
 trap 'rm -rf -- "$test_dir"' EXIT
+test_cc=${CARGO_LIBC_SMOKE_CC:-/usr/bin/clang}
 test_glibc=$(getconf GNU_LIBC_VERSION)
 test_glibc=${test_glibc#glibc }
 test_gcc=$(dirname "$(gcc -print-file-name=crtbeginS.o)")
@@ -11,10 +12,10 @@ test_gcc=$(dirname "$(gcc -print-file-name=crtbeginS.o)")
 cargo build --manifest-path "$repo_dir/Cargo.toml" --locked --offline --target-dir "$test_dir/tools"
 export PATH="$test_dir/tools/debug:$PATH"
 cargo libc --version
-cargo libc doctor --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc"
+cargo libc doctor --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc"
 cd "$repo_dir/examples/hello"
 test_artifact="$test_dir/target output/x86_64-unknown-linux-gnu/release/glibc-hello"
-cargo libc build --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" \
+cargo libc build --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc" \
   --artifact "$test_artifact" -- --release --locked --offline -vv \
   --target-dir "$test_dir/target output" >"$test_dir/build.log" 2>&1
 cat "$test_dir/build.log"
@@ -31,13 +32,13 @@ done
 grep -q 'Running.*rustc.*--crate-name glibc_hello .*libc-linker' "$test_dir/build.log"
 
 # Cached outputs remain valid artifacts of the current Cargo invocation.
-cargo libc build --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" \
+cargo libc build --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc" \
   --artifact "$test_artifact" -- --release --locked --offline \
   --target-dir "$test_dir/target output"
 cargo libc inspect "$test_artifact" --max-glibc "$test_glibc" --json
 
 # An unrelated existing ELF must never substitute for Cargo's output.
-if cargo libc build --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" \
+if cargo libc build --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc" \
   --artifact /bin/true -- --release --locked --offline \
   --target-dir "$test_dir/target output" >"$test_dir/rejection.log" 2>&1; then
   echo 'Unrelated artifact was accepted' >&2

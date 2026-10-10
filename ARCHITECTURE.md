@@ -2,7 +2,8 @@
 
 The original coordinator is now named `cargo-libc`. Its companion
 [libc-abi-tools](https://github.com/rustcommons/libc-abi-tools) has begun the
-metadata collection/parsing phase; generated libraries and provider integration
+metadata collection/parsing phase; the local 2.17 provider now integrates via
+--provider. Authenticated SDKs and additional versions
 remain future work. See [ROADMAP.md](docs/ROADMAP.md).
 
 ## The decision
