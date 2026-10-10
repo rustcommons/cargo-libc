@@ -7,4 +7,18 @@ publish = false
 [dependencies]
 hello-macro = { path = "hello-macro" }
 
+[features]
+qualification = []
+
+[[example]]
+name = "qualification"
+path = "examples/qualification.rs"
+required-features = ["qualification"]
+
 [workspace]
+members = ["workspace-member"]
+
+[profile.qualification]
+inherits = "release"
+opt-level = 1
+

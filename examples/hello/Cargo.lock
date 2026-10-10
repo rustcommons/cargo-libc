@@ -12,3 +12,7 @@ dependencies = [
 [[package]]
 name = "hello-macro"
 version = "0.1.0"
+
+[[package]]
+name = "qualification-member"
+version = "0.1.0"
