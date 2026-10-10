@@ -17,7 +17,7 @@ prototype; the commands are now `cargo libc` and the helper is `libc-linker`.
 The companion [libc-abi-tools](https://github.com/rustcommons/libc-abi-tools)
 ports the glibc metadata work of **Zig's contributors** to Rust. That generated
 provider now integrates through experimental `--provider` selection for 2.17 and source-built GNU 2.18/2.22. See [attribution](NOTICE.md), the
-[implementation plan](docs/ROADMAP.md), and the [migration record](docs/MIGRATION.md).
+[implementation plan](docs/ROADMAP.md), [feature and naming review](docs/FEATURE-REVIEW.md), and the [migration record](docs/MIGRATION.md).
 
 This project replaces the Zig dependency in a deliberately narrow build path:
 build an **x86-64 dynamically linked Rust executable** with Cargo/rustc, a host

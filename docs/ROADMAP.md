@@ -41,6 +41,29 @@ closure checks, and authenticated SDK publication remain unfinished. Existing
 input validation and direct ELF checks do not replace those features or qualify
 arbitrary runtime compatibility.
 
+## Feature and naming review
+
+See [the feature review](FEATURE-REVIEW.md) for 36 upstream parity candidates
+(F01-F36) and 16 additional enhancement candidates (E01-E16), with pinned source
+evidence, current coverage, recommended priority, estimated effort, and acceptance
+gates. New scope proposals remain pending review; listing them is not approval.
+
+Keep `cargo-libc` while selecting libc environments and explaining compatibility
+remain the main product. Native dependency integration and additional libc
+families fit that purpose. Revisit the name before adopting general toolchain/SDK
+management or platform packaging as a primary role, and again before public
+release against the actual approved scope. No rename is planned by this review.
+
+- [x] Inventory upstream capabilities and additional enhancements with stable IDs.
+- [x] Separate core, adjacent, and broader features and document the naming gate.
+- [ ] Review the product mission and each proposed feature: approve, defer, reject, or request evidence.
+- [ ] Record ownership, prerequisites, maintenance cost, and acceptance evidence for approved items.
+- [ ] Review core delivery/plain Cargo first, then native dependencies, Cargo conveniences/link modes, and platform expansion.
+- [ ] Recheck the product name against approved scope before public release.
+
+Provider rollout (2.19 next) and existing qualification work continue independently
+of whether we adopt every upstream convenience.
+
 ## 1. Repository foundation and migration
 
 - [x] Commit CLAUDE.md/AGENTS.md and imported Git conventions first.
