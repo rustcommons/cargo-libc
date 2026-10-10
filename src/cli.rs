@@ -14,7 +14,7 @@ USAGE
   cargo libc inspect FILE [--max-glibc VERSION] [--json]
 
 BUILD / DOCTOR OPTIONS
-  --provider FILE    Experimental glibc 2.17/2.22 provider descriptor instead of sysroot/GCC options
+  --provider FILE    Experimental glibc 2.17/2.18/2.22 provider descriptor instead of sysroot/GCC options
   --sysroot DIR      Target development filesystem, including glibc and GCC runtime
   --gcc-runtime DIR  Absolute GCC runtime directory inside that sysroot
   --glibc VERSION    Maximum permitted glibc version, at least 2.17 (e.g. 2.22)
