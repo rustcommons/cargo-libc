@@ -65,5 +65,5 @@ Live repository settings, pushes, and releases are not part of this local bootst
 - [x] Accept explicit 2.22 descriptors and reject mismatched release selections.
 - [x] Pass local host build-script/proc-macro, target thread, real loader, and link/runtime path checks.
 - [x] Recheck both 2.17 provider routes with the extended consumer.
-- [ ] Observe the extended Clang 21/24 hosted provider matrix in libc-abi-tools.
+- [x] Observe all four extended Clang 21/24 and glibc 2.17/2.22 hosted provider jobs passing.
 - [ ] Qualify actual SLES 12 SP5 inputs and native dependencies; generic GNU 2.22 is a separate environment.

@@ -41,4 +41,6 @@ Hosted evidence: [companion CI](https://github.com/rustcommons/cargo-libc/action
 
 ## GNU glibc 2.22 extension
 
-Local Rust 1.99.0 / Clang 18.1.3 / binutils 2.42 Cargo validation passed with the pinned GNU 2.22 source-built inputs. Host build scripts/procedural macros and the target thread ran, incompatible 2.17 selection failed, and all shared link/runtime inputs stayed in approved trees. Highest directly required GLIBC symbol tag was 2.18; this is not qualification for a 2.18 runtime. Both original 2.17 routes were rechecked successfully. Hosted Clang 21/24 qualification remains pending; actual SLES qualification is separate.
+Local Rust 1.99.0 / Clang 18.1.3 / binutils 2.42 Cargo validation passed with the pinned GNU 2.22 source-built inputs. Host build scripts/procedural macros and the target thread ran, incompatible 2.17 selection failed, and all shared link/runtime inputs stayed in approved trees. Highest directly required GLIBC symbol tag was 2.18; this is not qualification for a 2.18 runtime. Both original 2.17 routes were rechecked successfully. Hosted Clang 21/24 qualification passed with Rust 1.99 on 2026-10-10 for both release profiles. Actual SLES qualification is separate.
+
+Extended [provider/runtime evidence](https://github.com/rustcommons/libc-abi-tools/actions/runs/38058240922) qualified companion commit 695ac536a791650d0d351c74562e008c47a82392 with producer commit 39101a0bdf9d824e3fb89931552b0a771fee5e0e. Cargo rejected memfd_create through the target linker for both 2.17 routes and the 2.22 source route.
