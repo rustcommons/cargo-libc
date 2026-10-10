@@ -21,4 +21,3 @@ members = ["workspace-member"]
 [profile.qualification]
 inherits = "release"
 opt-level = 1
-
