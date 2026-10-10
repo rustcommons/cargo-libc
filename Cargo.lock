@@ -5,3 +5,29 @@ version = 4
 [[package]]
 name = "cargo-libc"
 version = "0.1.0"
+dependencies = [
+ "linux-abi-scan",
+ "linux-targets",
+]
+
+[[package]]
+name = "kernel-abi-tools"
+version = "0.1.0"
+source = "git+https://github.com/rustcommons/linux-abi-tools?rev=e75b610de93a921d68fee9df613e896aa7151380#e75b610de93a921d68fee9df613e896aa7151380"
+dependencies = [
+ "linux-targets",
+]
+
+[[package]]
+name = "linux-abi-scan"
+version = "0.1.0"
+source = "git+https://github.com/rustcommons/linux-abi-tools?rev=e75b610de93a921d68fee9df613e896aa7151380#e75b610de93a921d68fee9df613e896aa7151380"
+dependencies = [
+ "kernel-abi-tools",
+ "linux-targets",
+]
+
+[[package]]
+name = "linux-targets"
+version = "0.1.0"
+source = "git+https://github.com/rustcommons/linux-abi-tools?rev=e75b610de93a921d68fee9df613e896aa7151380#e75b610de93a921d68fee9df613e896aa7151380"

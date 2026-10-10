@@ -1,5 +1,5 @@
 use crate::{
-    report,
+    report::{self, ScanOptions},
     toolchain::{self, Toolchain},
     version::Version,
 };
@@ -11,7 +11,8 @@ USAGE
   cargo libc doctor --sysroot DIR --gcc-runtime DIR --glibc VERSION [OPTIONS]
   cargo libc build  --sysroot DIR --gcc-runtime DIR --glibc VERSION
                     --artifact FILE [OPTIONS] -- [CARGO BUILD ARGUMENTS]
-  cargo libc inspect FILE [--max-glibc VERSION] [--json]
+  cargo libc inspect FILE [--max-glibc VERSION | --distro ID] [--kernel VERSION]
+                     [--scan] [--strict] [--verbose] [--json]
 
 BUILD / DOCTOR OPTIONS
   --provider FILE    Experimental glibc 2.17/2.18/2.22 provider descriptor instead of sysroot/GCC options
@@ -24,6 +25,16 @@ BUILD / DOCTOR OPTIONS
   --artifact FILE    Exact executable from this Cargo build to inspect (build only)
   --dry-run          Probe target inputs and print the command without building
 
+INSPECT OPTIONS
+  --max-glibc VERSION  Fail when a mandatory GLIBC_* requirement is newer
+  --distro ID          Target preset (e.g. sles-12-sp5): sets the glibc and
+                       kernel floors and runs the tier 1 scan
+  --kernel VERSION     Kernel floor (e.g. 3.10); runs the tier 1 scan
+  --scan               Run the tier 1 scan with only the --max-glibc floor
+  --strict             Scan warnings (heuristic or optional use) also fail
+  --verbose            Show the scan's informational findings
+  --json               Machine-readable report
+
 GENERAL
   -h, --help         Show this help
   -V, --version      Show the tool version
@@ -34,7 +45,10 @@ It uses a Rust linker helper, a host Clang driver, and the selected native linke
 It does not use Zig, Python, or third-party Rust crates.
 
 The ELF check covers direct version requirements in the selected file.
-It does not resolve dependent libraries or replace testing on the target OS.
+The tier 1 scan (linux-abi-scan) adds kernel checks: imported syscall
+wrappers and DT_RELR exactly, constant syscall()/madvise() call sites
+heuristically. Neither resolves dependent libraries or replaces running the
+program under a kernel simulation or on the target OS.
 Native C/C++ dependencies need their own target configuration in this version.
 
 Use separate values for options, e.g. --glibc 2.22 (not --glibc=2.22).
@@ -80,6 +94,7 @@ enum ParsedCommand {
     Inspect {
         file: PathBuf,
         ceiling: Option<Version>,
+        scan: Option<ScanOptions>,
         json: bool,
     },
 }
@@ -242,6 +257,8 @@ fn parse_inspect(args: &[OsString]) -> Result<ParsedCommand, String> {
     let mut file = None;
     let mut ceiling = None;
     let mut json = false;
+    let mut scan = ScanOptions::default();
+    let mut scan_requested = false;
     let mut positional_only = false;
     let mut i = 0;
     while i < args.len() {
@@ -261,6 +278,30 @@ fn parse_inspect(args: &[OsString]) -> Result<ParsedCommand, String> {
                     i += 1;
                     continue;
                 }
+                Some(flag @ ("--distro" | "--kernel")) => {
+                    let value = next_value(args, &mut i, flag)?
+                        .into_string()
+                        .map_err(|_| format!("{flag} must be UTF-8"))?;
+                    let slot = if flag == "--distro" {
+                        &mut scan.distro
+                    } else {
+                        &mut scan.kernel
+                    };
+                    if slot.replace(value).is_some() {
+                        return Err(format!("duplicate {flag}"));
+                    }
+                    i += 1;
+                    continue;
+                }
+                Some(flag @ ("--scan" | "--strict" | "--verbose")) => {
+                    match flag {
+                        "--scan" => scan_requested = true,
+                        "--strict" => scan.strict = true,
+                        _ => scan.verbose = true,
+                    }
+                    i += 1;
+                    continue;
+                }
                 Some("--") => {
                     positional_only = true;
                     i += 1;
@@ -277,9 +318,22 @@ fn parse_inspect(args: &[OsString]) -> Result<ParsedCommand, String> {
         }
         i += 1;
     }
+    if scan.distro.is_some() && ceiling.is_some() {
+        return Err("--distro sets the glibc floor; do not combine it with --max-glibc".into());
+    }
+    let scan = if scan_requested || scan.distro.is_some() || scan.kernel.is_some() {
+        Some(scan)
+    } else if scan.strict || scan.verbose {
+        return Err(
+            "--strict and --verbose apply to the scan; add --distro, --kernel, or --scan".into(),
+        );
+    } else {
+        None
+    };
     Ok(ParsedCommand::Inspect {
         file: file.ok_or("inspect requires an ELF file path")?,
         ceiling,
+        scan,
         json,
     })
 }
@@ -308,8 +362,9 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
         ParsedCommand::Inspect {
             file,
             ceiling,
+            scan,
             json,
-        } => report::inspect_file(&file, ceiling, json),
+        } => report::inspect_file(&file, ceiling, scan.as_ref(), json),
     }
 }
 
@@ -477,6 +532,7 @@ mod tests {
         let ParsedCommand::Inspect {
             file,
             ceiling,
+            scan,
             json,
         } = parsed
         else {
@@ -484,6 +540,42 @@ mod tests {
         };
         assert_eq!(file, PathBuf::from("-app"));
         assert_eq!(ceiling, Some("2.22".parse().unwrap()));
+        assert!(scan.is_none(), "the scan runs only when asked for");
         assert!(json);
+    }
+
+    fn inspect_scan(argv: &[&str]) -> Option<ScanOptions> {
+        let ParsedCommand::Inspect { scan, .. } = parse(args(argv)).unwrap() else {
+            panic!("wrong command")
+        };
+        scan
+    }
+
+    #[test]
+    fn inspect_target_options_select_the_scan() {
+        let scan =
+            inspect_scan(&["inspect", "app", "--distro", "sles-12-sp5", "--strict"]).unwrap();
+        assert_eq!(scan.distro.as_deref(), Some("sles-12-sp5"));
+        assert!(scan.strict && !scan.verbose);
+        let scan =
+            inspect_scan(&["inspect", "app", "--max-glibc", "2.17", "--kernel", "3.10"]).unwrap();
+        assert_eq!(scan.kernel.as_deref(), Some("3.10"));
+        assert!(inspect_scan(&["inspect", "app", "--max-glibc", "2.17", "--scan"]).is_some());
+        for argv in [
+            vec![
+                "inspect",
+                "app",
+                "--distro",
+                "rhel-7",
+                "--max-glibc",
+                "2.17",
+            ],
+            vec!["inspect", "app", "--distro", "rhel-7", "--distro", "rhel-7"],
+            vec!["inspect", "app", "--strict"],
+            vec!["inspect", "app", "--max-glibc", "2.17", "--verbose"],
+            vec!["inspect", "app", "--kernel"],
+        ] {
+            assert!(parse(args(&argv)).is_err(), "{argv:?}");
+        }
     }
 }

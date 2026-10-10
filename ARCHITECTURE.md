@@ -50,6 +50,14 @@ interpreter/search paths, and version requirements. The assessment module
 compares numeric glibc requirements and makes no claim about unexamined runtime
 dependencies.
 
+`inspect --distro`/`--kernel` adds the tier 1 scan from rustcommons
+`linux-abi-scan`. cargo-libc resolves the floors with `linux-targets`
+(`Selection::resolve`, the same rules as the linux-abi-tools CLIs), passes the
+bytes it already read to `linux_abi_scan::scan`, and renders the report inside
+its own text and JSON output. The scan reads section headers, dynamic
+symbols, and code; its kernel facts come from `kernel-abi-tools`, so it
+cannot disagree with the seccomp simulation about what a kernel provides.
+
 ## What a Zig-style ABI provider would add
 
 The next provider would supply a small, generated link environment instead of

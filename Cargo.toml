@@ -24,3 +24,7 @@ path = "src/bin/libc-linker.rs"
 strip = true
 
 [dependencies]
+# First-party rustcommons crates for tier 1 binary scans (`inspect --distro`/`--kernel`).
+# Pinned to a full commit until they are published on crates.io.
+linux-abi-scan = { git = "https://github.com/rustcommons/linux-abi-tools", rev = "e75b610de93a921d68fee9df613e896aa7151380" }
+linux-targets = { git = "https://github.com/rustcommons/linux-abi-tools", rev = "e75b610de93a921d68fee9df613e896aa7151380" }

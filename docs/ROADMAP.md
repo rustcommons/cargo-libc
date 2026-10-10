@@ -63,6 +63,9 @@ claim general cargo-zigbuild parity.
 - [ ] Compare wrapper and plain-Cargo results for accepted/rejected interfaces, imported versions, and matching real-runtime execution.
 - [ ] Document the checks users must invoke separately when bypassing the coordinator.
 - [ ] Keep provider selection/link configuration and ELF inspection reusable independently of the Cargo subcommand; direct `cargo-libc inspect` / `doctor` invocation already exists.
+- [x] Tier 1 kernel scan in `inspect` (`--distro`, `--kernel`, `--scan`, `--strict`, `--verbose`) through `linux-abi-scan` (2026-10-10).
+- [ ] Optionally run the same scan on the built artifact after `cargo libc build`.
+- [ ] Switch the linux-abi-tools git dependencies to crates.io versions once published.
 - [ ] Publish portable provider and tool interfaces without requiring consumers to adopt the wrapper command.
 
 Automatic acquisition, native cc/CMake/pkg-config configuration, dependency

@@ -36,6 +36,9 @@ cargo libc build --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --c
   --artifact "$test_artifact" -- --release --locked --offline \
   --target-dir "$test_dir/target output"
 cargo libc inspect "$test_artifact" --max-glibc "$test_glibc" --json
+# Tier 1 scan against the host floors: it must run and report its findings.
+cargo libc inspect "$test_artifact" --max-glibc "$test_glibc" --kernel "$(uname -r)" --json   >"$test_dir/scan.json"
+grep -q '"scan":{"tier":1,' "$test_dir/scan.json"
 
 # An unrelated existing ELF must never substitute for Cargo's output.
 if cargo libc build --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc" \

@@ -47,9 +47,14 @@ tested and [ARCHITECTURE.md](ARCHITECTURE.md) for the next component.
 | Produce the final ELF executable | Your selected linker; GNU `ld.bfd` was tested |
 | Supply old glibc development inputs | Your target sysroot |
 | Inspect dynamic version requirements | This project's Rust ELF reader |
+| Scan for kernel and glibc use against a target (tier 1) | rustcommons [`linux-abi-scan`](https://github.com/rustcommons/linux-abi-tools/tree/main/crates/linux-abi-scan) |
 
 There is no Zig, Python runtime, PyPI package, or third-party Cargo dependency in
-the tool. Clang and the native linker remain external executables. The project
+the tool. Its only Cargo dependencies are the first-party rustcommons crates
+`linux-abi-scan` and `linux-targets` (and `kernel-abi-tools`, which the scan
+uses), all std-only. Until they are published they are pinned to a full
+commit of `rustcommons/linux-abi-tools`, so building needs one `cargo fetch`
+before `--offline` works. Clang and the native linker remain external executables. The project
 does not attempt to replace Rust's compiler backend or reimplement glibc.
 
 ## Versioned target shorthand
@@ -202,6 +207,45 @@ separately. That flag is distinct from a weak individual symbol. Required
 nonnumeric tags such as `GLIBC_PRIVATE` or `GLIBC_ABI_DT_RELR` fail the numeric
 ceiling check because a numeric comparison cannot establish their support.
 
+### 4. Scan a binary against a target's kernel (tier 1)
+
+```sh
+cargo libc inspect target/x86_64-unknown-linux-gnu/release/myapp --distro sles-12-sp5
+cargo libc inspect ./myapp --max-glibc 2.17 --kernel 3.10 --strict --json
+```
+
+`--distro ID` (a [linux-targets preset](https://github.com/rustcommons/linux-abi-tools/blob/main/crates/linux-targets/data/distros.tsv))
+sets both floors: the glibc ceiling for the direct check above, and the kernel
+for the scan, including the preset's sourced backports. `--kernel VERSION`
+sets the kernel floor on its own, and `--scan` runs the scan with only
+`--max-glibc`. `--distro` and `--max-glibc` cannot be combined.
+
+The scan is done by [`linux-abi-scan`](https://github.com/rustcommons/linux-abi-tools/tree/main/crates/linux-abi-scan),
+with the same kernel data as the seccomp simulation in `kernel-abi-tools`:
+
+| Check | Confidence | Fails `inspect` |
+| --- | --- | --- |
+| `GLIBC_*` requirements, `DT_RELR` against the glibc floor | Exact | Yes |
+| Imported syscall wrappers (`statx`, `getrandom`, ...) against the kernel floor | Exact | Yes; a weak import only warns |
+| `NT_GNU_ABI_TAG` minimum kernel | Exact | Warning |
+| `syscall(N, ...)` calls, raw `syscall` instructions, `madvise()` advice with constant arguments | Heuristic | Warning |
+
+Warnings fail only with `--strict`; `--verbose` also lists what passed. The
+JSON report gains a `scan` object (`null` when no scan ran) with each
+finding's severity, confidence, check, subject, and code address.
+
+**This is tier 1, the least reliable of three.** It reports what the file
+*could* do: it cannot see syscalls made inside glibc, numbers computed at run
+time, libraries loaded with `dlopen`, new flags on old syscalls, or whether a
+fallback works. Rust's standard library, for example, calls `statx` and falls
+back when the kernel answers `ENOSYS`, so a statx finding is expected for
+most Rust binaries on older kernels. Tier 2 runs the program under a seccomp
+filter or in a container (`kernel-seccomp run` in linux-abi-tools; `cargo libc
+test` is planned), and tier 3, running on a real host at the minimums such as
+a SLES 12 SP5 VM, is the only qualification. The scan needs section headers,
+so it rejects files stripped with `--strip-sections`; the direct check above
+does not.
+
 ## How the build is controlled
 
 The Rust helper invokes the configured Clang driver with rustc's arguments and
@@ -250,8 +294,9 @@ native link arguments can still introduce other files.
   configured. Applications with such dependencies require additional target
   configuration and dependency inspection.
 - The tool does not resolve the transitive shared-library closure, validate
-  C++ runtime versions, inspect CPU instructions/kernel use, or discover
-  libraries loaded later with `dlopen`.
+  C++ runtime versions, inspect CPU instructions, or discover libraries loaded
+  later with `dlopen`. Kernel use is checked only statically, by the tier 1
+  scan, and only in the inspected file.
 - Build verification requires `/lib64/ld-linux-x86-64.so.2` as the interpreter
   and rejects a direct RPATH/RUNPATH entry into the configured build sysroot.
   It does not model the complete runtime search behavior.
@@ -263,8 +308,9 @@ native link arguments can still introduce other files.
 
 ## Exit codes
 
-For `inspect`, 0 means parsing and any requested direct check succeeded, 2
-means the requested direct requirement check failed, and 1 means an input or
+For `inspect`, 0 means parsing and any requested direct check and scan
+succeeded, 2 means the requested direct requirement check or the scan failed
+(an error, or a warning with `--strict`), and 1 means an input or
 format error. For `build`, a failed Cargo invocation preserves Cargo's numeric
 exit code; configuration/inspection errors return 1, and a failed post-build
 requirement/interpreter/path check returns 2. Signal-only termination maps to 1.

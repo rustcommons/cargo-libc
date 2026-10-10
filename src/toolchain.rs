@@ -441,7 +441,14 @@ pub fn build(
     }
     println!(
         "{}",
-        report::render(artifact, &info, &assessment, Some(config.ceiling), false)
+        report::render(
+            artifact,
+            &info,
+            &assessment,
+            Some(config.ceiling),
+            None,
+            false
+        )
     );
     Ok(if assessment.errors.is_empty() { 0 } else { 2 })
 }
