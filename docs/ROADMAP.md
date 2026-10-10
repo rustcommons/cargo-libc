@@ -2,6 +2,45 @@
 
 Plan established 2026-10-09. Initial scope confirmed: x86_64 Linux, glibc 2.17+.
 
+## Product direction and user value
+
+Treat qualified provider artifacts and ABI tooling as the core, usable with
+ordinary Cargo and other build systems. Keep `cargo libc` an optional coordinator
+for selecting inputs, configuring a build, and validating the resulting artifact.
+A new Cargo command is not required to compile against those inputs. The wrapper
+should earn its place by removing setup and preventing mistakes.
+
+For a fixed project/CI environment, normal Cargo with explicit linker and target
+flags can be sufficient. Users who already accept Zig can use [cargo-zigbuild](https://github.com/rust-cross/cargo-zigbuild#specify-glibc-version)'s
+existing version-target workflow. Our narrower Rust implementation adds an
+alternative with explicit, independently audited provider inputs; it does not
+claim general cargo-zigbuild parity.
+
+| Capability | Current state | Remaining work |
+| --- | --- | --- |
+| Exact provider/release validation | Local v1 descriptors for 2.17/2.18/2.22; matching headers/files and conflicting requests checked | Authenticated relocatable SDK inventory and more qualified providers |
+| Target linking configuration | Startup/nonshared files, stubs, compatible unwinder, explicit Clang/GNU linker selection | Broader linking modes and native dependencies |
+| Host versus target separation | Explicit Cargo target and encoded target rustflags; build-script/proc-macro tests pass | Preserve this in every adapter and plain-Cargo recipe |
+| Build fingerprints | Selected paths, descriptor contents, and version selection participate | Immutable package identity and authenticated provider cache; current fingerprint does not hash every SDK file |
+| Built-artifact validation | Requires the selected executable to be reported by Cargo; checks direct GLIBC requirements, interpreter, and build-sysroot search-path leakage | Workspace-wide selection/checks and full dependency-closure policy |
+| Friendly versioned target syntax | Explicit `--glibc` / `--provider` today | Parse suffixes such as `x86_64-unknown-linux-gnu.2.17` and forward the ordinary Rust triple |
+| Provider acquisition | User supplies existing inputs | Discovery, download, verification, installation, cache identity, and offline reuse |
+| Target compatibility evidence | Qualified examples and CI for three glibc releases / four real input profiles, including both 2.17 routes | Actual intended distributions/kernels and broader native-dependency/runtime coverage |
+
+### Ordinary Cargo remains a supported design objective
+
+- [ ] Document and test an ordinary `cargo build` recipe using the same qualified provider inputs and a reusable linker configuration/helper.
+- [ ] Check host build scripts/proc macros and version switches in that recipe, including builds where host and target triples are identical.
+- [ ] Compare wrapper and plain-Cargo results for accepted/rejected interfaces, imported versions, and matching real-runtime execution.
+- [ ] Document the checks users must invoke separately when bypassing the coordinator.
+- [ ] Keep provider selection/link configuration and ELF inspection reusable independently of the Cargo subcommand; direct `cargo-libc inspect` / `doctor` invocation already exists.
+- [ ] Publish portable provider and tool interfaces without requiring consumers to adopt the wrapper command.
+
+Automatic acquisition, native cc/CMake/pkg-config configuration, dependency
+closure checks, and authenticated SDK publication remain unfinished. Existing
+input validation and direct ELF checks do not replace those features or qualify
+arbitrary runtime compatibility.
+
 ## 1. Repository foundation and migration
 
 - [x] Commit CLAUDE.md/AGENTS.md and imported Git conventions first.
@@ -16,12 +55,12 @@ Plan established 2026-10-09. Initial scope confirmed: x86_64 Linux, glibc 2.17+.
 
 ## 2. Generated glibc provider
 
-- [ ] Agree on a versioned artifact contract with libc-abi-tools.
-- [ ] Consume a pinned ABI database with provenance and integrity checks.
-- [ ] Select generated link-only libraries by target and release.
-- [ ] Supply compatible CRT, nonshared objects, headers, and compiler runtime inputs.
+- [x] Implement the experimental local six-field v1 contract with libc-abi-tools; authenticated relocatable release SDK contract remains open.
+- [ ] Consume authenticated SDK/ABI inventories directly; today the producer checks pinned ABI data and exports validated local descriptors.
+- [x] Select generated link-only libraries by exact x86_64 Linux provider/release (2.17/2.18/2.22).
+- [x] Select and validate supplied compatible CRT/nonshared/header/compiler-runtime inputs; automatic acquisition remains open.
 - [ ] Validate dynamic-library closure and runtime search paths.
-- [ ] Exercise threads/TLS, unwinding, C FFI, and negative newer-API cases on 2.17/2.22.
+- [x] Qualify selected threads/TLS, unwinding, C FFI, and negative newer-API examples on 2.17/2.18/2.22 in shared producer CI.
 
 ## 3. Broader support
 
@@ -43,12 +82,12 @@ Plan established 2026-10-09. Initial scope confirmed: x86_64 Linux, glibc 2.17+.
 
 - [ ] Apply the description/topics in GitHub repository settings.
 - [ ] Upload a raster social preview if wanted; the README uses SVG directly.
-- [ ] Observe hosted CI results after the first push.
-- [ ] Qualify the declared MSRV locally or in hosted CI.
+- [x] Observe hosted companion and producer integration CI passing.
+- [x] Qualify the Rust 1.90 minimum with hosted all-targets compilation checks.
 - [ ] Confirm crate-name availability and choose release/versioning policy.
 - [ ] Publish a release only after its supported environment is qualified.
 
-Live repository settings, pushes, and releases are not part of this local bootstrap.
+Repository pushes and hosted validation are complete; user release publication remains a separate milestone.
 
 ## Experimental provider checkpoint
 
