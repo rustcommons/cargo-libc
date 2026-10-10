@@ -58,6 +58,8 @@ Matching explicit --glibc values are allowed; conflicting versions and unsupport
 architectures are rejected. Without a suffix, --glibc is still required.
 The provider must already exist and match the requested release.
 
+For package, feature, profile and workspace options, see [Cargo workflows](docs/CARGO-WORKFLOWS.md).
+
 ## Requirements
 
 - x86-64 Linux build host.
