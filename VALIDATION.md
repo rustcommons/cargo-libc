@@ -83,3 +83,7 @@ and rematerialization; user SDK publication remains separate work; version-suffi
 Consumer ed4c997 passed [companion CI](https://github.com/rustcommons/cargo-libc/actions/runs/38074429107).
 Producer cbf31dd pinned that revision and passed [all nine provider jobs](https://github.com/rustcommons/libc-abi-tools/actions/runs/38076305526): three preparations and six Rust 1.99/Clang 21 or 24 application jobs across 2.17/2.18/2.22, including both 2.17 routes.
 Suffix builds retained ordinary Cargo target artifact paths, host scripts/proc macros, target threading, direct ELF/path checks and real-loader execution. Provider mismatch, suffix/explicit-version conflict and too-new memfd_create rejection passed. SDK acquisition, new platforms and actual old-kernel/distribution qualification remain separate.
+
+## Cargo workflow qualification (F02)
+
+Producer c442310 with consumer 6b07260 passed [all nine provider jobs](https://github.com/rustcommons/libc-abi-tools/actions/runs/38077381465) under Rust 1.99 and Clang 21/24 across glibc 2.17/2.18/2.22, including both 2.17 input routes. Workspace/exclusion, binary/example and package selection, feature/no-default-feature options, release/custom profiles, locked/offline and fresh cached builds passed. Real runtimes executed all three fixture programs. Selecting an existing executable absent from the current Cargo invocation was rejected. The wrapper still validates one explicitly selected executable, not every workspace output.

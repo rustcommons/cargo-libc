@@ -164,3 +164,7 @@ Version-suffixed target parsing is implemented, unit-tested, and qualified again
 - [x] Reject provider mismatches and conflicting suffix/explicit version requests with expected diagnostics.
 
 Qualified producer cbf31dd with consumer ed4c997: [all nine jobs passed](https://github.com/rustcommons/libc-abi-tools/actions/runs/38076305526).
+
+## Cargo workflow qualification (F02)
+
+Producer c442310 with consumer 6b07260 passed [all nine provider jobs](https://github.com/rustcommons/libc-abi-tools/actions/runs/38077381465) under Rust 1.99 and Clang 21/24 across glibc 2.17/2.18/2.22, including both 2.17 input routes. Workspace/exclusion, binary/example and package selection, feature/no-default-feature options, release/custom profiles, locked/offline and fresh cached builds passed. Real runtimes executed all three fixture programs. Selecting an existing executable absent from the current Cargo invocation was rejected. The wrapper still validates one explicitly selected executable, not every workspace output.
