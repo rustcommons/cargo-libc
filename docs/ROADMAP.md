@@ -2,6 +2,35 @@
 
 Plan established 2026-10-09. Initial scope confirmed: x86_64 Linux, glibc 2.17+.
 
+## Team handoff (2026-10-10)
+
+F01 versioned targets and F02 Cargo flags/workspace qualification are complete
+within the recorded Linux x86_64 provider scope. See the checkpoints below and
+[Cargo workflows](CARGO-WORKFLOWS.md). Remaining feature candidates and enhancements
+are individually tracked in [FEATURE-REVIEW.md](FEATURE-REVIEW.md); they are not
+all approved implementation commitments. Keep the cargo-libc name while libc
+selection and compatibility remain the main purpose.
+
+**Next coordinator task: F03, cargo libc check.**
+
+- [ ] Add check command parsing/help using the same target/provider selection and conflict rules.
+- [ ] Share managed target/tool configuration with build while preserving host build scripts/proc macros.
+- [ ] Forward appropriate Cargo check arguments and preserve Cargo diagnostics/exit status.
+- [ ] Do not require an executable artifact or imply linking, direct ELF inspection, or runtime qualification from check alone.
+- [ ] Cover success/failure, version conflicts, native host units and ordinary target forwarding; run required Rust checks and hosted provider fixtures.
+- [ ] Record qualified scope and pin the tested consumer in producer CI.
+
+The independent next provider rollout is glibc 2.19 in the producer roadmap.
+Provider download/authentication/release SDKs, plain-Cargo qualification, native
+dependency adapters, dependency closure, workspace-wide inspection, additional
+platforms and old-kernel/distribution qualification remain open. No user release
+has been published.
+
+Latest qualified code: producer c442310 and consumer 6b07260;
+[all nine provider jobs passed](https://github.com/rustcommons/libc-abi-tools/actions/runs/38077381465).
+Producer CI pins the full consumer revision 6b072609e1eafd27904ee3102bb40d2374f63270.
+Subsequent changes are documentation only. Read CLAUDE.md before starting work.
+
 ## Product direction and user value
 
 Treat qualified provider artifacts and ABI tooling as the core, usable with

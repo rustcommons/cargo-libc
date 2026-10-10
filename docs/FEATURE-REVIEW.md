@@ -181,7 +181,8 @@ workflow. A feature review does not authorize a rename or SDK publication.
 
 | Feature IDs | Proposed disposition | User decision | Notes |
 | --- | --- | --- | --- |
-| Every F01–F36 and E01–E16 item above | As stated per row | Pending | Review individually; record changes and evidence by stable ID |
+| F01/F02 | Retain qualified behavior | Authorized by proceed instructions; complete within tested scope | Evidence recorded below and in ROADMAP.md |
+| F03-F36 and E01-E16 | As stated per row | Pending individual implementation/review | Inventory is not approval of all proposed features |
 | Product mission / `cargo-libc` name | Retain for libc compatibility and optional coordination | Pending review of expanded scope | Revisit if broader toolchain/platform management becomes primary |
 
 See [ROADMAP.md](ROADMAP.md) for implemented checkpoints and ongoing work.
