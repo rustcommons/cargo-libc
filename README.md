@@ -52,9 +52,8 @@ tested and [ARCHITECTURE.md](ARCHITECTURE.md) for the next component.
 There is no Zig, Python runtime, PyPI package, or third-party Cargo dependency in
 the tool. Its only Cargo dependencies are the first-party rustcommons crates
 `linux-abi-scan` and `linux-targets` (and `kernel-abi-tools`, which the scan
-uses), all std-only. Until they are published they are pinned to a full
-commit of `rustcommons/linux-abi-tools`, so building needs one `cargo fetch`
-before `--offline` works. Clang and the native linker remain external executables. The project
+uses), all std-only and published on crates.io. Run `cargo fetch` once
+before `--offline` builds. Clang and the native linker remain external executables. The project
 does not attempt to replace Rust's compiler backend or reimplement glibc.
 
 ## Versioned target shorthand

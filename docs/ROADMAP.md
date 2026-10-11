@@ -65,7 +65,7 @@ claim general cargo-zigbuild parity.
 - [ ] Keep provider selection/link configuration and ELF inspection reusable independently of the Cargo subcommand; direct `cargo-libc inspect` / `doctor` invocation already exists.
 - [x] Tier 1 kernel scan in `inspect` (`--distro`, `--kernel`, `--scan`, `--strict`, `--verbose`) through `linux-abi-scan` (2026-10-10).
 - [ ] Optionally run the same scan on the built artifact after `cargo libc build`.
-- [ ] Switch the linux-abi-tools git dependencies to crates.io versions once published.
+- [x] Use the crates.io releases of linux-abi-scan and linux-targets (0.1.0, 2026-10-11).
 - [ ] Publish portable provider and tool interfaces without requiring consumers to adopt the wrapper command.
 
 Automatic acquisition, native cc/CMake/pkg-config configuration, dependency

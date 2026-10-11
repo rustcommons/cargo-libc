@@ -13,7 +13,8 @@ dependencies = [
 [[package]]
 name = "kernel-abi-tools"
 version = "0.1.0"
-source = "git+https://github.com/rustcommons/linux-abi-tools?rev=e75b610de93a921d68fee9df613e896aa7151380#e75b610de93a921d68fee9df613e896aa7151380"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b9e158725cf0f54820724dbf4101de85e438f4484d0992f0c2ff5107510d070"
 dependencies = [
  "linux-targets",
 ]
@@ -21,7 +22,8 @@ dependencies = [
 [[package]]
 name = "linux-abi-scan"
 version = "0.1.0"
-source = "git+https://github.com/rustcommons/linux-abi-tools?rev=e75b610de93a921d68fee9df613e896aa7151380#e75b610de93a921d68fee9df613e896aa7151380"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ae0708c85ef6ddcd2a730144557c27733fda8a7de6736f7ae9b50436a7248a5"
 dependencies = [
  "kernel-abi-tools",
  "linux-targets",
@@ -30,4 +32,5 @@ dependencies = [
 [[package]]
 name = "linux-targets"
 version = "0.1.0"
-source = "git+https://github.com/rustcommons/linux-abi-tools?rev=e75b610de93a921d68fee9df613e896aa7151380#e75b610de93a921d68fee9df613e896aa7151380"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c78c5028516efabb4be504f361157baafe187a768e3b59df5a34260f95234e2"

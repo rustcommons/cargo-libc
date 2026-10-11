@@ -18,8 +18,8 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
 - Generated ABI libraries, native dependency adapters, and other libc backends
   must be documented as planned until implemented and validated.
 - Keep Rust implementation dependencies minimal: std plus first-party
-  rustcommons crates (`linux-abi-scan`, `linux-targets`); no third-party crates.
-  Pin git dependencies to a full commit until the crates are on crates.io.
+  rustcommons crates from crates.io (`linux-abi-scan`, `linux-targets`); no
+  third-party crates.
 - Present the `inspect` scan as tier 1 (least reliable); never as qualification.
 - Preserve upstream attribution and license notices for any reused material.
 - Ask about unresolved product decisions; do not invent compatibility claims.
