@@ -62,7 +62,7 @@ claim general cargo-zigbuild parity.
 
 | Capability | Current state | Remaining work |
 | --- | --- | --- |
-| Exact provider/release validation | Local v1 descriptors for 2.17 through 2.29; matching headers/files and conflicting requests checked | Authenticated relocatable SDK inventory and more qualified providers |
+| Exact provider/release validation | Local v1 descriptors for 2.17 through 2.44; matching headers/files and conflicting requests checked | Authenticated relocatable SDK inventory and more qualified providers |
 | Target linking configuration | Startup/nonshared files, stubs, compatible unwinder, explicit Clang/GNU linker selection | Broader linking modes and native dependencies |
 | Host versus target separation | Explicit Cargo target and encoded target rustflags; build-script/proc-macro tests pass | Preserve this in every adapter and plain-Cargo recipe |
 | Build fingerprints | Selected paths, descriptor contents, and version selection participate | Immutable package identity and authenticated provider cache; current fingerprint does not hash every SDK file |
@@ -129,7 +129,7 @@ of whether we adopt every upstream convenience.
 
 - [x] Implement the experimental local six-field v1 contract with libc-abi-tools; authenticated relocatable release SDK contract remains open.
 - [ ] Consume authenticated SDK/ABI inventories directly; today the producer checks pinned ABI data and exports validated local descriptors.
-- [x] Select generated link-only libraries by exact x86_64 Linux provider/release (2.17 through 2.29), linking `libpthread_nonshared.a` only before 2.28.
+- [x] Select generated link-only libraries by exact x86_64 Linux provider/release (2.17 through 2.44), linking `libpthread_nonshared.a` only before 2.28.
 - [x] Select and validate supplied compatible CRT/nonshared/header/compiler-runtime inputs; automatic acquisition remains open.
 - [ ] Validate dynamic-library closure and runtime search paths.
 - [x] Qualify selected threads/TLS, unwinding, C FFI, and negative newer-API examples on 2.17/2.18/2.22 in shared producer CI.
