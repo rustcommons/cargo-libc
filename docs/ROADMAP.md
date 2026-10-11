@@ -26,10 +26,13 @@ dependency adapters, dependency closure, workspace-wide inspection, additional
 platforms and old-kernel/distribution qualification remain open. No user release
 has been published.
 
-Latest qualified code: producer c442310 and consumer 6b07260;
-[all nine provider jobs passed](https://github.com/rustcommons/linux-abi-tools/actions/runs/38077381465).
-Producer CI pins the full consumer revision 6b072609e1eafd27904ee3102bb40d2374f63270.
-Subsequent changes are documentation only. Read CLAUDE.md before starting work.
+Latest qualified code (2026-10-11): producer
+c8ecf2ec36f808766c31fba31bbfe43463128aec and consumer
+772548dbc95b515dfb224702fdbb85b62f48a751 (build, tier 1 scan, tier 2 local
+runner, and check against every glibc 2.17/2.18/2.22 provider route);
+[all nine provider jobs passed](https://github.com/rustcommons/linux-abi-tools/actions/runs/38104336231).
+Producer CI pins that full consumer revision. Later consumer changes are
+smoke-test or documentation only. Read CLAUDE.md before starting work.
 
 ## Product direction and user value
 
