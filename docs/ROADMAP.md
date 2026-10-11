@@ -10,7 +10,8 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
 
 **In scope:**
 
-- [ ] Automatic providers with no flags: `source` mode by default, `container` as the
+- [ ] Automatic providers with no flags: `source` mode by default (compiled with the
+  host's GCC; Clang cannot compile glibc's startup sources faithfully), `container` as the
   fallback ([PROVIDER-DELIVERY.md](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDER-DELIVERY.md));
   `prebuilt` follows its legal review.
 - [ ] `cargo libc provider prepare|list|path|verify|export|import|remove`.
