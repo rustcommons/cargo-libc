@@ -42,7 +42,7 @@ pub fn read_elf(path: &Path) -> Result<ElfInfo, String> {
     elf::inspect(&read_bytes(path)?)
 }
 
-fn read_bytes(path: &Path) -> Result<Vec<u8>, String> {
+pub fn read_bytes(path: &Path) -> Result<Vec<u8>, String> {
     let file = File::open(path).map_err(|e| format!("cannot open {}: {e}", path.display()))?;
     if !file.metadata().map_err(|e| e.to_string())?.is_file() {
         return Err("ELF input must be a regular file".into());

@@ -1,4 +1,9 @@
-use crate::{cargo_output, report, version::Version};
+use crate::{
+    cargo_output,
+    report::{self, ScanOptions},
+    simulate::{self, Simulation},
+    version::Version,
+};
 use std::{
     env,
     ffi::OsString,
@@ -359,48 +364,92 @@ pub fn validate_cargo_args(args: &[OsString]) -> Result<(), String> {
     Ok(())
 }
 
-pub fn build(
+fn sibling(name: &str) -> Result<PathBuf, String> {
+    let executable = env::current_exe().map_err(|e| e.to_string())?;
+    let path = executable
+        .parent()
+        .ok_or_else(|| format!("cannot locate sibling helper {name}"))?
+        .join(name);
+    if !path.is_file() {
+        return Err(format!(
+            "missing Rust helper {}; install/build all cargo-libc binaries",
+            path.display()
+        ));
+    }
+    Ok(path)
+}
+
+/// A TOML basic string, for Cargo's `--config KEY=VALUE`.
+fn toml_string(text: &str) -> String {
+    let mut out = String::from("\"");
+    for c in text.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            c if c.is_control() => out.push_str(&format!("\\u{:04X}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+/// Probes the inputs and prepares `cargo SUBCOMMAND --target ...` with the
+/// managed target flags; returns the command and the linker driver path.
+fn cargo_command(
     config: &Toolchain,
+    subcommand: &str,
     cargo_args: &[OsString],
-    artifact: &Path,
-    dry_run: bool,
-) -> Result<i32, String> {
+) -> Result<(Command, PathBuf), String> {
     validate_cargo_args(cargo_args)?;
-    for key in ["RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS"] {
+    // `test` also compiles doctests with rustdoc, which needs the same flags.
+    let doctests = subcommand == "test";
+    let mut managed = vec!["RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS"];
+    if doctests {
+        managed.extend(["RUSTDOCFLAGS", "CARGO_ENCODED_RUSTDOCFLAGS"]);
+    }
+    for key in managed {
         if env::var_os(key).is_some_and(|value| !value.is_empty()) {
             return Err(format!("{key} is already set; use a shell without that override so the target flags are explicit"));
         }
     }
     let diagnostic = config.diagnose()?;
     config.print_diagnostics(&diagnostic);
-    let executable = env::current_exe().map_err(|e| e.to_string())?;
-    let driver = executable
-        .parent()
-        .ok_or("cannot locate sibling linker driver")?
-        .join("libc-linker");
-    if !driver.is_file() {
-        return Err(format!(
-            "missing Rust linker driver {}; install/build both binaries",
-            driver.display()
-        ));
-    }
+    let driver = sibling("libc-linker")?;
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let mut cmd = Command::new(cargo);
-    cmd.arg("build")
-        .arg("--target")
-        .arg(TARGET)
-        .arg("--message-format=json-render-diagnostics")
-        .args(cargo_args);
+    cmd.arg(subcommand).arg("--target").arg(TARGET);
     config.set_environment(&mut cmd);
     // Target linker config also affects host build units on same-triple builds.
     // Explicit --target plus encoded rustflags keeps this linker target-only.
-    cmd.env("CARGO_ENCODED_RUSTFLAGS", config.rustflags(&driver)?);
+    let flags = config.rustflags(&driver)?;
+    if doctests {
+        cmd.env("CARGO_ENCODED_RUSTDOCFLAGS", &flags);
+    }
+    cmd.env("CARGO_ENCODED_RUSTFLAGS", flags);
     cmd.env_remove("CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS");
+    Ok((cmd, driver))
+}
+
+fn print_command(cmd: &Command) {
     println!(
         "Cargo command: {:?} {:?}",
         cmd.get_program(),
         cmd.get_args().collect::<Vec<_>>()
     );
+}
+
+pub fn build(
+    config: &Toolchain,
+    cargo_args: &[OsString],
+    artifact: &Path,
+    scan: Option<&ScanOptions>,
+    dry_run: bool,
+) -> Result<i32, String> {
+    let (mut cmd, driver) = cargo_command(config, "build", cargo_args)?;
+    cmd.arg("--message-format=json-render-diagnostics")
+        .args(cargo_args);
+    print_command(&cmd);
     println!("Rust linker driver: {}", driver.display());
     println!(
         "Artifact selected for direct ELF verification: {}",
@@ -420,7 +469,8 @@ pub fn build(
     {
         return Err(format!("{} was not reported as an executable by this Cargo invocation; select an executable it actually built or found fresh", artifact.display()));
     }
-    let info = report::read_elf(artifact)?;
+    let bytes = report::read_bytes(artifact)?;
+    let info = crate::elf::inspect(&bytes)?;
     let mut assessment = report::assess(&info, Some(config.ceiling));
     if info.interpreter.as_deref() != Some(LOADER) {
         assessment.errors.push(format!(
@@ -439,6 +489,13 @@ pub fn build(
             }
         }
     }
+    // A preset already set the ceiling; otherwise the scan uses --glibc.
+    let scan = scan
+        .map(|options| {
+            let ceiling = options.distro.is_none().then_some(config.ceiling);
+            report::scan(&bytes, ceiling, options).map(|(_, scan)| scan)
+        })
+        .transpose()?;
     println!(
         "{}",
         report::render(
@@ -446,11 +503,46 @@ pub fn build(
             &info,
             &assessment,
             Some(config.ceiling),
-            None,
+            scan.as_ref(),
             false
         )
     );
-    Ok(if assessment.errors.is_empty() { 0 } else { 2 })
+    let passed = assessment.errors.is_empty() && scan.as_ref().is_none_or(report::Scan::passed);
+    Ok(if passed { 0 } else { 2 })
+}
+
+/// `cargo libc test` / `cargo libc run`: Cargo builds with the managed target
+/// flags and runs every target binary through `libc-runner` (tier 2).
+pub fn test_or_run(
+    config: &Toolchain,
+    subcommand: &str,
+    cargo_args: &[OsString],
+    simulation: &Simulation,
+    dry_run: bool,
+) -> Result<i32, String> {
+    let (plan, _) = simulation.plan()?;
+    let (mut cmd, driver) = cargo_command(config, subcommand, cargo_args)?;
+    let runner = sibling("libc-runner")?;
+    // An array keeps a runner path with spaces as one program name.
+    cmd.arg("--config").arg(format!(
+        "target.{TARGET}.runner=[{}]",
+        toml_string(text_path(&runner)?)
+    ));
+    cmd.args(cargo_args);
+    simulation.set_environment(&mut cmd, config.ceiling);
+    print_command(&cmd);
+    println!("Rust linker driver: {}", driver.display());
+    println!("Target runner: {}", runner.display());
+    println!("Kernel simulation: {}", simulate::describe(&plan));
+    println!(
+        "Each binary is checked against glibc {} before it runs.",
+        config.ceiling
+    );
+    if dry_run {
+        return Ok(0);
+    }
+    let status = cmd.status().map_err(|e| format!("cannot run Cargo: {e}"))?;
+    Ok(status.code().unwrap_or(1))
 }
 
 fn run_cargo(cmd: &mut Command) -> Result<(ExitStatus, Vec<PathBuf>), String> {
@@ -662,6 +754,15 @@ mod tests {
             "target with spaces".into()
         ])
         .is_ok());
+    }
+
+    #[test]
+    fn runner_path_is_one_toml_string() {
+        assert_eq!(
+            toml_string("/tool path/libc-runner"),
+            "\"/tool path/libc-runner\""
+        );
+        assert_eq!(toml_string("a\"b\\c\n"), "\"a\\\"b\\\\c\\u000A\"");
     }
 
     #[test]

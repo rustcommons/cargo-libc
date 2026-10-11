@@ -20,7 +20,8 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
 - Keep Rust implementation dependencies minimal: std plus first-party
   rustcommons crates from crates.io (`linux-abi-scan`, `linux-targets`); no
   third-party crates.
-- Present the `inspect` scan as tier 1 (least reliable); never as qualification.
+- Present the `inspect`/`build` scan as tier 1 (least reliable) and
+  `test`/`run` as tier 2 (simulation); never either as qualification.
 - Preserve upstream attribution and license notices for any reused material.
 - Ask about unresolved product decisions; do not invent compatibility claims.
 

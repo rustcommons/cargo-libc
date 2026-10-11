@@ -176,6 +176,13 @@ workspace artifact.
 `--dry-run` performs the input probes and prints the Cargo command without
 building. It does not check the selected artifact.
 
+`--distro ID` (a linux-targets preset such as `sles-12-sp5`) can replace
+`--glibc`: it supplies the glibc version and also runs the tier 1 scan
+described in section 4 on the selected artifact. `--kernel VERSION` runs the
+scan with that kernel floor. `--strict` makes scan warnings fail the build
+check. `--distro` cannot be combined with `--glibc`, a versioned `--target`,
+or `--kernel`.
+
 ### 3. Inspect a binary independently
 
 ```sh
@@ -245,6 +252,51 @@ a SLES 12 SP5 VM, is the only qualification. The scan needs section headers,
 so it rejects files stripped with `--strip-sections`; the direct check above
 does not.
 
+### 5. Test and run under a simulated kernel (tier 2)
+
+```sh
+cargo libc test --provider provider.txt --distro rhel-7 --runner local -- --release
+cargo libc test --sysroot DIR --gcc-runtime DIR --distro sles-12-sp5      # container
+cargo libc run  --sysroot DIR --gcc-runtime DIR --glibc 2.17 --kernel 3.10 -- --bin myapp
+```
+
+`test` and `run` take the same target options as `build` (no `--artifact`)
+and pass the arguments after `--` to `cargo test` or `cargo run`. Cargo runs
+every target binary, including unit/integration test harnesses and doctests,
+through the `libc-runner` helper (Cargo's target runner). For each binary the
+helper:
+
+1. Refuses to run it if it requires a newer glibc than the selected version.
+   This matters most with the local runner, where the host's newer glibc
+   would otherwise load a binary the target cannot.
+2. Runs it under the kernel simulation from
+   [`kernel-abi-tools`](https://github.com/rustcommons/linux-abi-tools/tree/main/crates/kernel-abi-tools):
+   syscalls the target kernel lacks return `ENOSYS`, and `madvise` advice it
+   does not know returns `EINVAL`.
+
+| Runner | Selected by | Userland | Needs |
+| --- | --- | --- | --- |
+| `local` | `--runner local`, or a `--kernel` with no image | The host's | Linux; no root, no container runtime |
+| `container` | `--runner container`, `--image IMAGE`, or a `--distro` preset (its image) | The image's | podman or docker; a runtime whose libseccomp knows every syscall name in the profile (e.g. crun 1.28 via `KERNEL_ABI_ENGINE_ARGS="--runtime /path/to/crun"`) |
+
+Without `--distro` or `--kernel` there is no kernel simulation: binaries run
+on the host after the glibc check. `--runner local` ignores a preset's image.
+The container runner mounts the current directory and forwards only `CARGO*`
+and `RUST*` environment variables (`CONTAINER_ENGINE`, `KERNEL_ABI_ENGINE_ARGS`,
+and `KERNEL_ABI_RUN_ARGS` configure the engine).
+
+`cargo libc test` gives rustdoc the same target flags as rustc
+(`CARGO_ENCODED_RUSTDOCFLAGS`), so doctests link through `libc-linker` like
+other test binaries; it refuses a preexisting `RUSTDOCFLAGS` or
+`CARGO_ENCODED_RUSTDOCFLAGS`.
+
+**This is tier 2.** It catches what executes: a missing syscall that a test
+reaches and does not handle. It only simulates syscall availability and
+`madvise` advice; newer flags on old syscalls, other kernel behavior, and
+code paths no test reaches are not covered, and the local runner keeps the
+host's libraries. Tier 3, running on a real host at the minimums, remains the
+only qualification.
+
 ## How the build is controlled
 
 The Rust helper invokes the configured Clang driver with rustc's arguments and
@@ -300,7 +352,8 @@ native link arguments can still introduce other files.
   and rejects a direct RPATH/RUNPATH entry into the configured build sysroot.
   It does not model the complete runtime search behavior.
 - There is no automatic ABI database, stub generator, SDK download, container
-  management, cross-architecture support, or target runtime test runner.
+  image management, or cross-architecture support. `test`/`run` simulate the
+  kernel (tier 2); they do not provide a real target host.
 - `build` consumes Cargo's JSON messages internally and prints a human report.
   Use `inspect --json` when you need JSON. It is not a transparent replacement
   for Cargo's stdout protocol.
@@ -312,7 +365,10 @@ succeeded, 2 means the requested direct requirement check or the scan failed
 (an error, or a warning with `--strict`), and 1 means an input or
 format error. For `build`, a failed Cargo invocation preserves Cargo's numeric
 exit code; configuration/inspection errors return 1, and a failed post-build
-requirement/interpreter/path check returns 2. Signal-only termination maps to 1.
+requirement/interpreter/path check or scan returns 2. Signal-only termination
+maps to 1. `test` and `run` return Cargo's exit code; `libc-runner` makes a
+binary fail with 2 when it needs a newer glibc, otherwise it returns the
+binary's own status (128 when killed by a signal).
 
 ## Source map and references
 
@@ -321,7 +377,9 @@ requirement/interpreter/path check returns 2. Signal-only termination maps to 1.
   driver invocation, and selected-artifact checks.
 - `src/cargo_output.rs`: bounded JSON parsing for Cargo artifact identity.
 - `src/elf.rs`: bounded ELF dynamic metadata reader.
-- `src/report.rs`: numeric glibc assessment and human/JSON reports.
+- `src/report.rs`: numeric glibc assessment, the tier 1 scan, and human/JSON reports.
+- `src/simulate.rs` and `src/bin/libc-runner.rs`: the tier 2 target runner
+  (glibc check, then the local filter or a container).
 - `src/version.rs`: numeric version parsing and ordering.
 - `examples/hello`: Rust executable with a host build script and procedural
   macro, plus a thread at runtime.

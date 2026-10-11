@@ -1,5 +1,6 @@
 use crate::{
     report::{self, ScanOptions},
+    simulate::Simulation,
     toolchain::{self, Toolchain},
     version::Version,
 };
@@ -11,6 +12,9 @@ USAGE
   cargo libc doctor --sysroot DIR --gcc-runtime DIR --glibc VERSION [OPTIONS]
   cargo libc build  --sysroot DIR --gcc-runtime DIR --glibc VERSION
                     --artifact FILE [OPTIONS] -- [CARGO BUILD ARGUMENTS]
+  cargo libc test   --sysroot DIR --gcc-runtime DIR --glibc VERSION
+                    [OPTIONS] [-- CARGO TEST ARGUMENTS]
+  cargo libc run    (same as test) [-- CARGO RUN ARGUMENTS]
   cargo libc inspect FILE [--max-glibc VERSION | --distro ID] [--kernel VERSION]
                      [--scan] [--strict] [--verbose] [--json]
 
@@ -23,7 +27,20 @@ BUILD / DOCTOR OPTIONS
   --cc FILE          Host Clang driver (default: /usr/bin/clang)
   --ld FILE          Host native linker (default: /usr/bin/ld.bfd)
   --artifact FILE    Exact executable from this Cargo build to inspect (build only)
+  --distro ID        Target preset (e.g. sles-12-sp5): supplies --glibc and the
+                     kernel floor (build: tier 1 scan; test/run: simulation)
+  --kernel VERSION   Kernel floor without a preset
+  --strict           Scan warnings also fail (build only)
+  --runner R         local or container (test/run; default: container when an
+                     image is known, else local)
+  --image IMAGE      Container image (test/run; default: the preset's image)
   --dry-run          Probe target inputs and print the command without building
+
+test/run use the libc-runner helper as Cargo's target runner. It refuses a
+binary that needs a newer glibc than --glibc, then runs it under the kernel
+simulation (tier 2): the local seccomp filter keeps the host userland and needs
+no root; the container uses the image's userland (podman or docker, chosen by
+CONTAINER_ENGINE). Neither replaces testing on a real target host (tier 3).
 
 INSPECT OPTIONS
   --max-glibc VERSION  Fail when a mandatory GLIBC_* requirement is newer
@@ -88,6 +105,14 @@ enum ParsedCommand {
     Build {
         config: RawConfig,
         artifact: PathBuf,
+        scan: Option<ScanOptions>,
+        dry_run: bool,
+        cargo_args: Vec<OsString>,
+    },
+    Test {
+        config: RawConfig,
+        subcommand: &'static str,
+        simulation: Simulation,
         dry_run: bool,
         cargo_args: Vec<OsString>,
     },
@@ -130,14 +155,24 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         Some("-h" | "--help" | "help") => return Ok(ParsedCommand::Help),
         Some("-V" | "--version") => return Ok(ParsedCommand::Version),
         Some("inspect") => return parse_inspect(&args[1..]),
-        Some("doctor" | "build") => {}
+        Some("doctor" | "build" | "test" | "run") => {}
         _ => {
             return Err(format!(
                 "unknown command {command:?}; run cargo libc --help"
             ))
         }
     }
-    let build = command == "build";
+    let subcommand: &'static str = match command.to_str() {
+        Some("build") => "build",
+        Some("test") => "test",
+        Some("run") => "run",
+        _ => "doctor",
+    };
+    let build = subcommand == "build";
+    let cargo_command = subcommand != "doctor";
+    let runs = matches!(subcommand, "test" | "run");
+    let mut simulation = Simulation::default();
+    let mut strict = false;
     let mut provider = None;
     let mut sysroot = None;
     let mut gcc_runtime = None;
@@ -199,8 +234,39 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
             Some("--artifact") if build => {
                 artifact = Some(PathBuf::from(next_value(&args, &mut i, "--artifact")?))
             }
-            Some("--dry-run") if build => dry_run = true,
-            Some("--") if build => {
+            Some(flag @ ("--distro" | "--kernel")) if cargo_command => {
+                let value = next_value(&args, &mut i, flag)?
+                    .into_string()
+                    .map_err(|_| format!("{flag} must be UTF-8"))?;
+                let slot = if flag == "--distro" {
+                    &mut simulation.distro
+                } else {
+                    &mut simulation.kernel
+                };
+                if slot.replace(value).is_some() {
+                    return Err(format!("duplicate {flag}"));
+                }
+            }
+            Some("--strict") if build => strict = true,
+            Some("--runner") if runs => {
+                let value = next_value(&args, &mut i, "--runner")?;
+                let runner = kernel_abi_tools::Runner::parse(
+                    value.to_str().ok_or("--runner must be UTF-8")?,
+                )?;
+                if simulation.runner.replace(runner).is_some() {
+                    return Err("duplicate --runner".into());
+                }
+            }
+            Some("--image") if runs => {
+                let value = next_value(&args, &mut i, "--image")?
+                    .into_string()
+                    .map_err(|_| "--image must be UTF-8".to_string())?;
+                if simulation.image.replace(value).is_some() {
+                    return Err("duplicate --image".into());
+                }
+            }
+            Some("--dry-run") if cargo_command => dry_run = true,
+            Some("--") if cargo_command => {
                 cargo_args.extend_from_slice(&args[i + 1..]);
                 break;
             }
@@ -222,6 +288,18 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         }
         ceiling = Some(version);
     }
+    if simulation.distro.is_some() && simulation.kernel.is_some() {
+        return Err("--distro sets the kernel floor; do not combine it with --kernel".into());
+    }
+    if let Some(id) = &simulation.distro {
+        if ceiling.is_some() {
+            return Err(format!(
+                "--distro {id} sets the glibc version; do not combine it with --glibc or a versioned --target"
+            ));
+        }
+        let preset = linux_targets::distro(id).ok_or_else(|| format!("unknown distro {id:?}"))?;
+        ceiling = Some(parse_version(preset.glibc.to_string().into(), "--distro")?);
+    }
     let config = RawConfig {
         provider: provider.clone(),
         sysroot: if provider.is_some() {
@@ -240,11 +318,32 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     };
     if build {
         toolchain::validate_cargo_args(&cargo_args)?;
+        let scan =
+            (simulation.distro.is_some() || simulation.kernel.is_some()).then(|| ScanOptions {
+                distro: simulation.distro.clone(),
+                kernel: simulation.kernel.clone(),
+                strict,
+                verbose: false,
+            });
+        if strict && scan.is_none() {
+            return Err("--strict applies to the scan; add --distro or --kernel".into());
+        }
         Ok(ParsedCommand::Build {
             config,
             artifact: artifact.ok_or(
                 "--artifact is required; name the exact executable produced by this build",
             )?,
+            scan,
+            dry_run,
+            cargo_args,
+        })
+    } else if runs {
+        toolchain::validate_cargo_args(&cargo_args)?;
+        simulation.plan()?;
+        Ok(ParsedCommand::Test {
+            config,
+            subcommand,
+            simulation,
             dry_run,
             cargo_args,
         })
@@ -356,9 +455,29 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
         ParsedCommand::Build {
             config,
             artifact,
+            scan,
             dry_run,
             cargo_args,
-        } => toolchain::build(&config.resolve()?, &cargo_args, &artifact, dry_run),
+        } => toolchain::build(
+            &config.resolve()?,
+            &cargo_args,
+            &artifact,
+            scan.as_ref(),
+            dry_run,
+        ),
+        ParsedCommand::Test {
+            config,
+            subcommand,
+            simulation,
+            dry_run,
+            cargo_args,
+        } => toolchain::test_or_run(
+            &config.resolve()?,
+            subcommand,
+            &cargo_args,
+            &simulation,
+            dry_run,
+        ),
         ParsedCommand::Inspect {
             file,
             ceiling,
@@ -542,6 +661,120 @@ mod tests {
         assert_eq!(ceiling, Some("2.22".parse().unwrap()));
         assert!(scan.is_none(), "the scan runs only when asked for");
         assert!(json);
+    }
+
+    const SDK: [&str; 4] = ["--sysroot", "/sdk", "--gcc-runtime", "/sdk/gcc"];
+
+    fn with_sdk(command: &str, extra: &[&str]) -> Vec<OsString> {
+        let mut argv = vec![command];
+        argv.extend(SDK);
+        argv.extend(extra);
+        args(&argv)
+    }
+
+    #[test]
+    fn distro_supplies_the_glibc_version_and_excludes_explicit_ones() {
+        let ParsedCommand::Build { config, scan, .. } = parse(with_sdk(
+            "build",
+            &["--distro", "sles-12-sp5", "--strict", "--artifact", "app"],
+        ))
+        .unwrap() else {
+            panic!("wrong command")
+        };
+        assert_eq!(config.ceiling, "2.22".parse().unwrap());
+        let scan = scan.unwrap();
+        assert!(scan.strict && scan.distro.as_deref() == Some("sles-12-sp5"));
+        let ParsedCommand::Build { scan, .. } =
+            parse(with_sdk("build", &["--glibc", "2.17", "--artifact", "app"])).unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert!(scan.is_none(), "no scan without a target");
+        for extra in [
+            vec!["--distro", "rhel-7", "--glibc", "2.17", "--artifact", "app"],
+            vec![
+                "--distro",
+                "rhel-7",
+                "--target",
+                "x86_64-unknown-linux-gnu.2.17",
+                "--artifact",
+                "app",
+            ],
+            vec![
+                "--distro",
+                "rhel-7",
+                "--kernel",
+                "3.10",
+                "--artifact",
+                "app",
+            ],
+            vec!["--distro", "no-such", "--artifact", "app"],
+            vec!["--glibc", "2.17", "--strict", "--artifact", "app"],
+            vec!["--glibc", "2.17", "--runner", "local", "--artifact", "app"],
+        ] {
+            assert!(parse(with_sdk("build", &extra)).is_err(), "{extra:?}");
+        }
+    }
+
+    #[test]
+    fn test_and_run_carry_the_simulation_and_cargo_arguments() {
+        let ParsedCommand::Test {
+            config,
+            subcommand,
+            simulation,
+            cargo_args,
+            ..
+        } = parse(with_sdk(
+            "test",
+            &[
+                "--distro",
+                "rhel-7",
+                "--runner",
+                "local",
+                "--",
+                "--release",
+                "--lib",
+            ],
+        ))
+        .unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert_eq!(subcommand, "test");
+        assert_eq!(config.ceiling, "2.17".parse().unwrap());
+        assert_eq!(simulation.runner, Some(kernel_abi_tools::Runner::Local));
+        assert_eq!(cargo_args, args(&["--release", "--lib"]));
+        let ParsedCommand::Test {
+            subcommand,
+            simulation,
+            ..
+        } = parse(with_sdk(
+            "run",
+            &["--glibc", "2.17", "--kernel", "3.10", "--image", "centos:7"],
+        ))
+        .unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert_eq!(subcommand, "run");
+        assert_eq!(simulation.image.as_deref(), Some("centos:7"));
+        for extra in [
+            vec!["--glibc", "2.17", "--runner", "local"],
+            vec![
+                "--glibc",
+                "2.17",
+                "--kernel",
+                "3.10",
+                "--runner",
+                "container",
+            ],
+            vec!["--glibc", "2.17", "--kernel", "3.10", "--runner", "vm"],
+            vec!["--glibc", "2.17", "--strict"],
+            vec!["--glibc", "2.17", "--artifact", "app"],
+            vec!["--glibc", "2.17", "--", "--config", "x=1"],
+        ] {
+            assert!(parse(with_sdk("test", &extra)).is_err(), "{extra:?}");
+        }
     }
 
     fn inspect_scan(argv: &[&str]) -> Option<ScanOptions> {

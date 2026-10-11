@@ -48,4 +48,13 @@ if cargo libc build --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" 
   exit 1
 fi
 grep -q 'not reported' "$test_dir/rejection.log"
+
+# Tier 2: the target executable runs through libc-runner under a 3.10 filter;
+# the host build script and procedural macro are not routed through it.
+cargo libc run --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc" \
+  --kernel 3.10 --runner local -- --release --locked --offline --bin glibc-hello \
+  --target-dir "$test_dir/target output" >"$test_dir/run.log" 2>&1
+cat "$test_dir/run.log"
+grep -q 'Kernel simulation: Linux 3.10 with the local seccomp filter' "$test_dir/run.log"
+grep -q 'target executable ran; thread result = 42' "$test_dir/run.log"
 echo 'Linux smoke test passed (host SDK only).'

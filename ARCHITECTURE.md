@@ -58,6 +58,19 @@ its own text and JSON output. The scan reads section headers, dynamic
 symbols, and code; its kernel facts come from `kernel-abi-tools`, so it
 cannot disagree with the seccomp simulation about what a kernel provides.
 
+### Tier 2 runner
+
+`cargo libc test` and `run` start Cargo with the same managed flags as
+`build` (and, for `test`, the same flags for rustdoc), plus
+`--config target.x86_64-unknown-linux-gnu.runner=["<libc-runner>"]`. The
+selection reaches the helper in `CARGO_LIBC_RUN_*` variables. `libc-runner`
+applies the direct glibc check to each binary and then calls
+`kernel_abi_tools::local::run` (seccomp filter installed in the child before
+`exec`; no root) or `kernel_abi_tools::container::run` (OCI profile), choosing
+between them with `Runner::choose`, the same rules as `kernel-seccomp run`.
+Host build scripts and procedural macros are not target binaries, so Cargo
+never routes them through the runner.
+
 ## What a Zig-style ABI provider would add
 
 The next provider would supply a small, generated link environment instead of
