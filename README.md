@@ -20,7 +20,7 @@ glibc metadata and link stubs in Rust, an approach inspired by the work of
 **Zig's contributors**. Its glibc ABI data comes directly from glibc's signed
 release tags through [glibc-abilists](https://github.com/rustcommons/glibc-abilists)
 (LGPL-2.1-or-later), compiled in by default and optional. That generated
-provider now integrates through experimental `--provider` selection for 2.17 and source-built GNU 2.18/2.19/2.22. See [attribution](NOTICE.md), the
+provider now integrates through experimental `--provider` selection for 2.17 and source-built GNU 2.18/2.19/2.20/2.22. See [attribution](NOTICE.md), the
 [implementation plan](docs/ROADMAP.md), [feature and naming review](docs/FEATURE-REVIEW.md), and the [migration record](docs/MIGRATION.md).
 
 This project replaces the Zig dependency in a deliberately narrow build path:
