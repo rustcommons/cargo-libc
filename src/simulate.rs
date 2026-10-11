@@ -7,13 +7,25 @@
 //! the local seccomp filter (host userland, no root) or a container with the
 //! target's userland. The selection travels from `cargo libc` to the helper
 //! in `CARGO_LIBC_RUN_*` environment variables.
+//!
+//! Without a runner, and with the local runner, the program uses the host's
+//! glibc. The helper then also compares the program's GLIBC version
+//! requirements with what the host's libraries define (the same test the
+//! loader makes) and refuses to start a program that cannot load there.
 
-use crate::{report, version::Version};
+use crate::{elf::ElfInfo, report, version::Version};
 use kernel_abi_tools::{
     container::{self, Engine},
     local, table_floor, KernelVersion, Runner, Target,
 };
-use std::{env, ffi::OsString, path::Path, process::Command};
+use std::{
+    collections::BTreeMap,
+    env,
+    ffi::OsString,
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 const GLIBC_ENV: &str = "CARGO_LIBC_RUN_GLIBC";
 const DISTRO_ENV: &str = "CARGO_LIBC_RUN_DISTRO";
@@ -145,6 +157,153 @@ pub fn describe(plan: &Plan) -> String {
     }
 }
 
+/// Whether the host's glibc can load a program that runs on the host userland.
+#[derive(Debug, PartialEq, Eq)]
+pub enum HostGlibc {
+    Satisfied,
+    /// `library GLIBC_x.y` requirements the host's libraries do not define.
+    Missing(Vec<String>),
+    /// The host libraries could not be read; the run proceeds with a warning.
+    Unknown(String),
+}
+
+/// Compare every non-weak GLIBC_* requirement with the versions `defined`
+/// reports for that library (the loader rejects any missing one).
+pub fn host_glibc(
+    info: &ElfInfo,
+    mut defined: impl FnMut(&str) -> Result<Vec<String>, String>,
+) -> HostGlibc {
+    let mut required: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
+    for need in info
+        .versions
+        .iter()
+        .filter(|n| !n.weak && n.name.starts_with("GLIBC_"))
+    {
+        required.entry(&need.library).or_default().push(&need.name);
+    }
+    let mut missing = Vec::new();
+    for (library, names) in required {
+        let available = match defined(library) {
+            Ok(available) => available,
+            Err(e) => return HostGlibc::Unknown(e),
+        };
+        for name in names {
+            if !available.iter().any(|a| a == name) {
+                missing.push(format!("{library} {name}"));
+            }
+        }
+    }
+    if missing.is_empty() {
+        HostGlibc::Satisfied
+    } else {
+        HostGlibc::Missing(missing)
+    }
+}
+
+/// The directory of the libc.so.6 this helper loaded: the host's glibc.
+fn host_libc_dir() -> Result<PathBuf, String> {
+    let maps = fs::read_to_string("/proc/self/maps")
+        .map_err(|e| format!("cannot read /proc/self/maps: {e}"))?;
+    maps.lines()
+        .filter_map(|line| line.split_whitespace().nth(5))
+        .map(Path::new)
+        .find(|path| path.file_name().is_some_and(|name| name == "libc.so.6"))
+        .and_then(Path::parent)
+        .map(Path::to_path_buf)
+        .ok_or_else(|| "this helper did not load a glibc libc.so.6".into())
+}
+
+/// The directories the loader searches before the system glibc: DT_RPATH
+/// (only without DT_RUNPATH), LD_LIBRARY_PATH, then DT_RUNPATH, with $ORIGIN
+/// expanded. Other tokens ($LIB, $PLATFORM) make the result uncertain.
+fn search_dirs(program: &Path, info: &ElfInfo) -> Result<Vec<PathBuf>, String> {
+    let origin = program
+        .canonicalize()
+        .ok()
+        .and_then(|p| p.parent().map(Path::to_path_buf))
+        .unwrap_or_else(|| PathBuf::from("."));
+    let expand = |list: &str| -> Result<Vec<PathBuf>, String> {
+        list.split(':')
+            .map(|entry| {
+                let entry = entry
+                    .replace("${ORIGIN}", &origin.to_string_lossy())
+                    .replace("$ORIGIN", &origin.to_string_lossy());
+                if entry.contains('$') {
+                    return Err(format!("cannot expand library search path entry {entry:?}"));
+                }
+                Ok(PathBuf::from(if entry.is_empty() { "." } else { &entry }))
+            })
+            .collect()
+    };
+    let mut dirs = Vec::new();
+    if info.runpath.is_empty() {
+        for list in &info.rpath {
+            dirs.extend(expand(list)?);
+        }
+    }
+    if let Some(list) = env::var_os("LD_LIBRARY_PATH").filter(|v| !v.is_empty()) {
+        dirs.extend(expand(&list.to_string_lossy())?);
+    }
+    for list in &info.runpath {
+        dirs.extend(expand(list)?);
+    }
+    Ok(dirs)
+}
+
+/// Version definitions of the `library` file the loader would use: the first
+/// one in the search directories, otherwise the one beside the host's libc.so.6.
+fn host_definitions(dirs: &[PathBuf], host: &Path, library: &str) -> Result<Vec<String>, String> {
+    if library.contains('/') {
+        return Err(format!("unexpected library name {library:?}"));
+    }
+    let path = dirs
+        .iter()
+        .map(|dir| dir.join(library))
+        .find(|path| path.is_file())
+        .unwrap_or_else(|| host.join(library));
+    let bytes = fs::read(&path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    Ok(crate::elf::inspect(&bytes)
+        .map_err(|e| format!("{}: {e}", path.display()))?
+        .definitions)
+}
+
+/// The highest GLIBC version among `library GLIBC_x.y` entries.
+fn highest(entries: &[String]) -> Option<Version> {
+    entries
+        .iter()
+        .filter_map(|e| e.rsplit_once(" GLIBC_")?.1.parse().ok())
+        .max()
+}
+
+/// Applies the host check for runs on the host userland: refuses (exit code
+/// 2) when the libraries the loader would use cannot satisfy the program, and
+/// warns and runs when it cannot tell.
+fn check_host(program: &str, info: &ElfInfo) -> Option<i32> {
+    let located =
+        host_libc_dir().and_then(|host| Ok((search_dirs(Path::new(program), info)?, host)));
+    let result = match &located {
+        Ok((dirs, host)) => host_glibc(info, |library| host_definitions(dirs, host, library)),
+        Err(e) => HostGlibc::Unknown(e.clone()),
+    };
+    match result {
+        HostGlibc::Satisfied => None,
+        HostGlibc::Unknown(e) => {
+            eprintln!("libc-runner: warning: host glibc not checked ({e}); running {program}");
+            None
+        }
+        HostGlibc::Missing(missing) => {
+            let need = highest(&missing).map_or_else(String::new, |v| format!(" {v} or newer"));
+            eprintln!(
+                "libc-runner: not running {program}: the host's libraries lack {}, so the \
+                 loader would refuse it. Run it in a container with glibc{need} (--runner \
+                 container --image IMAGE, or --distro), or build it with an older provider.",
+                missing.join(", ")
+            );
+            Some(2)
+        }
+    }
+}
+
 /// The `libc-runner` entry point: `libc-runner PROGRAM [ARGS...]`.
 pub fn run_program(mut args: impl Iterator<Item = OsString>) -> Result<i32, String> {
     let program = args
@@ -172,6 +331,12 @@ pub fn run_program(mut args: impl Iterator<Item = OsString>) -> Result<i32, Stri
     }
 
     let (plan, target) = sim.plan()?;
+    // The container supplies its own glibc; the other plans use the host's.
+    if !matches!(plan, Plan::Container(..)) {
+        if let Some(code) = check_host(&program, &info) {
+            return Ok(code);
+        }
+    }
     if let Some(t) = &target {
         if t.kernel < table_floor() {
             eprintln!(
@@ -374,6 +539,73 @@ mod tests {
         ] {
             assert!(bad.plan().is_err(), "{bad:?}");
         }
+    }
+
+    fn needs(entries: &[(&str, &str, bool)]) -> ElfInfo {
+        ElfInfo {
+            machine: 62,
+            interpreter: None,
+            needed: Vec::new(),
+            rpath: Vec::new(),
+            runpath: Vec::new(),
+            versions: entries
+                .iter()
+                .map(|(library, name, weak)| crate::elf::VersionNeed {
+                    library: (*library).into(),
+                    name: (*name).into(),
+                    weak: *weak,
+                })
+                .collect(),
+            definitions: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn host_glibc_compares_required_with_defined_versions() {
+        let host = |library: &str| -> Result<Vec<String>, String> {
+            match library {
+                "libc.so.6" => Ok(vec!["GLIBC_2.2.5".into(), "GLIBC_2.17".into()]),
+                "libm.so.6" => Ok(vec!["GLIBC_2.2.5".into()]),
+                _ => Err(format!("cannot read {library}")),
+            }
+        };
+        let fits = needs(&[
+            ("libc.so.6", "GLIBC_2.17", false),
+            ("libm.so.6", "GLIBC_2.2.5", false),
+        ]);
+        assert_eq!(host_glibc(&fits, host), HostGlibc::Satisfied);
+        let too_new = needs(&[
+            ("libc.so.6", "GLIBC_2.34", false),
+            ("libm.so.6", "GLIBC_2.29", false),
+            ("libc.so.6", "GLIBC_2.38", true),
+            ("libgcc_s.so.1", "GCC_3.0", false),
+        ]);
+        let HostGlibc::Missing(missing) = host_glibc(&too_new, host) else {
+            panic!("expected missing versions")
+        };
+        assert_eq!(missing, ["libc.so.6 GLIBC_2.34", "libm.so.6 GLIBC_2.29"]);
+        assert_eq!(highest(&missing), Some("2.34".parse().unwrap()));
+        let unreadable = needs(&[("libdl.so.2", "GLIBC_2.2.5", false)]);
+        assert!(matches!(
+            host_glibc(&unreadable, host),
+            HostGlibc::Unknown(_)
+        ));
+    }
+
+    #[test]
+    fn search_dirs_follow_the_loader_order_and_expand_origin() {
+        let mut info = needs(&[]);
+        info.rpath.push("/r1:$ORIGIN/r2".into());
+        let dirs = search_dirs(Path::new("/nonexistent/bin/app"), &info).unwrap();
+        assert!(dirs.starts_with(&[PathBuf::from("/r1")]));
+        assert!(dirs[1].ends_with("r2"), "{dirs:?}");
+        // DT_RUNPATH disables DT_RPATH and comes after LD_LIBRARY_PATH.
+        info.runpath.push("/run".into());
+        let dirs = search_dirs(Path::new("/nonexistent/bin/app"), &info).unwrap();
+        assert!(!dirs.contains(&PathBuf::from("/r1")));
+        assert_eq!(dirs.last(), Some(&PathBuf::from("/run")));
+        info.runpath.push("/x/$LIB".into());
+        assert!(search_dirs(Path::new("/nonexistent/bin/app"), &info).is_err());
     }
 
     #[test]

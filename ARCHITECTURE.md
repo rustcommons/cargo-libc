@@ -64,7 +64,12 @@ cannot disagree with the seccomp simulation about what a kernel provides.
 `build` (and, for `test`, the same flags for rustdoc), plus
 `--config target.x86_64-unknown-linux-gnu.runner=["<libc-runner>"]`. The
 selection reaches the helper in `CARGO_LIBC_RUN_*` variables. `libc-runner`
-applies the direct glibc check to each binary and then calls
+applies the direct glibc check to each binary. For runs on the host userland
+(no runner, or the local runner) it then compares the binary's non-weak
+`GLIBC_*` requirements with the DT_VERDEF definitions of the libraries the
+loader would use, found through RPATH, `LD_LIBRARY_PATH`, RUNPATH and the
+directory of the libc.so.6 the helper itself loaded, and refuses a binary the
+loader would reject (a warning when it cannot tell). It then calls
 `kernel_abi_tools::local::run` (seccomp filter installed in the child before
 `exec`; no root) or `kernel_abi_tools::container::run` (OCI profile), choosing
 between them with `Runner::choose`, the same rules as `kernel-seccomp run`.

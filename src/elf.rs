@@ -29,9 +29,14 @@ const DT_STRTAB: u64 = 5;
 const DT_STRSZ: u64 = 10;
 const DT_RPATH: u64 = 15;
 const DT_RUNPATH: u64 = 29;
+const DT_VERDEF: u64 = 0x6fff_fffc;
+const DT_VERDEFNUM: u64 = 0x6fff_fffd;
 const DT_VERNEED: u64 = 0x6fff_fffe;
 const DT_VERNEEDNUM: u64 = 0x6fff_ffff;
+const VER_FLG_BASE: u16 = 1;
 const VER_FLG_WEAK: u16 = 2;
+const VERDEF_SIZE: u64 = 20;
+const VERDAUX_SIZE: u64 = 8;
 
 const MAX_PROGRAM_HEADERS: u64 = 1_024;
 const MAX_METADATA_RECORDS: usize = 65_536;
@@ -49,6 +54,9 @@ pub struct ElfInfo {
     /// Raw DT_RUNPATH values; do not expand tokens or split search paths here.
     pub runpath: Vec<String>,
     pub versions: Vec<VersionNeed>,
+    /// Version names this object defines (DT_VERDEF), without the base entry
+    /// that names the object itself.
+    pub definitions: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -320,6 +328,66 @@ fn read_versions(
     Ok(versions)
 }
 
+/// Read the Verdef chain. Each record's first Verdaux names the version; later
+/// auxiliary entries name its parents and are not definitions of their own.
+fn read_definitions(
+    reader: &Reader<'_>,
+    loads: &[Segment],
+    strings: &[u8],
+    address: u64,
+    count: u64,
+    budget: &mut Budget,
+) -> Result<Vec<String>, String> {
+    if count == 0 || count > MAX_METADATA_RECORDS as u64 {
+        return Err("invalid DT_VERDEFNUM or definition count exceeds inspection limit".into());
+    }
+    let mut definitions = Vec::new();
+    let mut current = address;
+    for index in 0..count {
+        budget.record()?;
+        let offset = file_offset(loads, current, VERDEF_SIZE)?;
+        let record = Reader {
+            bytes: reader.take(offset, VERDEF_SIZE)?,
+        };
+        if record.u16(0)? != 1 {
+            return Err("unsupported ELF Verdef structure version".into());
+        }
+        let flags = record.u16(2)?;
+        let aux_count = record.u16(6)?;
+        let aux_delta = u64::from(record.u32(12)?);
+        let next_delta = u64::from(record.u32(16)?);
+        if aux_count == 0 || aux_delta < VERDEF_SIZE {
+            return Err("Verdef has no auxiliary entries or an invalid vd_aux offset".into());
+        }
+        let aux_address = add(current, aux_delta, "Verdaux")?;
+        let aux_offset = file_offset(loads, aux_address, VERDAUX_SIZE)?;
+        let aux = Reader {
+            bytes: reader.take(aux_offset, VERDAUX_SIZE)?,
+        };
+        let name = table_string(
+            strings,
+            u64::from(aux.u32(0)?),
+            "version definition name",
+            false,
+            budget,
+        )?;
+        if flags & VER_FLG_BASE == 0 {
+            definitions.push(name);
+        }
+        // Records only move forward, so a malformed chain cannot cycle.
+        if index + 1 == count {
+            if next_delta != 0 {
+                return Err("Verdef chain exceeds its declared count".into());
+            }
+        } else if next_delta < VERDEF_SIZE {
+            return Err("Verdef chain ends early or overlaps its current record".into());
+        } else {
+            current = add(current, next_delta, "Verdef")?;
+        }
+    }
+    Ok(definitions)
+}
+
 pub fn inspect(bytes: &[u8]) -> Result<ElfInfo, String> {
     let reader = Reader { bytes };
     let header = reader.take(0, ELF_HEADER_SIZE)?;
@@ -425,6 +493,7 @@ pub fn inspect(bytes: &[u8]) -> Result<ElfInfo, String> {
         rpath: Vec::new(),
         runpath: Vec::new(),
         versions: Vec::new(),
+        definitions: Vec::new(),
     };
     let Some(dynamic) = dynamic else {
         return Ok(info);
@@ -443,6 +512,8 @@ pub fn inspect(bytes: &[u8]) -> Result<ElfInfo, String> {
     let mut strsz = None;
     let mut verneed = None;
     let mut verneednum = None;
+    let mut verdef = None;
+    let mut verdefnum = None;
     let mut needed = Vec::new();
     let mut rpath = None;
     let mut runpath = None;
@@ -464,6 +535,8 @@ pub fn inspect(bytes: &[u8]) -> Result<ElfInfo, String> {
             DT_RUNPATH => set_once(&mut runpath, value, "DT_RUNPATH")?,
             DT_VERNEED => set_once(&mut verneed, value, "DT_VERNEED")?,
             DT_VERNEEDNUM => set_once(&mut verneednum, value, "DT_VERNEEDNUM")?,
+            DT_VERDEF => set_once(&mut verdef, value, "DT_VERDEF")?,
+            DT_VERDEFNUM => set_once(&mut verdefnum, value, "DT_VERDEFNUM")?,
             _ => {}
         }
     }
@@ -515,6 +588,14 @@ pub fn inspect(bytes: &[u8]) -> Result<ElfInfo, String> {
             info.versions = read_versions(&reader, &loads, strings, address, count, &mut budget)?;
         }
         _ => return Err("DT_VERNEED and DT_VERNEEDNUM must be supplied together".into()),
+    }
+    match (verdef, verdefnum) {
+        (None, None | Some(0)) => {}
+        (Some(address), Some(count)) => {
+            info.definitions =
+                read_definitions(&reader, &loads, strings, address, count, &mut budget)?;
+        }
+        _ => return Err("DT_VERDEF and DT_VERDEFNUM must be supplied together".into()),
     }
     Ok(info)
 }
@@ -653,6 +734,66 @@ mod tests {
                 },
             ]
         );
+    }
+
+    /// A library defining its base name plus GLIBC_2.2.5 and GLIBC_2.34, the
+    /// latter with a parent Verdaux that must not count as a definition.
+    fn library_fixture() -> Vec<u8> {
+        const VERDEF: usize = 0x480;
+        let mut bytes = fixture();
+        let mut next = 0x80;
+        let soname = string(&mut bytes, &mut next, "libc.so.6");
+        let old = string(&mut bytes, &mut next, "GLIBC_2.2.5");
+        let new = string(&mut bytes, &mut next, "GLIBC_2.34");
+        dyn_entry(&mut bytes, 1, DT_STRSZ, next as u64);
+        dyn_entry(&mut bytes, 6, DT_VERDEF, BASE + VERDEF as u64);
+        dyn_entry(&mut bytes, 7, DT_VERDEFNUM, 3);
+        let records = [
+            (VER_FLG_BASE, 1, soname, None),
+            (0, 1, old, None),
+            (0, 2, new, Some(old)),
+        ];
+        for (index, (flags, count, name, parent)) in records.into_iter().enumerate() {
+            let at = VERDEF + index * 36;
+            put16(&mut bytes, at, 1);
+            put16(&mut bytes, at + 2, flags);
+            put16(&mut bytes, at + 6, count);
+            put32(&mut bytes, at + 12, 20);
+            put32(&mut bytes, at + 16, if index == 2 { 0 } else { 36 });
+            put32(&mut bytes, at + 20, name);
+            if let Some(parent) = parent {
+                put32(&mut bytes, at + 24, 8);
+                put32(&mut bytes, at + 28, parent);
+            }
+        }
+        bytes
+    }
+
+    #[test]
+    fn reads_version_definitions_without_base_or_parent_entries() {
+        let info = inspect(&library_fixture()).unwrap();
+        assert_eq!(info.definitions, ["GLIBC_2.2.5", "GLIBC_2.34"]);
+        assert!(inspect(&fixture()).unwrap().definitions.is_empty());
+    }
+
+    #[test]
+    fn rejects_malformed_definition_chains() {
+        let mut bytes = library_fixture();
+        put32(&mut bytes, 0x480 + 16, 0);
+        assert!(inspect(&bytes).unwrap_err().contains("ends early"));
+        let mut bytes = library_fixture();
+        put32(&mut bytes, 0x480 + 72 + 16, 36);
+        assert!(inspect(&bytes).is_err());
+        let mut bytes = library_fixture();
+        dyn_entry(&mut bytes, 7, 21, 0);
+        assert!(inspect(&bytes).unwrap_err().contains("supplied together"));
+        let bytes = library_fixture();
+        for length in 0x480..bytes.len() {
+            assert!(
+                inspect(&bytes[..length]).is_err(),
+                "accepted prefix {length}"
+            );
+        }
     }
 
     #[test]

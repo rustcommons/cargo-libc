@@ -364,6 +364,7 @@ mod tests {
                     weak: *weak,
                 })
                 .collect(),
+            definitions: vec![],
         }
     }
 

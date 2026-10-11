@@ -269,7 +269,17 @@ helper:
 1. Refuses to run it if it requires a newer glibc than the selected version.
    This matters most with the local runner, where the host's newer glibc
    would otherwise load a binary the target cannot.
-2. Runs it under the kernel simulation from
+2. Without a runner and with the local runner, where the binary uses the
+   host's glibc, refuses to run it if the host's libraries cannot satisfy it:
+   it reads the version definitions of each library the loader would use
+   (RPATH, `LD_LIBRARY_PATH`, RUNPATH, then the host's glibc directory) and
+   reports the missing `GLIBC_x.y` versions, which the loader would otherwise
+   reject with a bare "version not found". This happens when the provider is
+   newer than the host, for example any 2.34+ provider on an older system.
+   Use `--runner container` with an image whose glibc is new enough, or an
+   older provider. If it cannot read those libraries (or a search path uses
+   `$LIB`/`$PLATFORM`), it warns and runs the binary anyway.
+3. Runs it under the kernel simulation from
    [`kernel-abi-tools`](https://github.com/rustcommons/linux-abi-tools/tree/main/crates/kernel-abi-tools):
    syscalls the target kernel lacks return `ENOSYS`, and `madvise` advice it
    does not know returns `EINVAL`.
@@ -409,7 +419,8 @@ format error. For `build`, a failed Cargo invocation preserves Cargo's numeric
 exit code; configuration/inspection errors return 1, and a failed post-build
 requirement/interpreter/path check or scan returns 2. Signal-only termination
 maps to 1. `check`, `test`, and `run` return Cargo's exit code; `libc-runner` makes a
-binary fail with 2 when it needs a newer glibc, otherwise it returns the
+binary fail with 2 when it needs a newer glibc than the selected version or,
+on the host userland, than the host's libraries provide; otherwise it returns the
 binary's own status (128 when killed by a signal).
 
 ## Source map and references

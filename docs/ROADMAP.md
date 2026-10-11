@@ -85,6 +85,7 @@ claim general cargo-zigbuild parity.
 - [x] Optionally run the same scan on the built artifact after `cargo libc build` (`--distro`/`--kernel`/`--strict`, 2026-10-11).
 - [x] Tier 2: `cargo libc test`/`run` with `--runner local|container` through the `libc-runner` target runner, including doctests (2026-10-11).
 - [x] `cargo libc doctor --distro|--kernel [--runner] [--image]` checks both runners by running under them, with or without toolchain inputs (2026-10-11).
+- [x] Host glibc check for `test`/`run` on the host userland: refuse a binary whose `GLIBC_*` requirements the host's libraries (resolved in loader order) do not define, warn when that cannot be determined (2026-10-11).
 - [x] Use the crates.io releases of linux-abi-scan and linux-targets (0.1.0, 2026-10-11).
 - [ ] Publish portable provider and tool interfaces without requiring consumers to adopt the wrapper command.
 
@@ -113,6 +114,9 @@ release against the actual approved scope. No rename is planned by this review.
 - [ ] Review core delivery/plain Cargo first, then native dependencies, Cargo conveniences/link modes, and platform expansion.
 - [ ] Recheck the product name against approved scope before public release.
 
+Distribution-specific providers are planned for a later release (see the producer's
+[roadmap](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/ROADMAP.md#future-release-distribution-specific-providers)
+and [measured differences](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/DISTRIBUTION-DIFFERENCES.md)).
 Distribution/kernel qualification and the remaining review items continue independently
 of whether we adopt every upstream convenience.
 
