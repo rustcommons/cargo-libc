@@ -55,8 +55,8 @@ capabilities, not every inherited Cargo flag or internal compiler workaround.
 An implemented upstream helper is not proof that every platform combination is
 qualified. Unknown upstream support is recorded as unverified, not absent.
 
-Our current baseline: Linux x86_64 application builds, GNU providers 2.17/2.18/2.19/2.22,
-five real input profiles, direct ELF inspection, and an experimental local v1
+Our current baseline: Linux x86_64 application builds, GNU providers 2.17/2.18/2.19/2.20/2.22,
+six real input profiles, direct ELF inspection, and an experimental local v1
 contract. CLI/inspection tests on Windows do not qualify Windows application
 builds. Native cc/CMake/pkg-config/bindgen adapters and user SDK delivery are not
 implemented. Source/runtime/license scope is in [our validation](../VALIDATION.md).

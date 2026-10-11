@@ -101,3 +101,18 @@ mismatched-selection and conflicting `--glibc` rejection, and the too-new
 memfd_create linker failure. glibc 2.19 adds no versioned interfaces on x86_64,
 so no new boundary fixture applies. Distribution (Ubuntu 14.04, Debian 8),
 kernel, native dependency, and SDK qualification remain separate.
+
+## GNU glibc 2.20 qualification
+
+Consumer `8444108c1b83e72ef484b95f756308de34725844` accepts explicit 2.20 provider
+selection with the unchanged six-field descriptor; its CI passed. Locally (Rust
+1.99.0, Clang 18.1.3, GNU binutils 2.42) and in producer `5ed1e12856f98566dfb2c61d0c64ce7922306b27`'s
+[provider workflow](https://github.com/rustcommons/linux-abi-tools/actions/runs/38144128128), all fifteen jobs
+passed, including both Clang 21/24 jobs for 2.20: Cargo host build/proc-macro
+separation, target threading, real 2.20 loader execution, path auditing, the
+tier 1 scan, the tier 2 local run under a Linux 3.10 filter, `check`,
+mismatched-selection and conflicting `--glibc` rejection, and the too-new
+memfd_create linker failure. glibc 2.20 adds no versioned interfaces on x86_64;
+its measured default changes (libpthread `vfork` became compatibility-only) are
+covered by the producer's exhaustive default checks. Distribution, kernel,
+native dependency, and SDK qualification remain separate.
