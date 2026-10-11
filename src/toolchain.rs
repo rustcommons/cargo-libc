@@ -511,6 +511,30 @@ pub fn build(
     Ok(if passed { 0 } else { 2 })
 }
 
+/// `cargo libc check`: type-checks with the same managed target flags as
+/// `build`. Cargo's diagnostics and exit status pass through unchanged;
+/// nothing is linked, so there is no artifact to verify.
+pub fn check(config: &Toolchain, cargo_args: &[OsString], dry_run: bool) -> Result<i32, String> {
+    let (mut cmd, driver) = cargo_command(config, "check", cargo_args)?;
+    cmd.args(cargo_args);
+    print_command(&cmd);
+    println!(
+        "Rust linker driver: {} (configured; check does not link)",
+        driver.display()
+    );
+    if dry_run {
+        return Ok(0);
+    }
+    let status = cmd.status().map_err(|e| format!("cannot run Cargo: {e}"))?;
+    if status.success() {
+        println!(
+            "Type check passed for glibc {} target flags. Nothing was linked: build and inspect the executable to check its requirements.",
+            config.ceiling
+        );
+    }
+    Ok(status.code().unwrap_or(1))
+}
+
 /// `cargo libc test` / `cargo libc run`: Cargo builds with the managed target
 /// flags and runs every target binary through `libc-runner` (tier 2).
 pub fn test_or_run(

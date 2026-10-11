@@ -12,6 +12,12 @@ then requires the selected executable to be reported by that invocation. Cargo
 may report an unchanged executable as fresh; a file merely existing on disk is
 insufficient.
 
+`cargo libc check` takes the same options before the separator, minus the
+artifact, and forwards the arguments after it to `cargo check` with the same
+restrictions. It shares the managed target flags with `build`, so host build
+scripts and procedural macros stay native; it does not link and makes no
+claim about the final executable.
+
 ## Qualified workflow fixtures
 
 The hello fixture has a second workspace package, a feature-gated example, and a
@@ -25,6 +31,9 @@ custom profile inheriting release behavior. The provider integration exercises:
   unreported executable as the selected artifact.
 - Real-loader execution of the main binary, second package, and example; the
   example asserts feature activation and release/custom profile behavior.
+- `check` of the same workspace with each provider and versioned target
+  (2026-10-11), and rejection of a `--target` suffix that conflicts with
+  `--glibc`.
 
 Custom profile outputs use their profile directory, while release outputs use
 release. Examples are below an examples directory. All use the ordinary Rust

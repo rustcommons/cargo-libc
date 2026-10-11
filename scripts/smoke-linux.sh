@@ -57,6 +57,36 @@ cargo libc run --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc 
 cat "$test_dir/run.log"
 grep -q 'Kernel simulation: Linux 3.10 with the local seccomp filter' "$test_dir/run.log"
 grep -q 'target executable ran; thread result = 42' "$test_dir/run.log"
+# check: same target flags, host units stay native, nothing is linked.
+cargo libc check --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc" \
+  -- --locked --offline -vv --target-dir "$test_dir/check output" >"$test_dir/check.log" 2>&1
+cat "$test_dir/check.log"
+for crate in build_script_build hello_macro; do
+  host_line=$(grep 'Running.*rustc.*--crate-name '"$crate"' ' "$test_dir/check.log")
+  if [[ "$host_line" == *libc-linker* || "$host_line" == *'--target x86_64-unknown-linux-gnu'* ]]; then
+    echo "check gave host crate $crate the target configuration" >&2
+    exit 1
+  fi
+done
+grep -q 'Running.*rustc.*--crate-name glibc_hello .*--target x86_64-unknown-linux-gnu.*libc-linker' "$test_dir/check.log"
+grep -q 'Nothing was linked' "$test_dir/check.log"
+if [ -e "$test_dir/check output/x86_64-unknown-linux-gnu/debug/glibc-hello" ]; then
+  echo 'check produced a linked executable' >&2
+  exit 1
+fi
+# A type error keeps Cargo's diagnostic and exit status.
+mkdir -p "$test_dir/broken/src"
+printf '[package]\nname = "broken"\nversion = "0.1.0"\nedition = "2021"\n[workspace]\n' \
+  >"$test_dir/broken/Cargo.toml"
+printf 'fn main() { let _x: u32 = "text"; }\n' >"$test_dir/broken/src/main.rs"
+set +e
+(cd "$test_dir/broken" && cargo libc check --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" \
+  --cc "$test_cc" -- --offline) >"$test_dir/broken.log" 2>&1
+broken_status=$?
+set -e
+cat "$test_dir/broken.log"
+[ "$broken_status" -eq 101 ]
+grep -q 'error\[E0308\]: mismatched types' "$test_dir/broken.log"
 # doctor checks the runners without toolchain inputs; the local one must work here.
 cargo libc doctor --kernel 3.10 --runner local >"$test_dir/doctor.log" 2>&1
 cat "$test_dir/doctor.log"

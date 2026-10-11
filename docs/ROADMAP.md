@@ -11,14 +11,14 @@ are individually tracked in [FEATURE-REVIEW.md](FEATURE-REVIEW.md); they are not
 all approved implementation commitments. Keep the cargo-libc name while libc
 selection and compatibility remain the main purpose.
 
-**Next coordinator task: F03, cargo libc check.**
+**F03, cargo libc check (implemented 2026-10-11).**
 
-- [ ] Add check command parsing/help using the same target/provider selection and conflict rules.
-- [ ] Share managed target/tool configuration with build while preserving host build scripts/proc macros.
-- [ ] Forward appropriate Cargo check arguments and preserve Cargo diagnostics/exit status.
-- [ ] Do not require an executable artifact or imply linking, direct ELF inspection, or runtime qualification from check alone.
-- [ ] Cover success/failure, version conflicts, native host units and ordinary target forwarding; run required Rust checks and hosted provider fixtures.
-- [ ] Record qualified scope and pin the tested consumer in producer CI.
+- [x] Add check command parsing/help using the same target/provider selection and conflict rules.
+- [x] Share managed target/tool configuration with build while preserving host build scripts/proc macros.
+- [x] Forward appropriate Cargo check arguments and preserve Cargo diagnostics/exit status.
+- [x] Do not require an executable artifact or imply linking, direct ELF inspection, or runtime qualification from check alone.
+- [x] Cover success/failure, version conflicts, native host units and ordinary target forwarding; run required Rust checks and hosted provider fixtures.
+- [x] Record qualified scope and pin the tested consumer in producer CI.
 
 The independent next provider rollout is glibc 2.19 in the producer roadmap.
 Provider download/authentication/release SDKs, plain-Cargo qualification, native

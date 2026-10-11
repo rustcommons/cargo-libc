@@ -322,6 +322,23 @@ code paths no test reaches are not covered, and the local runner keeps the
 host's libraries. Tier 3, running on a real host at the minimums, remains the
 only qualification.
 
+### 6. Type-check without linking
+
+```sh
+cargo libc check --provider provider.txt --target x86_64-unknown-linux-gnu.2.17 -- --workspace --all-targets
+```
+
+`check` takes the same target options as `build` (including `--distro` for
+the glibc version), probes the same inputs, and runs `cargo check` with the
+same managed target flags, so host build scripts and procedural macros stay
+native and the cached metadata matches a later `build`. Arguments after `--`
+go to `cargo check` under the same restrictions as `build`; Cargo's
+diagnostics and exit status pass through unchanged. It needs no
+`--artifact`, and it rejects `--kernel`, `--strict`, `--runner`, and
+`--image`, because nothing is linked or run: a passing check says nothing
+about the executable's glibc or kernel requirements. Use `build` (and
+`inspect`) for that.
+
 ## How the build is controlled
 
 The Rust helper invokes the configured Clang driver with rustc's arguments and
@@ -391,7 +408,7 @@ succeeded, 2 means the requested direct requirement check or the scan failed
 format error. For `build`, a failed Cargo invocation preserves Cargo's numeric
 exit code; configuration/inspection errors return 1, and a failed post-build
 requirement/interpreter/path check or scan returns 2. Signal-only termination
-maps to 1. `test` and `run` return Cargo's exit code; `libc-runner` makes a
+maps to 1. `check`, `test`, and `run` return Cargo's exit code; `libc-runner` makes a
 binary fail with 2 when it needs a newer glibc, otherwise it returns the
 binary's own status (128 when killed by a signal).
 

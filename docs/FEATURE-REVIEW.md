@@ -76,7 +76,7 @@ These are estimates, not delivery dates. Each row includes a completion test.
 | --- | --- | --- | --- | --- |
 | F01 Core | Version-suffixed targets (S1/S3/S4) | Suffix implemented and real-provider qualified; provider still explicit | Retain / M | Strip suffix for rustc; exact provider selected; reject conflicts/unknown releases |
 | F02 Adjacent | Normal build flags/workspaces (S7) | Tested workspace/package/bin/example/features/profiles and fresh artifacts; reserved options remain managed | Retain / M | Profiles/features/bin/example/workspace/locked/offline options preserved; managed target cannot be overridden |
-| F03 Adjacent | `check` (S2) | Build/doctor/inspect only | Next / S | No final-ELF requirement for checking; correct host/target units; honest lack of link/runtime evidence |
+| F03 Adjacent | `check` (S2) | Implemented 2026-10-11 (host SDK smoke test and glibc 2.17/2.18/2.22 provider fixtures) | Done / S | No final-ELF requirement for checking; correct host/target units; honest lack of link/runtime evidence |
 | F04 Adjacent | `clippy` (S2) | Use ordinary Cargo separately | Later / S | Same target context; normal diagnostic output and exit status |
 | F05 Adjacent | `test` and runners (S2/S8) | CI examples are tested explicitly | Next / M | `--no-run`, test executables, runner configuration and target-runtime execution remain distinct |
 | F06 Adjacent | `run` (S2) | Real-loader execution is currently CI scripting | Later / M | Explicit real runtime/runner; refuse generated stubs as runtime libraries |
