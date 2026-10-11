@@ -87,3 +87,17 @@ Suffix builds retained ordinary Cargo target artifact paths, host scripts/proc m
 ## Cargo workflow qualification (F02)
 
 Producer c442310 with consumer 6b07260 passed [all nine provider jobs](https://github.com/rustcommons/linux-abi-tools/actions/runs/38077381465) under Rust 1.99 and Clang 21/24 across glibc 2.17/2.18/2.22, including both 2.17 input routes. Workspace/exclusion, binary/example and package selection, feature/no-default-feature options, release/custom profiles, locked/offline and fresh cached builds passed. Real runtimes executed all three fixture programs. Selecting an existing executable absent from the current Cargo invocation was rejected. The wrapper still validates one explicitly selected executable, not every workspace output.
+
+## GNU glibc 2.19 qualification
+
+Consumer `2a6d0e57f915c774d71b1261b6707014d2bde47e` accepts explicit 2.19 provider
+selection with the unchanged six-field descriptor; its CI passed. Locally (Rust
+1.99.0, Clang 18.1.3, GNU binutils 2.42) and in producer `fb5d99f977a34d8f75c455b947a22f83ef57ea35`'s
+[provider workflow](https://github.com/rustcommons/linux-abi-tools/actions/runs/38142660054), all twelve jobs
+passed, including both Clang 21/24 jobs for 2.19: Cargo host build/proc-macro
+separation, target threading, real 2.19 loader execution, path auditing, the
+tier 1 scan, the tier 2 local run under a Linux 3.10 filter, `check`,
+mismatched-selection and conflicting `--glibc` rejection, and the too-new
+memfd_create linker failure. glibc 2.19 adds no versioned interfaces on x86_64,
+so no new boundary fixture applies. Distribution (Ubuntu 14.04, Debian 8),
+kernel, native dependency, and SDK qualification remain separate.
