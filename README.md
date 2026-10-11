@@ -285,6 +285,31 @@ The container runner mounts the current directory and forwards only `CARGO*`
 and `RUST*` environment variables (`CONTAINER_ENGINE`, `KERNEL_ABI_ENGINE_ARGS`,
 and `KERNEL_ABI_RUN_ARGS` configure the engine).
 
+Check the runners before testing:
+
+```sh
+cargo libc doctor --distro sles-12-sp5             # runners only
+cargo libc doctor --kernel 3.10 --runner local
+cargo libc doctor --sysroot DIR --gcc-runtime DIR --distro sles-12-sp5   # inputs and runners
+```
+
+`doctor` with `--distro` or `--kernel` reports the plan `test`/`run` would
+use and checks both runners for real:
+
+- **local:** installs the target's seccomp filter in a child and runs
+  `/bin/sh -c 'exit 0'` under it, which proves the host allows an
+  unprivileged filter;
+- **container:** prints the engine version and the runtime named in
+  `KERNEL_ABI_ENGINE_ARGS` (with its version), then starts `true` in the
+  selected image under the target's profile. This may pull the image. A
+  runtime that cannot start under an old kernel's profile (podman's default
+  runc calls `statx` while starting) fails here with a hint to use crun.
+  Without an image the container start is reported as not tested.
+
+`doctor` exits with 2 when the runner `test`/`run` would choose is not
+usable; the other runner being unavailable is only reported. Without
+`--sysroot`/`--gcc-runtime` or `--provider` it checks the runners only.
+
 `cargo libc test` gives rustdoc the same target flags as rustc
 (`CARGO_ENCODED_RUSTDOCFLAGS`), so doctests link through `libc-linker` like
 other test binaries; it refuses a preexisting `RUSTDOCFLAGS` or

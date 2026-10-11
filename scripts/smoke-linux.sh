@@ -57,4 +57,9 @@ cargo libc run --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc 
 cat "$test_dir/run.log"
 grep -q 'Kernel simulation: Linux 3.10 with the local seccomp filter' "$test_dir/run.log"
 grep -q 'target executable ran; thread result = 42' "$test_dir/run.log"
+# doctor checks the runners without toolchain inputs; the local one must work here.
+cargo libc doctor --kernel 3.10 --runner local >"$test_dir/doctor.log" 2>&1
+cat "$test_dir/doctor.log"
+grep -q '  local: ok: seccomp filter for Linux 3.10 installed without root' "$test_dir/doctor.log"
+grep -q 'Selected runner: usable' "$test_dir/doctor.log"
 echo 'Linux smoke test passed (host SDK only).'

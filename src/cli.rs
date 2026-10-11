@@ -1,6 +1,6 @@
 use crate::{
     report::{self, ScanOptions},
-    simulate::Simulation,
+    simulate::{self, Simulation},
     toolchain::{self, Toolchain},
     version::Version,
 };
@@ -10,6 +10,7 @@ const HELP: &str = r#"cargo-libc — explicit sysroot builds and native ELF insp
 
 USAGE
   cargo libc doctor --sysroot DIR --gcc-runtime DIR --glibc VERSION [OPTIONS]
+  cargo libc doctor (--distro ID | --kernel VERSION) [--runner R] [--image IMAGE]
   cargo libc build  --sysroot DIR --gcc-runtime DIR --glibc VERSION
                     --artifact FILE [OPTIONS] -- [CARGO BUILD ARGUMENTS]
   cargo libc test   --sysroot DIR --gcc-runtime DIR --glibc VERSION
@@ -31,9 +32,9 @@ BUILD / DOCTOR OPTIONS
                      kernel floor (build: tier 1 scan; test/run: simulation)
   --kernel VERSION   Kernel floor without a preset
   --strict           Scan warnings also fail (build only)
-  --runner R         local or container (test/run; default: container when an
-                     image is known, else local)
-  --image IMAGE      Container image (test/run; default: the preset's image)
+  --runner R         local or container (test/run/doctor; default: container
+                     when an image is known, else local)
+  --image IMAGE      Container image (test/run/doctor; default: the preset's)
   --dry-run          Probe target inputs and print the command without building
 
 test/run use the libc-runner helper as Cargo's target runner. It refuses a
@@ -41,6 +42,11 @@ binary that needs a newer glibc than --glibc, then runs it under the kernel
 simulation (tier 2): the local seccomp filter keeps the host userland and needs
 no root; the container uses the image's userland (podman or docker, chosen by
 CONTAINER_ENGINE). Neither replaces testing on a real target host (tier 3).
+
+doctor with --distro or --kernel also checks both runners: it installs the
+filter and runs /bin/sh under it, and starts `true` in the image under the
+profile (which may pull the image). It exits with 2 when the runner test/run
+would choose is not usable. Without --sysroot/--provider it checks runners only.
 
 INSPECT OPTIONS
   --max-glibc VERSION  Fail when a mandatory GLIBC_* requirement is newer
@@ -101,7 +107,10 @@ impl RawConfig {
 enum ParsedCommand {
     Help,
     Version,
-    Doctor(RawConfig),
+    Doctor {
+        config: Option<RawConfig>,
+        simulation: Simulation,
+    },
     Build {
         config: RawConfig,
         artifact: PathBuf,
@@ -234,7 +243,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
             Some("--artifact") if build => {
                 artifact = Some(PathBuf::from(next_value(&args, &mut i, "--artifact")?))
             }
-            Some(flag @ ("--distro" | "--kernel")) if cargo_command => {
+            Some(flag @ ("--distro" | "--kernel")) => {
                 let value = next_value(&args, &mut i, flag)?
                     .into_string()
                     .map_err(|_| format!("{flag} must be UTF-8"))?;
@@ -248,7 +257,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
                 }
             }
             Some("--strict") if build => strict = true,
-            Some("--runner") if runs => {
+            Some("--runner") if runs || !cargo_command => {
                 let value = next_value(&args, &mut i, "--runner")?;
                 let runner = kernel_abi_tools::Runner::parse(
                     value.to_str().ok_or("--runner must be UTF-8")?,
@@ -257,7 +266,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
                     return Err("duplicate --runner".into());
                 }
             }
-            Some("--image") if runs => {
+            Some("--image") if runs || !cargo_command => {
                 let value = next_value(&args, &mut i, "--image")?
                     .into_string()
                     .map_err(|_| "--image must be UTF-8".to_string())?;
@@ -299,6 +308,19 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         }
         let preset = linux_targets::distro(id).ok_or_else(|| format!("unknown distro {id:?}"))?;
         ceiling = Some(parse_version(preset.glibc.to_string().into(), "--distro")?);
+    }
+    // doctor --distro/--kernel without toolchain inputs checks the runners only.
+    if !cargo_command
+        && provider.is_none()
+        && sysroot.is_none()
+        && gcc_runtime.is_none()
+        && (simulation.distro.is_some() || simulation.kernel.is_some())
+    {
+        simulation.plan()?;
+        return Ok(ParsedCommand::Doctor {
+            config: None,
+            simulation,
+        });
     }
     let config = RawConfig {
         provider: provider.clone(),
@@ -348,7 +370,11 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
             cargo_args,
         })
     } else {
-        Ok(ParsedCommand::Doctor(config))
+        simulation.plan()?;
+        Ok(ParsedCommand::Doctor {
+            config: Some(config),
+            simulation,
+        })
     }
 }
 
@@ -447,10 +473,13 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
             println!("cargo-libc {}", env!("CARGO_PKG_VERSION"));
             Ok(0)
         }
-        ParsedCommand::Doctor(raw) => {
-            let config = raw.resolve()?;
-            config.print_diagnostics(&config.diagnose()?);
-            Ok(0)
+        ParsedCommand::Doctor { config, simulation } => {
+            if let Some(raw) = config {
+                let config = raw.resolve()?;
+                config.print_diagnostics(&config.diagnose()?);
+            }
+            let runner_ok = simulate::doctor(&simulation)?;
+            Ok(if runner_ok { 0 } else { 2 })
         }
         ParsedCommand::Build {
             config,
@@ -499,7 +528,11 @@ mod tests {
             "--glibc",
             "2.17",
         ];
-        let ParsedCommand::Doctor(config) = parse(args(&base)).unwrap() else {
+        let ParsedCommand::Doctor {
+            config: Some(config),
+            ..
+        } = parse(args(&base)).unwrap()
+        else {
             panic!("wrong command")
         };
         assert_eq!(config.provider, Some(PathBuf::from("/sdk/provider.txt")));
@@ -774,6 +807,32 @@ mod tests {
             vec!["--glibc", "2.17", "--", "--config", "x=1"],
         ] {
             assert!(parse(with_sdk("test", &extra)).is_err(), "{extra:?}");
+        }
+    }
+
+    #[test]
+    fn doctor_checks_runners_with_or_without_toolchain_inputs() {
+        let ParsedCommand::Doctor { config, simulation } =
+            parse(args(&["doctor", "--kernel", "3.10", "--runner", "local"])).unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert!(config.is_none(), "runner checks only");
+        assert_eq!(simulation.kernel.as_deref(), Some("3.10"));
+        let ParsedCommand::Doctor { config, simulation } =
+            parse(with_sdk("doctor", &["--distro", "sles-12-sp5"])).unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert_eq!(config.unwrap().ceiling, "2.22".parse().unwrap());
+        assert_eq!(simulation.distro.as_deref(), Some("sles-12-sp5"));
+        for argv in [
+            vec!["doctor", "--runner", "local"],
+            vec!["doctor", "--kernel", "3.10", "--runner", "container"],
+            vec!["doctor", "--image", "centos:7"],
+            vec!["doctor"],
+        ] {
+            assert!(parse(args(&argv)).is_err(), "{argv:?}");
         }
     }
 

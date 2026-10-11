@@ -71,6 +71,11 @@ between them with `Runner::choose`, the same rules as `kernel-seccomp run`.
 Host build scripts and procedural macros are not target binaries, so Cargo
 never routes them through the runner.
 
+`cargo libc doctor` with a kernel floor calls the same `local::run` and
+`container::run` on trivial programs (`/bin/sh -c 'exit 0'`, `true`), so a
+runner it reports as usable has started a process under the target's filter
+or profile on this machine.
+
 ## What a Zig-style ABI provider would add
 
 The next provider would supply a small, generated link environment instead of

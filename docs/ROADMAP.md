@@ -66,6 +66,7 @@ claim general cargo-zigbuild parity.
 - [x] Tier 1 kernel scan in `inspect` (`--distro`, `--kernel`, `--scan`, `--strict`, `--verbose`) through `linux-abi-scan` (2026-10-10).
 - [x] Optionally run the same scan on the built artifact after `cargo libc build` (`--distro`/`--kernel`/`--strict`, 2026-10-11).
 - [x] Tier 2: `cargo libc test`/`run` with `--runner local|container` through the `libc-runner` target runner, including doctests (2026-10-11).
+- [x] `cargo libc doctor --distro|--kernel [--runner] [--image]` checks both runners by running under them, with or without toolchain inputs (2026-10-11).
 - [x] Use the crates.io releases of linux-abi-scan and linux-targets (0.1.0, 2026-10-11).
 - [ ] Publish portable provider and tool interfaces without requiring consumers to adopt the wrapper command.
 

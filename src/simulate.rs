@@ -197,6 +197,127 @@ pub fn run_program(mut args: impl Iterator<Item = OsString>) -> Result<i32, Stri
     }
 }
 
+/// The OCI runtime named in the engine options (`--runtime X` or
+/// `--runtime=X`), if any.
+pub fn runtime_from_engine_args(args: &[String]) -> Option<String> {
+    let mut it = args.iter();
+    while let Some(arg) = it.next() {
+        if arg == "--runtime" {
+            return it.next().cloned();
+        }
+        if let Some(value) = arg.strip_prefix("--runtime=") {
+            return Some(value.to_string());
+        }
+    }
+    None
+}
+
+fn first_line(program: &str, args: &[&str]) -> Result<String, String> {
+    let output = Command::new(program)
+        .args(args)
+        .output()
+        .map_err(|e| format!("cannot run {program}: {e}"))?;
+    if !output.status.success() {
+        return Err(format!("{program} {} failed", args.join(" ")));
+    }
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .next()
+        .unwrap_or("")
+        .trim()
+        .to_string())
+}
+
+/// The local runner: install the filter for `target` in a child and run
+/// `/bin/sh -c 'exit 0'` under it.
+fn check_local(target: &Target) -> Result<String, String> {
+    if !cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+        return Err("needs an x86_64 Linux host".into());
+    }
+    match local::run(target, "/bin/sh", &["-c".into(), "exit 0".into()])? {
+        0 => Ok(format!(
+            "seccomp filter for {} installed without root; /bin/sh ran under it",
+            target.label
+        )),
+        code => Err(format!("/bin/sh exited with {code} under the filter")),
+    }
+}
+
+const UNTESTED: &str =
+    "engine found; no container started (select an image with --image or --distro)";
+
+/// The container runner: engine and runtime versions, then `true` in the
+/// image under the profile for `target`.
+fn check_container(target: &Target, image: Option<&str>) -> Result<String, String> {
+    let engine = Engine::from_env();
+    let version = first_line(&engine.program, &["--version"])?;
+    let runtime = match runtime_from_engine_args(&engine.engine_args) {
+        Some(r) => format!("runtime {r} ({})", first_line(&r, &["--version"])?),
+        None => "the engine's default runtime".into(),
+    };
+    println!("  container: {version}; {runtime}");
+    let Some(image) = image else {
+        return Ok(UNTESTED.into());
+    };
+    println!(
+        "  container: starting `true` in {image} under the {} profile (may pull the image)",
+        target.label
+    );
+    match container::run(&engine, target, image, "true", &[])? {
+        0 => Ok(format!(
+            "`true` ran in {image} under the {} profile",
+            target.label
+        )),
+        code => Err(format!(
+            "`true` exited with {code} in {image}. If the runtime failed to start, its \
+             libseccomp may not know every syscall in the profile, or the runtime itself \
+             (e.g. runc's statx) is caught by the older kernel's profile; crun 1.28 works: \
+             KERNEL_ABI_ENGINE_ARGS=\"--runtime /path/to/crun\""
+        )),
+    }
+}
+
+/// `cargo libc doctor` runner checks: reports both runners and returns whether
+/// the one `test`/`run` would choose is usable.
+pub fn doctor(simulation: &Simulation) -> Result<bool, String> {
+    let (plan, target) = simulation.plan()?;
+    println!("Kernel simulation for test/run: {}", describe(&plan));
+    let Some(target) = target else {
+        println!("Runner checks skipped: no kernel floor (--distro or --kernel).");
+        return Ok(true);
+    };
+    let image = match &plan {
+        Plan::Container(_, image) => Some(image.clone()),
+        _ => simulation.image.clone().or_else(|| {
+            simulation
+                .distro
+                .as_deref()
+                .and_then(kernel_abi_tools::distro)
+                .map(|d| d.image.to_string())
+        }),
+    };
+    let report = |name: &str, result: &Result<String, String>| match result {
+        Ok(text) if text == UNTESTED => println!("  {name}: not tested: {text}"),
+        Ok(text) => println!("  {name}: ok: {text}"),
+        Err(text) => println!("  {name}: unavailable: {text}"),
+    };
+    println!("Runner checks:");
+    let local = check_local(&target);
+    report("local", &local);
+    let container = check_container(&target, image.as_deref());
+    report("container", &container);
+    let selected = match plan {
+        Plan::Local(_) => local.is_ok(),
+        Plan::Container(..) => container.is_ok(),
+        Plan::Direct => true,
+    };
+    println!(
+        "Selected runner: {}",
+        if selected { "usable" } else { "NOT usable" }
+    );
+    Ok(selected)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,6 +374,20 @@ mod tests {
         ] {
             assert!(bad.plan().is_err(), "{bad:?}");
         }
+    }
+
+    #[test]
+    fn finds_the_runtime_in_engine_options() {
+        let words = |s: &str| s.split_whitespace().map(String::from).collect::<Vec<_>>();
+        assert_eq!(
+            runtime_from_engine_args(&words("--log-level warn --runtime /opt/crun")),
+            Some("/opt/crun".into())
+        );
+        assert_eq!(
+            runtime_from_engine_args(&words("--runtime=crun")),
+            Some("crun".into())
+        );
+        assert_eq!(runtime_from_engine_args(&words("--log-level warn")), None);
     }
 
     #[test]
