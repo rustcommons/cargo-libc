@@ -28,7 +28,11 @@ The glibc 2.20 provider is qualified: producer
 5ed1e12856f98566dfb2c61d0c64ce7922306b27 with consumer
 8444108c1b83e72ef484b95f756308de34725844 passed
 [all fifteen provider jobs](https://github.com/rustcommons/linux-abi-tools/actions/runs/38144128128) on 2026-10-11.
-The independent next provider rollout is glibc 2.21 in the producer roadmap.
+The glibc 2.21 provider is qualified, completing 2.17 through 2.22: producer
+85b69c8ad27be4ae486e6723ca0698a06ba96c92 with consumer
+16a464ea88aa3b54d652583303fe6ed6c4d26e58 passed
+[all eighteen provider jobs](https://github.com/rustcommons/linux-abi-tools/actions/runs/38147732823) on 2026-10-11.
+The independent next provider rollout is glibc 2.23 in the producer roadmap.
 Provider download/authentication/release SDKs, plain-Cargo qualification, native
 dependency adapters, dependency closure, workspace-wide inspection, additional
 platforms and old-kernel/distribution qualification remain open. No user release
@@ -65,7 +69,7 @@ claim general cargo-zigbuild parity.
 | Built-artifact validation | Requires the selected executable to be reported by Cargo; checks direct GLIBC requirements, interpreter, and build-sysroot search-path leakage | Workspace-wide selection/checks and full dependency-closure policy |
 | Friendly versioned target syntax | Version suffix or explicit glibc selection; provider remains explicit | Authenticated acquisition and additional qualified targets |
 | Provider acquisition | User supplies existing inputs | Discovery, download, verification, installation, cache identity, and offline reuse |
-| Target compatibility evidence | Qualified examples and CI for five glibc releases / six real input profiles, including both 2.17 routes | Actual intended distributions/kernels and broader native-dependency/runtime coverage |
+| Target compatibility evidence | Qualified examples and CI for six glibc releases (2.17–2.22) / seven real input profiles, including both 2.17 routes | Actual intended distributions/kernels and broader native-dependency/runtime coverage |
 
 ### Ordinary Cargo remains a supported design objective
 
@@ -106,7 +110,7 @@ release against the actual approved scope. No rename is planned by this review.
 - [ ] Review core delivery/plain Cargo first, then native dependencies, Cargo conveniences/link modes, and platform expansion.
 - [ ] Recheck the product name against approved scope before public release.
 
-Provider rollout (2.21 next) and existing qualification work continue independently
+Provider rollout (2.23 next) and existing qualification work continue independently
 of whether we adopt every upstream convenience.
 
 ## 1. Repository foundation and migration

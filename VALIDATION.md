@@ -116,3 +116,18 @@ memfd_create linker failure. glibc 2.20 adds no versioned interfaces on x86_64;
 its measured default changes (libpthread `vfork` became compatibility-only) are
 covered by the producer's exhaustive default checks. Distribution, kernel,
 native dependency, and SDK qualification remain separate.
+
+## GNU glibc 2.21 qualification
+
+Consumer `16a464ea88aa3b54d652583303fe6ed6c4d26e58` accepts explicit 2.21 provider
+selection with the unchanged six-field descriptor; its CI passed. Locally (Rust
+1.99.0, Clang 18.1.3, GNU binutils 2.42) and in producer `85b69c8ad27be4ae486e6723ca0698a06ba96c92`'s
+[provider workflow](https://github.com/rustcommons/linux-abi-tools/actions/runs/38147732823), all eighteen jobs
+passed, including both Clang 21/24 jobs for 2.21: Cargo host build/proc-macro
+separation, target threading, real 2.21 loader execution, path auditing, the
+tier 1 scan, the tier 2 local run under a Linux 3.10 filter, `check`,
+mismatched-selection and conflicting `--glibc` rejection, and the too-new
+memfd_create linker failure. The producer's new fixture confirms that 2.21's
+compatibility-only `sigvec` cannot be linked by new code. Every release from
+2.17 through 2.22 now has a qualified provider. Distribution, kernel, native
+dependency, and SDK qualification remain separate.
