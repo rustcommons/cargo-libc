@@ -2,6 +2,49 @@
 
 Plan established 2026-10-09. Initial scope confirmed: x86_64 Linux, glibc 2.17+.
 
+## First release (0.1.0) scope
+
+Decided 2026-10-11: the first release is **cargo-zigbuild's main use case for
+x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
+2.17–2.44 with no setup, including crates that compile C.
+
+**In scope:**
+
+- [ ] Automatic providers with no flags: `source` mode by default, `container` as the
+  fallback ([PROVIDER-DELIVERY.md](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDER-DELIVERY.md));
+  `prebuilt` follows its legal review.
+- [ ] `cargo libc provider prepare|list|path|verify|export|import|remove`.
+- [ ] C dependencies: `CC`/`AR`/CFLAGS for the target, for the `cc` crate and CMake,
+  using Clang with the provider's headers and sysroot; build scripts and proc macros
+  keep the host settings.
+- [ ] More Cargo commands: `clippy`, `doc`, `rustc` and `install` alongside `build`,
+  `check`, `test` and `run`.
+- [ ] Plain-Cargo use: a command that prints the environment and Cargo configuration
+  for using a provider without the wrapper.
+- [ ] Depend on the 0.2+ workspace crates and the provider module of `libc-abi-tools`.
+- [ ] Packaging: crate metadata, `include` list, remove `publish = false`, and confirm
+  the crate name.
+- [ ] Hosted CI for all of the above, every release 2.17–2.44, and user documentation.
+
+**Already built and included:**
+- versioned targets;
+- `build` with post-build checks;
+- the tier 1 scan;
+- `inspect`, `check`, `doctor`;
+- `test`/`run` under the tier 2 kernel simulation, with the host glibc check.
+
+**Out of scope for 0.1.0, documented as such:**
+
+- **C++ dependencies:** a compatible C++ runtime per glibc era is needed; the release
+  fails clearly rather than silently using the host's.
+- **Hosts other than Linux x86_64.**
+- **Other targets:** aarch64 and other architectures, musl, macOS and Windows.
+- **Real-target qualification (tier 3):** testing on a real Rocky Linux 9 build host
+  and a real SLES 12 SP5 runtime is deferred so the release can ship.
+  - The release states that its evidence is tiers 1 and 2 plus real-runtime tests of
+    each glibc on a modern kernel, not testing on old distributions or kernels.
+  - Users must qualify their own targets.
+
 ## Team handoff (2026-10-10)
 
 F01 versioned targets and F02 Cargo flags/workspace qualification are complete
@@ -135,7 +178,7 @@ of whether we adopt every upstream convenience.
 - [x] Add README artwork, attribution, CI configuration, and migration notes.
 - [x] Remove the original cargo-glibc folder after tests, commits, and a final
   file-by-file comparison against the preserved import.
-- [ ] Qualify on an actual Rocky Linux 9 build host and SLES 12 SP5 runtime.
+- [ ] Qualify on an actual Rocky Linux 9 build host and SLES 12 SP5 runtime (deferred past 0.1.0, 2026-10-11).
 
 ## 2. Generated glibc provider
 
@@ -169,7 +212,8 @@ of whether we adopt every upstream convenience.
 - [x] Observe hosted companion and producer integration CI passing.
 - [x] Qualify the Rust 1.90 minimum with hosted all-targets compilation checks.
 - [ ] Confirm crate-name availability and choose release/versioning policy.
-- [ ] Publish a release only after its supported environment is qualified.
+- [ ] Publish a release only after its supported environment is qualified. For 0.1.0 (decided 2026-10-11),
+  tier 3 is deferred and the release documents its tier 1 and 2 evidence instead.
 
 Repository pushes and hosted validation are complete; user release publication remains a separate milestone.
 
