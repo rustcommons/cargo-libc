@@ -131,3 +131,16 @@ memfd_create linker failure. The producer's new fixture confirms that 2.21's
 compatibility-only `sigvec` cannot be linked by new code. Every release from
 2.17 through 2.22 now has a qualified provider. Distribution, kernel, native
 dependency, and SDK qualification remain separate.
+
+## Every glibc release, 2.17 through 2.44
+
+Consumer `bfe04693f6685770b47c9346e32de556a8029f4e` accepts provider descriptors for every release in
+the pinned ABI lists and links `libpthread_nonshared.a` only before 2.28. Producer
+`ae68bf63f5ddde7fc7852e76eab83ad2c1beb2c0`'s [provider workflow](https://github.com/rustcommons/linux-abi-tools/actions/runs/38158161339) passed all 84 jobs: 28
+preparations and 56 Rust 1.99/Clang 21 or 24 applications. For every release, Cargo
+host build/proc-macro separation, target threading, real loader execution, path auditing,
+the tier 1 scan, the tier 2 local run under a Linux 3.10 filter, `check`,
+mismatched-selection and conflicting `--glibc` rejection, and a matrix-selected too-new
+linker failure passed. Executables built with a 2.34 or later provider require glibc 2.34
+(`__libc_start_main@GLIBC_2.34` from `crt1.o`). Distribution, kernel, native dependency,
+and SDK qualification remain separate.
