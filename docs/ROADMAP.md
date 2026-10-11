@@ -159,7 +159,7 @@ of whether we adopt every upstream convenience.
 | README image | docs/assets/banner.svg; original editable gear and ABI diagram |
 | Badges | CI workflow, Rust 1.90+, MIT, prototype status |
 
-- [ ] Apply the description/topics in GitHub repository settings.
+- [x] Apply the description/topics in GitHub repository settings (2026-10-11).
 - [ ] Upload a raster social preview if wanted; the README uses SVG directly.
 - [x] Observe hosted companion and producer integration CI passing.
 - [x] Qualify the Rust 1.90 minimum with hosted all-targets compilation checks.
