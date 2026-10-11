@@ -22,7 +22,7 @@ USAGE
                      [--scan] [--strict] [--verbose] [--json]
 
 BUILD / DOCTOR OPTIONS
-  --provider FILE    Experimental glibc 2.17/2.18/2.22 provider descriptor instead of sysroot/GCC options
+  --provider FILE    Experimental glibc 2.17/2.18/2.19/2.22 provider descriptor instead of sysroot/GCC options
   --sysroot DIR      Target development filesystem, including glibc and GCC runtime
   --gcc-runtime DIR  Absolute GCC runtime directory inside that sysroot
   --glibc VERSION    Maximum permitted glibc version, at least 2.17 (e.g. 2.22)
@@ -579,7 +579,7 @@ mod tests {
     }
     #[test]
     fn versioned_target_selects_ceiling_and_preserves_cargo_arguments() {
-        for version in ["2.17", "2.18", "2.22"] {
+        for version in ["2.17", "2.18", "2.19", "2.22"] {
             let target = format!("{}.{}", toolchain::TARGET, version);
             let ParsedCommand::Build {
                 config, cargo_args, ..
