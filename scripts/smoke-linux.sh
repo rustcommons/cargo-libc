@@ -81,7 +81,7 @@ printf '[package]\nname = "broken"\nversion = "0.1.0"\nedition = "2021"\n[worksp
 printf 'fn main() { let _x: u32 = "text"; }\n' >"$test_dir/broken/src/main.rs"
 set +e
 (cd "$test_dir/broken" && cargo libc check --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" \
-  --cc "$test_cc" -- --offline) >"$test_dir/broken.log" 2>&1
+  --cc "$test_cc" -- --offline --color never) >"$test_dir/broken.log" 2>&1
 broken_status=$?
 set -e
 cat "$test_dir/broken.log"
