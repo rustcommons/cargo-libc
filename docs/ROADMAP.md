@@ -114,6 +114,11 @@ release against the actual approved scope. No rename is planned by this review.
 - [ ] Review core delivery/plain Cargo first, then native dependencies, Cargo conveniences/link modes, and platform expansion.
 - [ ] Recheck the product name against approved scope before public release.
 
+Provider delivery is the next major work: `cargo libc build --target x86_64-unknown-linux-gnu.2.28`
+without provider flags, preparing a provider by compiling shipped glibc source (default), from
+CI-built binaries, or with a local container build, plus `cargo libc provider` management
+commands. Design: [PROVIDER-DELIVERY.md](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDER-DELIVERY.md);
+this precedes a first cargo-libc release.
 Distribution-specific providers are planned for a later release (see the producer's
 [roadmap](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/ROADMAP.md#future-release-distribution-specific-providers)
 and [measured differences](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/DISTRIBUTION-DIFFERENCES.md)).
