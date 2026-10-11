@@ -144,3 +144,17 @@ mismatched-selection and conflicting `--glibc` rejection, and a matrix-selected 
 linker failure passed. Executables built with a 2.34 or later provider require glibc 2.34
 (`__libc_start_main@GLIBC_2.34` from `crt1.o`). Distribution, kernel, native dependency,
 and SDK qualification remain separate.
+
+## Host glibc check for test/run (2026-10-11)
+
+cargo-libc `b809806500415b2053e26b4dedc55847fe5fb054` makes `libc-runner` compare a binary's
+non-weak `GLIBC_*` requirements with the version definitions of the libraries the
+loader would use whenever the binary runs on the host userland (no runner, or the
+local runner), and refuse it with exit code 2 when a version is missing. Unit tests
+cover the comparison, loader-order search paths and the new DT_VERDEF parser; the
+Linux smoke test shows the passing path. Producer `1dabe9e761d41cfb8742b3a121ab3909c8efb0c2`'s
+[84-job provider run](https://github.com/rustcommons/linux-abi-tools/actions/runs/38166901453) adds an end-to-end check for every provider newer
+than the CI host's glibc 2.39: a program using `sched_getattr@GLIBC_2.41` built with
+the 2.41–2.44 providers was refused ("the host's libraries lack libc.so.6
+GLIBC_2.41"), while every provider's normal local run still passed. Releases whose
+libc defines no version beyond the host skip that check.
