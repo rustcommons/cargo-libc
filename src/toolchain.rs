@@ -681,8 +681,9 @@ pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
         cmd.arg(provider.sysroot.join("usr/lib64/crti.o"));
         cmd.arg(provider.gcc_startup.join("crtbegin.o"));
         cmd.args(args);
-        cmd.arg(provider.sysroot.join("usr/lib64/libc_nonshared.a"));
-        cmd.arg(provider.sysroot.join("usr/lib64/libpthread_nonshared.a"));
+        for archive in provider.nonshared_archives() {
+            cmd.arg(provider.sysroot.join(archive));
+        }
         cmd.arg(provider.gcc_startup.join("crtend.o"));
         cmd.arg(provider.sysroot.join("usr/lib64/crtn.o"));
         cmd.arg(format!("-Wl,--dynamic-linker={LOADER}"));
