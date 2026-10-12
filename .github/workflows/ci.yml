@@ -9,7 +9,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: rustfmt, clippy
@@ -25,14 +25,14 @@ jobs:
       matrix:
         clang: [21, 24]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.99.0
       - run: cargo fetch --locked
       - run: bash scripts/install-clang.sh "${{ matrix.clang }}"
       - run: bash scripts/smoke-linux.sh
         env:
           CARGO_LIBC_SMOKE_CC: /usr/bin/clang-${{ matrix.clang }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sysroot-clang-${{ matrix.clang }}-toolchain
@@ -40,7 +40,7 @@ jobs:
   msrv:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@1.90.0
       - run: cargo fetch --locked
       - run: cargo check --all-targets --locked --offline
