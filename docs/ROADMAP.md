@@ -10,11 +10,16 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
 
 **In scope:**
 
-- [ ] Automatic providers with no flags: `source` mode by default (compiled with the
-  host's GCC; Clang cannot compile glibc's startup sources faithfully), `container` as the
-  fallback ([PROVIDER-DELIVERY.md](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDER-DELIVERY.md));
-  `prebuilt` follows its legal review.
-- [ ] `cargo libc provider prepare|list|path|verify|export|import|remove`.
+- [x] Automatic providers with no flags (2026-10-12): `source` mode by default (compiled with the
+  host's GCC; Clang cannot compile glibc's startup sources faithfully), `container` by
+  choice (`--provider-mode`, `CARGO_LIBC_PROVIDER_MODE`), never as a silent fallback
+  ([PROVIDER-DELIVERY.md](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDER-DELIVERY.md));
+  `prebuilt` follows its legal review. CI builds, scans, checks, runs (tier 2) and
+  verifies with the automatic provider for every release 2.17–2.44, refuses a too-new
+  symbol for every release before 2.27, and builds and runs with a container-mode
+  provider for 2.28.
+- [x] `cargo libc provider prepare|list|path|verify|export|import|remove` (2026-10-12),
+  the same implementation as `libc-abi provider`.
 - [ ] C dependencies: `CC`/`AR`/CFLAGS for the target, for the `cc` crate and CMake,
   using Clang with the provider's headers and sysroot; build scripts and proc macros
   keep the host settings.
@@ -23,6 +28,7 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
 - [ ] Plain-Cargo use: a command that prints the environment and Cargo configuration
   for using a provider without the wrapper.
 - [ ] Depend on the 0.2+ workspace crates and the provider module of `libc-abi-tools`.
+  The provider module is used from a git revision until it is published (step 12).
 - [ ] Packaging: crate metadata, `include` list, remove `publish = false`, and confirm
   the crate name.
 - [ ] Hosted CI for all of the above, every release 2.17–2.44, and user documentation.

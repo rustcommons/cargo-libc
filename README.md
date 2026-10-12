@@ -19,8 +19,13 @@ The companion `libc-abi-tools` crate in
 glibc metadata and link stubs in Rust, an approach inspired by the work of
 **Zig's contributors**. Its glibc ABI data comes directly from glibc's signed
 release tags through [glibc-abilists](https://github.com/rustcommons/glibc-abilists)
-(LGPL-2.1-or-later), compiled in by default and optional. That generated
-provider now integrates through experimental `--provider` selection for 2.17 and source-built GNU 2.18 through 2.44 (every release in the pinned ABI lists). See [attribution](NOTICE.md), the
+(LGPL-2.1-or-later), compiled in by default and optional. **For every release
+2.17 through 2.44, cargo-libc now prepares that provider itself** when no
+`--provider` or `--sysroot` is given (2026-10-12): it compiles glibc's startup
+objects from the recorded sources of
+[glibc-provider-sources](https://github.com/rustcommons/glibc-provider) with the
+host's GCC, verifies them against the qualified container build, and caches the
+result. `--provider FILE` and `--sysroot` keep working. See [attribution](NOTICE.md), the
 [implementation plan](docs/ROADMAP.md), [feature and naming review](docs/FEATURE-REVIEW.md), and the [migration record](docs/MIGRATION.md).
 
 This project replaces the Zig dependency in a deliberately narrow build path:
@@ -56,6 +61,28 @@ uses), all std-only and published on crates.io. Run `cargo fetch` once
 before `--offline` builds. Clang and the native linker remain external executables. The project
 does not attempt to replace Rust's compiler backend or reimplement glibc.
 
+## Automatic providers
+
+    cargo libc build --target x86_64-unknown-linux-gnu.2.28 --artifact target/x86_64-unknown-linux-gnu/release/app -- --release
+
+With no `--provider` or `--sysroot`, `build`, `check`, `test`, `run` and `doctor`
+use a provider for the selected glibc release, prepared on first use and cached in
+`$CARGO_LIBC_PROVIDER_DIR` (default `$CARGO_HOME/libc-providers`):
+
+- **`source` (default):** compiles `crt1.o`, `crti.o`, `crtn.o` and the nonshared
+  archives from glibc's recorded sources with the host's GCC (`gcc`, or
+  `$CARGO_LIBC_PROVIDER_GCC`), offline, in a few seconds. Every object is compared
+  with the qualified container build first; a difference refuses the provider and
+  names `container` mode, rather than using it. Needs GCC and GNU binutils.
+- **`container`:** `--provider-mode container` (or
+  `CARGO_LIBC_PROVIDER_MODE=container`) runs the pinned container build CI runs,
+  with podman or docker; several minutes per release, needs the network.
+- **`prebuilt`** waits on a legal review.
+
+Manage the cache with `cargo libc provider prepare|list|path|verify|export|import|remove`
+(`cargo libc provider --help`); `export`/`import` move providers to an offline
+machine.
+
 ## Versioned target shorthand
 
     cargo libc build --target x86_64-unknown-linux-gnu.2.17 --provider /path/to/provider.txt --artifact target/x86_64-unknown-linux-gnu/release/app -- --release
@@ -64,7 +91,7 @@ The suffix supplies the glibc selection. Cargo receives the ordinary
 x86_64-unknown-linux-gnu target; artifact paths therefore use that triple.
 Matching explicit --glibc values are allowed; conflicting versions and unsupported
 architectures are rejected. Without a suffix, --glibc is still required.
-The provider must already exist and match the requested release.
+An explicit provider must match the requested release.
 
 For package, feature, profile and workspace options, see [Cargo workflows](docs/CARGO-WORKFLOWS.md).
 
@@ -77,7 +104,9 @@ For package, feature, profile and workspace options, see [Cargo workflows](docs/
 - A host Clang driver supporting `--gcc-install-dir`; validation used Clang
   18.1.3. Pass its executable path with `--cc`.
 - A host native linker. The default is `/usr/bin/ld.bfd`.
-- For building against an older glibc: a coherent target development sysroot,
+- For automatic providers: GCC and GNU binutils (`as`, `ld`, `ar`, `readelf`);
+  `container` mode also needs podman or docker and network access.
+- For `--sysroot` builds: a coherent target development sysroot,
   including glibc headers, development libraries, startup objects, loader, and
   the target's GCC runtime development files.
 
@@ -403,8 +432,8 @@ native link arguments can still introduce other files.
 - Build verification requires `/lib64/ld-linux-x86-64.so.2` as the interpreter
   and rejects a direct RPATH/RUNPATH entry into the configured build sysroot.
   It does not model the complete runtime search behavior.
-- There is no automatic ABI database, stub generator, SDK download, container
-  image management, or cross-architecture support. `test`/`run` simulate the
+- Providers cover x86_64 glibc 2.17 through 2.44 only; there is no SDK download or
+  cross-architecture support. `test`/`run` simulate the
   kernel (tier 2); they do not provide a real target host.
 - `build` consumes Cargo's JSON messages internally and prints a human report.
   Use `inspect --json` when you need JSON. It is not a transparent replacement

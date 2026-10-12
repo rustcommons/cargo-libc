@@ -32,3 +32,8 @@ strip = true
 kernel-abi-tools = "0.1.0"
 linux-abi-scan = "0.1.0"
 linux-targets = "0.1.0"
+# Provider preparation (`cargo libc provider`, automatic providers). Its default
+# features compile in glibc's ABI lists (glibc-abilists) and recorded sources
+# (glibc-provider-sources), LGPL-2.1-or-later. A git revision until the provider
+# module is published; publishing uses the version.
+libc-abi-tools = { version = "0.2.0", git = "https://github.com/rustcommons/linux-abi-tools", rev = "47785ebf9ae6d845800851482bd735237aea1d96" }

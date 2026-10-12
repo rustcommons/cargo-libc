@@ -24,6 +24,22 @@ code it adapted from that commit; its
 [NOTICE](https://github.com/rustcommons/linux-abi-tools/blob/main/NOTICE.md)
 holds the full attribution record.
 
-This repository currently contains no copied Zig source or glibc ABI dataset.
-It uses the caller's real sysroot; the generated provider is not integrated yet.
+This repository contains no copied Zig source or glibc data of its own.
+
+## glibc data in the built tool
+
+Since 2026-10-12 cargo-libc depends on `libc-abi-tools` for providers, with its
+default features, so the `cargo-libc` executable compiles in:
+
+- glibc's ABI lists, from glibc's release tags through
+  [glibc-abilists](https://github.com/rustcommons/glibc-abilists), under the GNU
+  Lesser General Public License, version 2.1 or later;
+- glibc's recorded source files and headers, and the Linux UAPI headers of the
+  builders, through
+  [glibc-provider-sources](https://github.com/rustcommons/glibc-provider): glibc's
+  files under LGPL-2.1-or-later, each UAPI header under its own license (mostly
+  GPL-2.0 WITH Linux-syscall-note).
+
+Providers prepared from them on the user's machine keep those licenses. Those
+crates' NOTICE files hold the full provenance.
 It is an independent project, with no implied endorsement by Zig or Rust.

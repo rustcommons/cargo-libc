@@ -18,8 +18,12 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
 - Generated ABI libraries, native dependency adapters, and other libc backends
   must be documented as planned until implemented and validated.
 - Keep Rust implementation dependencies minimal: std plus first-party
-  rustcommons crates from crates.io (`linux-abi-scan`, `linux-targets`); no
-  third-party crates.
+  rustcommons crates (`linux-abi-scan`, `linux-targets`, `kernel-abi-tools`, and
+  `libc-abi-tools` for providers, a git revision until its provider module is
+  published); no third-party crates.
+- Provider preparation lives in `libc-abi-tools` (`provider::cli`); cargo-libc
+  exposes it (`cargo libc provider`, automatic providers) and must not
+  reimplement it. Never fall back silently from one provider mode to another.
 - Present the `inspect`/`build` scan as tier 1 (least reliable) and
   `test`/`run` as tier 2 (simulation); never either as qualification.
 - Preserve upstream attribution and license notices for any reused material.

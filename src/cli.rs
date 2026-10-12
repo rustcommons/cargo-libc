@@ -4,11 +4,14 @@ use crate::{
     toolchain::{self, Toolchain},
     version::Version,
 };
+use libc_abi_tools::provider::cache::Mode;
 use std::{ffi::OsString, path::PathBuf};
 
-const HELP: &str = r#"cargo-libc — explicit sysroot builds and native ELF inspection
+const HELP: &str = r#"cargo-libc — builds for an older glibc, and native ELF inspection
 
 USAGE
+  cargo libc build  --target x86_64-unknown-linux-gnu.2.28 --artifact FILE
+                    [OPTIONS] -- [CARGO BUILD ARGUMENTS]
   cargo libc doctor --sysroot DIR --gcc-runtime DIR --glibc VERSION [OPTIONS]
   cargo libc doctor (--distro ID | --kernel VERSION) [--runner R] [--image IMAGE]
   cargo libc build  --sysroot DIR --gcc-runtime DIR --glibc VERSION
@@ -20,9 +23,21 @@ USAGE
   cargo libc run    (same as test) [-- CARGO RUN ARGUMENTS]
   cargo libc inspect FILE [--max-glibc VERSION | --distro ID] [--kernel VERSION]
                      [--scan] [--strict] [--verbose] [--json]
+  cargo libc provider prepare|list|path|verify|export|import|remove ...
+
+PROVIDERS
+Without --provider or --sysroot, build/check/test/run/doctor use a glibc link
+provider for the selected release (2.17 through 2.44), prepared on first use and
+cached (see `cargo libc provider`). The default mode, source, compiles glibc's
+startup objects from the recorded sources with the host's GCC (or
+$CARGO_LIBC_PROVIDER_GCC), offline, and verifies them against the qualified build;
+it refuses rather than use objects that differ. container runs the pinned
+container build (podman or docker).
 
 BUILD / DOCTOR OPTIONS
-  --provider FILE    Experimental glibc provider descriptor (see docs/PROVIDER-CONTRACT.md) instead of sysroot/GCC options
+  --provider-mode M  source (default) or container, for the automatic provider
+                     (also CARGO_LIBC_PROVIDER_MODE); prebuilt awaits a legal review
+  --provider FILE    glibc provider descriptor (see docs/PROVIDER-CONTRACT.md) instead of the automatic provider
   --sysroot DIR      Target development filesystem, including glibc and GCC runtime
   --gcc-runtime DIR  Absolute GCC runtime directory inside that sysroot
   --glibc VERSION    Maximum permitted glibc version, at least 2.17 (e.g. 2.22)
@@ -69,9 +84,9 @@ GENERAL
   -V, --version      Show the tool version
 
 This prototype supports x86-64 Linux dynamically linked Rust executables.
-It requires an existing target sysroot; --glibc does not create or downgrade one.
-It uses a Rust linker helper, a host Clang driver, and the selected native linker.
-It does not use Zig, Python, or third-party Rust crates.
+With --sysroot it uses that existing target sysroot; --glibc does not create or
+downgrade one. It uses a Rust linker helper, a host Clang driver, and the selected
+native linker. It does not use Zig, Python, or third-party Rust crates.
 
 The ELF check covers direct version requirements in the selected file.
 The tier 1 scan (linux-abi-scan) adds kernel checks: imported syscall
@@ -87,6 +102,8 @@ Direct invocation as `cargo-libc ...` is also supported.
 #[derive(Debug)]
 struct RawConfig {
     provider: Option<PathBuf>,
+    /// Prepare (or reuse) a provider in this mode: no provider or sysroot given.
+    auto: Option<Mode>,
     sysroot: PathBuf,
     gcc_runtime: PathBuf,
     cc: PathBuf,
@@ -96,6 +113,26 @@ struct RawConfig {
 
 impl RawConfig {
     fn resolve(self) -> Result<Toolchain, String> {
+        if let Some(mode) = self.auto {
+            let release = self.ceiling.to_string();
+            let gcc = std::env::var_os("CARGO_LIBC_PROVIDER_GCC").map(PathBuf::from);
+            let prepared = libc_abi_tools::provider::cli::ensure(&release, mode, gcc)
+                .map_err(|e| format!("cannot prepare the glibc {release} provider: {e}"))?;
+            let descriptor = prepared.entry.descriptor();
+            eprintln!(
+                "glibc {release} provider ({mode} mode, {}): {}",
+                if prepared.reused {
+                    "cached"
+                } else {
+                    "prepared"
+                },
+                descriptor.display()
+            );
+            for note in &prepared.notes {
+                eprintln!("  {note}");
+            }
+            return Toolchain::from_provider(&descriptor, self.cc, self.ld, self.ceiling);
+        }
         if let Some(path) = self.provider {
             return Toolchain::from_provider(&path, self.cc, self.ld, self.ceiling);
         }
@@ -142,6 +179,8 @@ enum ParsedCommand {
         scan: Option<ScanOptions>,
         json: bool,
     },
+    /// `cargo libc provider ...`: the arguments after `provider`.
+    Provider(Vec<OsString>),
 }
 
 fn next_value(args: &[OsString], i: &mut usize, flag: &str) -> Result<OsString, String> {
@@ -175,6 +214,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         Some("-h" | "--help" | "help") => return Ok(ParsedCommand::Help),
         Some("-V" | "--version") => return Ok(ParsedCommand::Version),
         Some("inspect") => return parse_inspect(&args[1..]),
+        Some("provider") => return Ok(ParsedCommand::Provider(args[1..].to_vec())),
         Some("doctor" | "build" | "check" | "test" | "run") => {}
         _ => {
             return Err(format!(
@@ -195,6 +235,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     let mut simulation = Simulation::default();
     let mut strict = false;
     let mut provider = None;
+    let mut mode = None;
     let mut sysroot = None;
     let mut gcc_runtime = None;
     let mut ceiling = None;
@@ -213,6 +254,16 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
                     return Err("duplicate --provider".into());
                 }
                 provider = Some(PathBuf::from(next_value(&args, &mut i, "--provider")?));
+            }
+            Some("--provider-mode") => {
+                let value = next_value(&args, &mut i, "--provider-mode")?;
+                let parsed = value
+                    .to_str()
+                    .ok_or("--provider-mode must be UTF-8")?
+                    .parse::<Mode>()?;
+                if mode.replace(parsed).is_some() {
+                    return Err("duplicate --provider-mode".into());
+                }
             }
             Some("--sysroot") => {
                 sysroot = Some(PathBuf::from(next_value(&args, &mut i, "--sysroot")?))
@@ -303,6 +354,13 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     if provider.is_some() && (sysroot.is_some() || gcc_runtime.is_some()) {
         return Err("--provider conflicts with --sysroot and --gcc-runtime".into());
     }
+    let explicit = provider.is_some() || sysroot.is_some() || gcc_runtime.is_some();
+    if mode.is_some() && explicit {
+        return Err(
+            "--provider-mode selects the automatic provider; it conflicts with --provider, --sysroot and --gcc-runtime"
+                .into(),
+        );
+    }
     if let Some(Some(version)) = target {
         if ceiling.is_some_and(|explicit| explicit != version) {
             return Err("--target version conflicts with --glibc".into());
@@ -323,9 +381,8 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     }
     // doctor --distro/--kernel without toolchain inputs checks the runners only.
     if !cargo_command
-        && provider.is_none()
-        && sysroot.is_none()
-        && gcc_runtime.is_none()
+        && !explicit
+        && mode.is_none()
         && (simulation.distro.is_some() || simulation.kernel.is_some())
     {
         simulation.plan()?;
@@ -334,17 +391,32 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
             simulation,
         });
     }
+    let auto = if explicit {
+        None
+    } else {
+        Some(match mode {
+            Some(mode) => mode,
+            None => match std::env::var("CARGO_LIBC_PROVIDER_MODE") {
+                Ok(value) => value
+                    .parse()
+                    .map_err(|e| format!("CARGO_LIBC_PROVIDER_MODE: {e}"))?,
+                Err(_) => Mode::Source,
+            },
+        })
+    };
+    let sysroot_mode = provider.is_none() && auto.is_none();
     let config = RawConfig {
         provider: provider.clone(),
-        sysroot: if provider.is_some() {
-            PathBuf::new()
-        } else {
+        auto,
+        sysroot: if sysroot_mode {
             sysroot.ok_or("--sysroot is required")?
-        },
-        gcc_runtime: if provider.is_some() {
-            PathBuf::new()
         } else {
+            PathBuf::new()
+        },
+        gcc_runtime: if sysroot_mode {
             gcc_runtime.ok_or("--gcc-runtime is required")?
+        } else {
+            PathBuf::new()
         },
         cc,
         ld,
@@ -543,6 +615,14 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
             scan,
             json,
         } => report::inspect_file(&file, ceiling, scan.as_ref(), json),
+        ParsedCommand::Provider(args) => {
+            if args.is_empty() || matches!(args[0].to_str(), Some("-h" | "--help" | "help")) {
+                print!("{}", libc_abi_tools::provider::cli::help("cargo libc"));
+                return Ok(0);
+            }
+            libc_abi_tools::provider::cli::run(&args, "cargo libc")?;
+            Ok(0)
+        }
     }
 }
 
@@ -649,6 +729,49 @@ mod tests {
             toolchain::TARGET
         ]))
         .is_err());
+    }
+
+    #[test]
+    fn without_provider_or_sysroot_a_provider_is_prepared_automatically() {
+        let build = |extra: &[&str]| {
+            let mut argv = vec![
+                "build",
+                "--target",
+                "x86_64-unknown-linux-gnu.2.28",
+                "--artifact",
+                "app",
+            ];
+            argv.extend(extra);
+            parse(args(&argv))
+        };
+        let ParsedCommand::Build { config, .. } = build(&[]).unwrap() else {
+            panic!("wrong command")
+        };
+        assert_eq!(config.auto, Some(Mode::Source));
+        assert_eq!(config.ceiling, "2.28".parse().unwrap());
+        let ParsedCommand::Build { config, .. } = build(&["--provider-mode", "container"]).unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert_eq!(config.auto, Some(Mode::Container));
+        let ParsedCommand::Build { config, .. } = build(&["--provider", "/p.txt"]).unwrap() else {
+            panic!("wrong command")
+        };
+        assert_eq!(config.auto, None);
+        for extra in [
+            &["--provider-mode", "binary"][..],
+            &["--provider-mode", "source", "--provider-mode", "source"],
+            &["--provider-mode", "source", "--provider", "/p.txt"],
+            &["--provider-mode", "source", "--sysroot", "/sdk"],
+            &["--sysroot", "/sdk"],
+        ] {
+            assert!(build(extra).is_err(), "{extra:?}");
+        }
+        let ParsedCommand::Provider(rest) = parse(args(&["libc", "provider", "list"])).unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert_eq!(rest, args(&["list"]));
     }
 
     fn args(values: &[&str]) -> Vec<OsString> {
