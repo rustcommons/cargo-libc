@@ -198,6 +198,26 @@ of whether we adopt every upstream convenience.
   their baseline and static/dynamic linking behavior.
 - [ ] Design flag merging, workspace-wide artifact checks, and packaging.
 
+## Rust API documentation
+
+Added 2026-10-11. cargo-libc is used as a Cargo subcommand, but its library is
+published too and gets a docs.rs page. That page must explain installation and use
+and link to the user documentation, and the library API must be documented. Today
+`cargo doc` builds without warnings; the library has no crate-level documentation and
+80 undocumented public items (measured with `-W missing_docs` on 2026-10-11).
+
+- [ ] Add a crate-level overview: what cargo-libc does, installation, the main
+  commands, and links to the user documentation.
+- [ ] Document every public item, or make items that are not meant as API private
+  (`pub(crate)`). Then add `#![warn(missing_docs)]` (CI denies warnings).
+- [ ] Add `cargo doc --workspace --no-deps` with `RUSTDOCFLAGS="-D warnings"` to CI, so
+  broken intra-doc links and malformed docs fail the build.
+- [ ] Add `documentation` (the docs.rs URL) and `[package.metadata.docs.rs]` (target
+  `x86_64-unknown-linux-gnu`, all features documented) to each published Cargo.toml,
+  and a docs.rs badge to each README.
+- [ ] After each release, confirm the docs.rs build succeeded and the pages read
+  correctly.
+
 ## Repository presentation and release work
 
 | Field | Prepared value |
