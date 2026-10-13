@@ -32,8 +32,8 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
 - [x] Plain-Cargo use (2026-10-12): `cargo libc env [--format sh|cargo]` prints the
   rustflags, rustdoc flags, runner, helper variables and C compiler wrappers for
   `cargo build --target x86_64-unknown-linux-gnu`. CI builds, runs and inspects with
-  both formats (the C dependency example with the shell one) for 2.17, 2.27, 2.28, 2.34, 2.38
-  and 2.44.
+  both formats (the C dependency example with the shell one) for every release
+  2.17–2.44 (since step 10).
 - [x] Depend on the 0.2 workspace crates (2026-10-12: `kernel-abi-tools`,
   `linux-abi-scan` and `linux-targets` 0.2.0, no code changes) and the provider module
   of `libc-abi-tools`, from a git revision until it is published (step 12). Packaging
@@ -44,7 +44,12 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
   categories, docs.rs), an `include` list of the source, README, LICENSE and NOTICE
   (22 files, 61 KiB packed; CI checks the list), no `publish = false`. The name stays
   `cargo-libc` (decided 2026-10-12).
-- [ ] Hosted CI for all of the above, every release 2.17–2.44, and user documentation.
+- [x] Hosted CI for all of the above, every release 2.17–2.44 (2026-10-12): automatic
+  providers (source mode), C dependencies, and clippy/doc/rustc/install/plain Cargo,
+  each for every release; container mode for 2.28 here, and for every release in
+  linux-abi-tools' provider workflow, which also runs the full Cargo suite with both
+  modes' providers.
+- [ ] User documentation.
 
 **Already built and included:**
 - versioned targets;
