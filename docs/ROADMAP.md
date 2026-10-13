@@ -34,10 +34,16 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
   `cargo build --target x86_64-unknown-linux-gnu`. CI builds, runs and inspects with
   both formats (the C dependency example with the shell one) for 2.17, 2.27, 2.28, 2.34, 2.38
   and 2.44.
-- [ ] Depend on the 0.2+ workspace crates and the provider module of `libc-abi-tools`.
-  The provider module is used from a git revision until it is published (step 12).
-- [ ] Packaging: crate metadata, `include` list, remove `publish = false`, and confirm
-  the crate name.
+- [x] Depend on the 0.2 workspace crates (2026-10-12: `kernel-abi-tools`,
+  `linux-abi-scan` and `linux-targets` 0.2.0, no code changes) and the provider module
+  of `libc-abi-tools`, from a git revision until it is published (step 12). Packaging
+  replaces the git source with the version (`0.2.0`), which has no provider module, so
+  `cargo package` and `cargo publish` fail verification until the provider module is
+  released and the requirement names that release.
+- [x] Packaging (2026-10-12): crate metadata (description, readme, keywords,
+  categories, docs.rs), an `include` list of the source, README, LICENSE and NOTICE
+  (22 files, 61 KiB packed; CI checks the list), no `publish = false`. The name stays
+  `cargo-libc` (decided 2026-10-12).
 - [ ] Hosted CI for all of the above, every release 2.17–2.44, and user documentation.
 
 **Already built and included:**
@@ -228,7 +234,8 @@ and link to the user documentation, and the library API must be documented. Toda
   broken intra-doc links and malformed docs fail the build.
 - [ ] Add `documentation` (the docs.rs URL) and `[package.metadata.docs.rs]` (target
   `x86_64-unknown-linux-gnu`, all features documented) to each published Cargo.toml,
-  and a docs.rs badge to each README.
+  and a docs.rs badge to each README. (cargo-libc has both entries since 2026-10-12;
+  the badge waits for the first release.)
 - [ ] After each release, confirm the docs.rs build succeeded and the pages read
   correctly.
 

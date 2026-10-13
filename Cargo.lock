@@ -25,9 +25,9 @@ source = "git+https://github.com/rustcommons/glibc-provider?rev=1ae578cf7123399b
 
 [[package]]
 name = "kernel-abi-tools"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b9e158725cf0f54820724dbf4101de85e438f4484d0992f0c2ff5107510d070"
+checksum = "a9b960b26021280eb89e131703a80fce088c9c321a5ede824e0adde3ac8608c9"
 dependencies = [
  "linux-targets",
 ]
@@ -43,9 +43,9 @@ dependencies = [
 
 [[package]]
 name = "linux-abi-scan"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ae0708c85ef6ddcd2a730144557c27733fda8a7de6736f7ae9b50436a7248a5"
+checksum = "a694a790a4b922cd92f53ad635fb9acb8402487dabbc14f9b66c60730e59736f"
 dependencies = [
  "kernel-abi-tools",
  "linux-targets",
@@ -53,6 +53,6 @@ dependencies = [
 
 [[package]]
 name = "linux-targets"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c78c5028516efabb4be504f361157baafe187a768e3b59df5a34260f95234e2"
+checksum = "6d2704040ab5dd19368c48d829b3e118a977543b36691f31f9d9ffbbc00d94ee"

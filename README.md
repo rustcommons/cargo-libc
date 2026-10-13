@@ -56,8 +56,9 @@ tested and [ARCHITECTURE.md](ARCHITECTURE.md) for the next component.
 
 There is no Zig, Python runtime, PyPI package, or third-party Cargo dependency in
 the tool. Its only Cargo dependencies are the first-party rustcommons crates
-`linux-abi-scan` and `linux-targets` (and `kernel-abi-tools`, which the scan
-uses), all std-only and published on crates.io. Run `cargo fetch` once
+`linux-abi-scan`, `linux-targets` and `kernel-abi-tools` (0.2, on crates.io) and
+`libc-abi-tools` for providers (a git revision until its provider module is
+published), all std-only. Run `cargo fetch` once
 before `--offline` builds. Clang and the native linker remain external executables. The project
 does not attempt to replace Rust's compiler backend or reimplement glibc.
 
@@ -154,9 +155,10 @@ cargo install --path . --locked --offline
 cargo libc --help
 ```
 
-This installs both `cargo-libc` and `libc-linker` into Cargo's bin directory.
-They must remain together because the coordinator locates its sibling helper.
-The package has `publish = false`; these commands install the local source.
+This installs `cargo-libc` and its helpers `libc-linker`, `libc-runner`,
+`libc-cc` and `libc-cxx` into Cargo's bin directory. They must remain together
+because the coordinator locates its sibling helpers. cargo-libc is not on
+crates.io yet; these commands install the local source.
 Ensure Cargo's bin directory is on your shell's `PATH`.
 
 To use the project without installation:
