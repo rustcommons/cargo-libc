@@ -264,10 +264,12 @@ and link to the user documentation, and the library API must be documented. Toda
 - [x] Qualify the Rust 1.90 minimum with hosted all-targets compilation checks.
 - [x] Confirm the crate name: `cargo-libc` (decided 2026-10-12).
 - [ ] Choose a release/versioning policy.
-- [ ] Publish a release only after its supported environment is qualified. For 0.1.0 (decided 2026-10-11),
+- [x] Publish a release only after its supported environment is qualified. For 0.1.0 (decided 2026-10-11),
   tier 3 is deferred and the release documents its tier 1 and 2 evidence instead.
-
-Repository pushes and hosted validation are complete; user release publication remains a separate milestone.
+  Published 0.1.0 on 2026-10-13 from `ce9a7d51122f143091050d9e53b1222b77e67de1` (tag
+  `v0.1.0`, CI 12/12), on linux-abi-tools 0.3.0 and glibc-provider-sources 0.1.0;
+  `cargo install cargo-libc --locked` from crates.io then built and ran a glibc 2.17
+  program on WSL Ubuntu.
 
 ## Experimental provider checkpoint
 
