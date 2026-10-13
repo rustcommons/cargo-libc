@@ -92,4 +92,13 @@ cargo libc doctor --kernel 3.10 --runner local >"$test_dir/doctor.log" 2>&1
 cat "$test_dir/doctor.log"
 grep -q '  local: ok: seccomp filter for Linux 3.10 installed without root' "$test_dir/doctor.log"
 grep -q 'Selected runner: usable' "$test_dir/doctor.log"
+# C dependencies (cc crate and CMake) compile for the target through libc-cc with
+# the --sysroot selection; scripts/smoke-c-deps.sh covers the providers.
+cargo fetch --manifest-path "$repo_dir/examples/c-deps/Cargo.toml" --locked
+cargo libc run --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc"   --kernel 3.10 --runner local -- --manifest-path "$repo_dir/examples/c-deps/Cargo.toml"   --locked --offline --target-dir "$test_dir/c-deps" >"$test_dir/c-deps.log" 2>&1 ||
+  { cat "$test_dir/c-deps.log"; exit 1; }
+cat "$test_dir/c-deps.log"
+grep -q "cc: glibc $test_glibc headers" "$test_dir/c-deps.log"
+grep -q "cmake: glibc $test_glibc headers" "$test_dir/c-deps.log"
+grep -q 'cmake: memfd_create found = 1' "$test_dir/c-deps.log"
 echo 'Linux smoke test passed (host SDK only).'

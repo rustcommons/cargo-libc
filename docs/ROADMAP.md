@@ -20,9 +20,12 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
   provider for 2.28.
 - [x] `cargo libc provider prepare|list|path|verify|export|import|remove` (2026-10-12),
   the same implementation as `libc-abi provider`.
-- [ ] C dependencies: `CC`/`AR`/CFLAGS for the target, for the `cc` crate and CMake,
-  using Clang with the provider's headers and sysroot; build scripts and proc macros
-  keep the host settings.
+- [x] C dependencies (2026-10-12): the `cc` crate and CMake compile C for the target
+  through `libc-cc` (Clang with the provider's or sysroot's headers, and its startup
+  objects and stubs for links); build scripts and proc macros keep the host compiler.
+  The flags live in the wrapper rather than `CFLAGS`, which host units would also
+  read; the host `ar` archives. C++ and `-static` are refused. CI builds and runs
+  `examples/c-deps` for every release 2.17–2.44 and with `--sysroot`.
 - [ ] More Cargo commands: `clippy`, `doc`, `rustc` and `install` alongside `build`,
   `check`, `test` and `run`.
 - [ ] Plain-Cargo use: a command that prints the environment and Cargo configuration
@@ -139,7 +142,7 @@ claim general cargo-zigbuild parity.
 - [x] Use the crates.io releases of linux-abi-scan and linux-targets (0.1.0, 2026-10-11).
 - [ ] Publish portable provider and tool interfaces without requiring consumers to adopt the wrapper command.
 
-Automatic acquisition, native cc/CMake/pkg-config configuration, dependency
+Native pkg-config and C++ configuration, dependency
 closure checks, and authenticated SDK publication remain unfinished. Existing
 input validation and direct ELF checks do not replace those features or qualify
 arbitrary runtime compatibility.
@@ -198,7 +201,8 @@ of whether we adopt every upstream convenience.
 
 ## 3. Broader support
 
-- [ ] Configure target-only native C/C++ dependencies, cc/CMake/pkg-config.
+- [x] Configure target-only native C dependencies built with cc/CMake (2026-10-12).
+- [ ] C++ (a target C++ runtime) and pkg-config/system libraries.
 - [ ] Expand architectures after ABI and runtime qualification.
 - [ ] Add other Rust-supported libc families when a concrete use case defines
   their baseline and static/dynamic linking behavior.

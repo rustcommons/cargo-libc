@@ -50,6 +50,20 @@ jobs:
       - run: cargo fetch --locked
       - run: bash scripts/install-clang.sh "${{ matrix.clang }}"
       - run: bash scripts/smoke-providers.sh /usr/bin/clang-${{ matrix.clang }}
+  c-dependencies:
+    name: C dependencies (cc, CMake), every release (Clang ${{ matrix.clang }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        clang: [21]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99.0
+      - run: cargo fetch --locked
+      - run: bash scripts/install-clang.sh "${{ matrix.clang }}"
+      - run: cmake --version
+      - run: bash scripts/smoke-c-deps.sh /usr/bin/clang-${{ matrix.clang }}
   container-provider:
     name: Automatic provider in container mode (glibc 2.28)
     runs-on: ubuntu-24.04

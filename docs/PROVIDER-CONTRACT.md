@@ -62,7 +62,11 @@ It does not revalidate full ABI membership or hash contents on every build.
 Explicit Cargo `--target` and encoded target Rust flags preserve host compilation
 of build scripts/procedural macros. Descriptor contents enter Cargo's fingerprint;
 changing input files in place still requires a fresh target directory or clean
-rebuild. Arbitrary native dependency overrides remain outside the prototype scope.
+rebuild. C dependencies compiled by `cc` or CMake use `libc-cc`, which compiles
+with the provider's `usr/include` and links with the same startup objects, stubs,
+nonshared archives and compiler runtime as Rust (plus GCC's default `-lgcc`,
+`-lgcc_s` and `-lc`). Arbitrary native dependency overrides remain outside the
+prototype scope.
 
 `examples/glibc-two-paths/provider-and-check.sh WORK CARGO_LIBC_REPO CLANG` tests
 the selected release's input routes, host build units, a target thread, wrong-version rejection,

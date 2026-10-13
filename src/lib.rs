@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 pub mod cargo_output;
+pub mod cc;
 pub mod cli;
 pub mod elf;
 pub mod provider;

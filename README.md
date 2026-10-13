@@ -36,8 +36,8 @@ are written in Rust and use only the Rust standard library.
 
 **Status: working prototype, not a complete cargo-zigbuild replacement.** It
 consumes a real sysroot. It does not yet generate glibc ABI stub libraries, stage
-a distribution SDK, configure native C/C++ dependencies, or prove that an
-application runs on SLES. See [VALIDATION.md](VALIDATION.md) for exactly what was
+a distribution SDK, build C++ or system-library dependencies for the target, or
+prove that an application runs on SLES. See [VALIDATION.md](VALIDATION.md) for exactly what was
 tested and [ARCHITECTURE.md](ARCHITECTURE.md) for the next component.
 
 ## What “Rust native” means here
@@ -83,6 +83,35 @@ Manage the cache with `cargo libc provider prepare|list|path|verify|export|impor
 (`cargo libc provider --help`); `export`/`import` move providers to an offline
 machine.
 
+## C dependencies
+
+`build`, `check`, `test` and `run` configure C code compiled by build scripts for
+the target: the [`cc`](https://crates.io/crates/cc) crate, and CMake through the
+[`cmake`](https://crates.io/crates/cmake) crate, use the `libc-cc` helper, which
+runs the `--cc` Clang with the selected provider's (or `--sysroot`'s) glibc headers
+and, for links such as CMake's configure checks, its startup objects and stubs.
+The C code therefore sees the target release's declarations: with glibc 2.38+
+headers, `strtol` under `_GNU_SOURCE` becomes `__isoc23_strtol@GLIBC_2.38`, while
+`libc-cc` for 2.17 keeps `strtol@GLIBC_2.2.5`, and CMake's `check_function_exists`
+finds only what the target defines.
+
+- Build scripts and procedural macros run on the build host, so their C code keeps
+  the host compiler (`HOST_CC`, `CC`, else `cc`). Cargo uses the same triple for
+  both; `libc-cc` tells them apart by the `cargo_libc_profile` cfg that only target
+  units have.
+- cargo-libc sets `CC_x86_64-unknown-linux-gnu` and `CXX_x86_64-unknown-linux-gnu`
+  and refuses to run when either is already set (in either spelling). Package
+  `CFLAGS` and the build script's own flags pass through; the selection comes last.
+  The host `ar` archives the objects.
+- **C only.** C++ for the target is refused (`libc-cxx`): providers have no target
+  C++ runtime. CMake projects must declare `project(NAME C)`. `-static` is refused
+  too: providers have no static glibc.
+- pkg-config and other libraries installed on the host are not configured for the
+  target: their headers, and their own glibc requirements, are the host's.
+
+[examples/c-deps](examples/c-deps) is the CI fixture (`scripts/smoke-c-deps.sh`,
+every release 2.17–2.44).
+
 ## Versioned target shorthand
 
     cargo libc build --target x86_64-unknown-linux-gnu.2.17 --provider /path/to/provider.txt --artifact target/x86_64-unknown-linux-gnu/release/app -- --release
@@ -106,6 +135,7 @@ For package, feature, profile and workspace options, see [Cargo workflows](docs/
 - A host native linker. The default is `/usr/bin/ld.bfd`.
 - For automatic providers: GCC and GNU binutils (`as`, `ld`, `ar`, `readelf`);
   `container` mode also needs podman or docker and network access.
+- For C dependencies: CMake, when a build script uses it.
 - For `--sysroot` builds: a coherent target development sysroot,
   including glibc headers, development libraries, startup objects, loader, and
   the target's GCC runtime development files.
@@ -422,9 +452,9 @@ native link arguments can still introduce other files.
 - Build coordination is for x86-64 Linux dynamically linked executable targets.
   `inspect` accepts x86-64 ELF64 little-endian executable/shared objects, up to
   256 MiB, within the documented parser limits in `src/elf.rs`.
-- Native C/C++ build scripts, `cc`, CMake, and `pkg-config` are not automatically
-  configured. Applications with such dependencies require additional target
-  configuration and dependency inspection.
+- C dependencies built with `cc` or CMake are configured for the target (see
+  [C dependencies](#c-dependencies)); C++, `pkg-config` and host system libraries
+  are not.
 - The tool does not resolve the transitive shared-library closure, validate
   C++ runtime versions, inspect CPU instructions, or discover libraries loaded
   later with `dlopen`. Kernel use is checked only statically, by the tier 1

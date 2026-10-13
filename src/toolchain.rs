@@ -364,7 +364,7 @@ pub fn validate_cargo_args(args: &[OsString]) -> Result<(), String> {
     Ok(())
 }
 
-fn sibling(name: &str) -> Result<PathBuf, String> {
+pub fn sibling(name: &str) -> Result<PathBuf, String> {
     let executable = env::current_exe().map_err(|e| e.to_string())?;
     let path = executable
         .parent()
@@ -416,13 +416,21 @@ fn cargo_command(
     let diagnostic = config.diagnose()?;
     config.print_diagnostics(&diagnostic);
     let driver = sibling("libc-linker")?;
+    let (cc, cxx) = crate::cc::wrappers()?;
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let mut cmd = Command::new(cargo);
     cmd.arg(subcommand).arg("--target").arg(TARGET);
     config.set_environment(&mut cmd);
+    // C dependencies (the `cc` crate, CMake through it) compile for the target
+    // with libc-cc; build scripts and proc macros keep the host compiler.
+    crate::cc::set_environment(&mut cmd, &cc, &cxx)?;
     // Target linker config also affects host build units on same-triple builds.
     // Explicit --target plus encoded rustflags keeps this linker target-only.
     let flags = config.rustflags(&driver)?;
+    println!(
+        "Target C compiler (cc crate, CMake): {} (C only; host units keep the host compiler)",
+        cc.display()
+    );
     if doctests {
         cmd.env("CARGO_ENCODED_RUSTDOCFLAGS", &flags);
     }
@@ -654,55 +662,137 @@ fn remove_search_overrides(cmd: &mut Command) {
     }
 }
 
-pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
-    let required = |key: &str| {
-        env::var_os(key)
-            .ok_or_else(|| format!("{key} is missing; this helper is launched by cargo libc build"))
-    };
-    let cc = required(CC_ENV)?;
-    let root = required(SYSROOT_ENV)?;
-    let gcc = required(GCC_ENV)?;
-    let ld = required(LD_ENV)?;
-    let mut cmd = Command::new(cc);
-    if let Some(descriptor) = env::var_os("CARGO_LIBC_PROVIDER_DESCRIPTOR") {
-        let provider = crate::provider::Provider::parse(
-            descriptor
-                .to_str()
-                .ok_or("provider descriptor must be UTF-8")?,
-        )?;
-        provider.validate_files()?;
-        cmd.arg("-nostdlib").arg("-no-pie");
-        if let Some(path) = env::var_os("CARGO_LIBC_PROVIDER_LINK_MAP") {
-            cmd.arg(prefixed_path("-Wl,-Map=", Path::new(&path)));
+/// The selection `cargo libc` hands its helpers through the environment.
+struct Selection {
+    cc: OsString,
+    sysroot: OsString,
+    gcc: OsString,
+    ld: OsString,
+    provider: Option<crate::provider::Provider>,
+}
+
+impl Selection {
+    fn from_environment(helper: &str) -> Result<Self, String> {
+        let required = |key: &str| {
+            env::var_os(key).ok_or_else(|| {
+                format!("{key} is missing; {helper} is launched by cargo libc build")
+            })
+        };
+        let provider = env::var_os("CARGO_LIBC_PROVIDER_DESCRIPTOR")
+            .map(|descriptor| {
+                let provider = crate::provider::Provider::parse(
+                    descriptor
+                        .to_str()
+                        .ok_or("provider descriptor must be UTF-8")?,
+                )?;
+                provider.validate_files()?;
+                Ok::<_, String>(provider)
+            })
+            .transpose()?;
+        Ok(Self {
+            cc: required(CC_ENV)?,
+            sysroot: required(SYSROOT_ENV)?,
+            gcc: required(GCC_ENV)?,
+            ld: required(LD_ENV)?,
+            provider,
+        })
+    }
+
+    /// Fixed profile selections; they come last, after the caller's arguments.
+    fn finish(&self, cmd: &mut Command, link: bool) {
+        cmd.arg(format!("--target={TARGET}"));
+        cmd.arg(prefixed_path("--sysroot=", Path::new(&self.sysroot)));
+        cmd.arg(prefixed_path("--gcc-install-dir=", Path::new(&self.gcc)));
+        if link {
+            if self.provider.is_none() {
+                cmd.arg("--rtlib=libgcc");
+            }
+            cmd.arg(prefixed_path("-fuse-ld=", Path::new(&self.ld)));
         }
-        cmd.arg(prefixed_path("-L", &provider.stubs));
-        cmd.arg(prefixed_path("-L", &provider.compiler_runtime));
-        cmd.arg(provider.sysroot.join("usr/lib64/crt1.o"));
-        cmd.arg(provider.sysroot.join("usr/lib64/crti.o"));
-        cmd.arg(provider.gcc_startup.join("crtbegin.o"));
-        cmd.args(args);
-        for archive in provider.nonshared_archives() {
-            cmd.arg(provider.sysroot.join(archive));
-        }
-        cmd.arg(provider.gcc_startup.join("crtend.o"));
-        cmd.arg(provider.sysroot.join("usr/lib64/crtn.o"));
-        cmd.arg(format!("-Wl,--dynamic-linker={LOADER}"));
+        remove_search_overrides(cmd);
+    }
+}
+
+/// A provider link: only the provider's startup objects, stubs and archives,
+/// around `args`. `shared` links a shared library instead of an executable.
+fn provider_link(
+    cmd: &mut Command,
+    provider: &crate::provider::Provider,
+    args: impl IntoIterator<Item = OsString>,
+    default_libraries: bool,
+    shared: bool,
+) {
+    let (begin, end) = if shared {
+        ("crtbeginS.o", "crtendS.o")
     } else {
-        cmd.args(args);
+        ("crtbegin.o", "crtend.o")
+    };
+    cmd.arg("-nostdlib");
+    if !shared {
+        cmd.arg("-no-pie");
     }
-    // Fixed profile selections come last, after any arguments from rustc.
-    cmd.arg(format!("--target={TARGET}"));
-    cmd.arg(prefixed_path("--sysroot=", Path::new(&root)));
-    cmd.arg(prefixed_path("--gcc-install-dir=", Path::new(&gcc)));
-    if env::var_os("CARGO_LIBC_PROVIDER_DESCRIPTOR").is_none() {
-        cmd.arg("--rtlib=libgcc");
+    if let Some(path) = env::var_os("CARGO_LIBC_PROVIDER_LINK_MAP") {
+        cmd.arg(prefixed_path("-Wl,-Map=", Path::new(&path)));
     }
-    cmd.arg(prefixed_path("-fuse-ld=", Path::new(&ld)));
-    remove_search_overrides(&mut cmd);
+    cmd.arg(prefixed_path("-L", &provider.stubs));
+    cmd.arg(prefixed_path("-L", &provider.compiler_runtime));
+    if !shared {
+        cmd.arg(provider.sysroot.join("usr/lib64/crt1.o"));
+    }
+    cmd.arg(provider.sysroot.join("usr/lib64/crti.o"));
+    cmd.arg(provider.gcc_startup.join(begin));
+    cmd.args(args);
+    // GCC's default libraries for a dynamic link; rustc names its own.
+    let as_needed_gcc_s = ["-Wl,--push-state,--as-needed", "-lgcc_s", "-Wl,--pop-state"];
+    if default_libraries {
+        cmd.arg("-lgcc").args(as_needed_gcc_s).arg("-lc");
+    }
+    for archive in provider.nonshared_archives() {
+        cmd.arg(provider.sysroot.join(archive));
+    }
+    if default_libraries {
+        cmd.arg("-lgcc").args(as_needed_gcc_s);
+    }
+    cmd.arg(provider.gcc_startup.join(end));
+    cmd.arg(provider.sysroot.join("usr/lib64/crtn.o"));
+    if !shared {
+        cmd.arg(format!("-Wl,--dynamic-linker={LOADER}"));
+    }
+}
+
+pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
+    let selection = Selection::from_environment("this helper")?;
+    let mut cmd = Command::new(&selection.cc);
+    match &selection.provider {
+        Some(provider) => provider_link(&mut cmd, provider, args, false, false),
+        None => {
+            cmd.args(args);
+        }
+    }
+    selection.finish(&mut cmd, true);
     let status = cmd
         .status()
         .map_err(|e| format!("cannot launch Clang driver: {e}"))?;
     Ok(status.code().unwrap_or(1))
+}
+
+/// The target C compiler command for `libc-cc`: Clang with the selected
+/// sysroot or provider. Links get the provider's startup objects and stubs.
+pub fn target_compiler(action: crate::cc::Action, args: Vec<OsString>) -> Result<Command, String> {
+    use crate::cc::Action;
+    let selection = Selection::from_environment("this compiler wrapper")?;
+    let mut cmd = Command::new(&selection.cc);
+    let link = matches!(action, Action::Link { .. } | Action::Relocatable);
+    match (&selection.provider, action) {
+        (Some(provider), Action::Link { shared }) => {
+            provider_link(&mut cmd, provider, args, true, shared)
+        }
+        _ => {
+            cmd.args(args);
+        }
+    }
+    selection.finish(&mut cmd, link);
+    Ok(cmd)
 }
 
 fn validate_x86_object(path: &Path) -> Result<(), String> {

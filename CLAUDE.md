@@ -21,6 +21,10 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
   rustcommons crates (`linux-abi-scan`, `linux-targets`, `kernel-abi-tools`, and
   `libc-abi-tools` for providers, a git revision until its provider module is
   published); no third-party crates.
+- C dependencies go through `libc-cc` (`src/cc.rs`): target units are told from
+  host units by the `CARGO_CFG_CARGO_LIBC_PROFILE` build script variable, never by
+  the triple (Cargo uses the same one for both). Keep C++ refused until a target
+  C++ runtime exists.
 - Provider preparation lives in `libc-abi-tools` (`provider::cli`); cargo-libc
   exposes it (`cargo libc provider`, automatic providers) and must not
   reimplement it. Never fall back silently from one provider mode to another.

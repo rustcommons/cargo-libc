@@ -50,7 +50,8 @@ Rustflags overrides remain rejected.
 The wrapper validates the one executable named by its artifact option.
 Building several workspace outputs does not imply compatibility validation of
 every output. Workspace-wide checks and library output policies remain separate
-features (F10/F11). Native C/C++ dependencies still need their own configuration.
+features (F10/F11). C dependencies built with `cc` or CMake are configured for the
+target (README, "C dependencies"); C++ and `pkg-config` dependencies are not.
 Build flags not exercised by these fixtures are forwarded, but this document
 does not claim qualification of every Cargo flag or compiler combination.
 

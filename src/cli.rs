@@ -93,7 +93,14 @@ The tier 1 scan (linux-abi-scan) adds kernel checks: imported syscall
 wrappers and DT_RELR exactly, constant syscall()/madvise() call sites
 heuristically. Neither resolves dependent libraries or replaces running the
 program under a kernel simulation or on the target OS.
-Native C/C++ dependencies need their own target configuration in this version.
+
+C DEPENDENCIES
+build/check/test/run point the cc crate (and CMake through it) at libc-cc for
+the target: Clang with the selected provider's or sysroot's glibc headers, and
+for links its startup objects and stubs. Build scripts and procedural macros
+keep the host compiler (HOST_CC, CC, else cc). C++ for the target is refused
+(no target C++ runtime), and so is -static. pkg-config and other system
+libraries found on the host are not configured for the target.
 
 Use separate values for options, e.g. --glibc 2.22 (not --glibc=2.22).
 Direct invocation as `cargo-libc ...` is also supported.
