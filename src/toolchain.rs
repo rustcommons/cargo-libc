@@ -287,7 +287,7 @@ impl Toolchain {
     pub fn rustflag_list(&self, driver: &Path) -> Result<Vec<String>, String> {
         // These input paths deliberately also appear in rustc flags: Cargo then sees
         // profile-path changes in its fingerprints rather than only hidden env vars.
-        let mut flags = vec![
+        let flags = vec![
             "-C".to_string(),
             format!("linker={}", text_path(driver)?),
             "-C".into(),
@@ -308,9 +308,6 @@ impl Toolchain {
             "--cfg".into(),
             format!("cargo_libc_profile=\"{}\"", self.profile_fingerprint()?),
         ];
-        if self.provider.is_some() {
-            flags.extend(["-C".into(), "relocation-model=static".into()]);
-        }
         Ok(flags)
     }
 
@@ -990,11 +987,32 @@ fn provider_link(
     }
 }
 
+/// rustc's arguments for a provider link: whether it links a shared library
+/// (a `cdylib` or `dylib`), and the arguments without `-pie`. Rust code is
+/// position-independent, so executables still link as non-PIE with the
+/// provider's `crt1.o`.
+fn provider_link_args(args: impl Iterator<Item = OsString>) -> (bool, Vec<OsString>) {
+    let mut shared = false;
+    let mut kept = Vec::new();
+    for arg in args {
+        if arg == "-shared" {
+            shared = true;
+        }
+        if arg != "-pie" {
+            kept.push(arg);
+        }
+    }
+    (shared, kept)
+}
+
 pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
     let selection = Selection::from_environment("this helper")?;
     let mut cmd = Command::new(&selection.cc);
     match &selection.provider {
-        Some(provider) => provider_link(&mut cmd, provider, args, false, false),
+        Some(provider) => {
+            let (shared, args) = provider_link_args(args);
+            provider_link(&mut cmd, provider, args, false, shared)
+        }
         None => {
             cmd.args(args);
         }
@@ -1079,6 +1097,18 @@ mod tests {
             "2.22".parse().unwrap()
         );
         assert!(header_version("#define __GLIBC__ 2").is_err());
+    }
+
+    #[test]
+    fn provider_links_tell_shared_libraries_and_drop_pie() {
+        let args = |list: &[&str]| list.iter().map(OsString::from).collect::<Vec<_>>();
+        let (shared, kept) = provider_link_args(args(&["a.o", "-pie", "-o", "app"]).into_iter());
+        assert!(!shared);
+        assert_eq!(kept, args(&["a.o", "-o", "app"]));
+        let (shared, kept) =
+            provider_link_args(args(&["a.o", "-shared", "-o", "lib.so"]).into_iter());
+        assert!(shared);
+        assert_eq!(kept, args(&["a.o", "-shared", "-o", "lib.so"]));
     }
 
     #[test]

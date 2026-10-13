@@ -1,8 +1,9 @@
 # Experimental glibc provider contract
 
 Version 1 connects generated link-only DSOs to Cargo through a trusted local
-descriptor. It supports x86_64 Linux dynamically linked non-PIE Rust executables
-and exactly one glibc release from 2.17 through 2.44, every release in the pinned ABI lists (the `RELEASES` list in `src/provider.rs`). It is not an authenticated or relocatable release SDK.
+descriptor. It supports x86_64 Linux dynamically linked non-PIE Rust executables,
+Rust shared libraries (`cdylib`, linked without `crt1.o` and with GCC's
+`crtbeginS.o`/`crtendS.o`; Rust code is position-independent in both cases), and exactly one glibc release from 2.17 through 2.44, every release in the pinned ABI lists (the `RELEASES` list in `src/provider.rs`). It is not an authenticated or relocatable release SDK.
 The six-field v1 format is unchanged; existing 2.17 descriptors remain valid.
 
 The descriptor is UTF-8, at most 16 KiB, with LF endings and a final newline.

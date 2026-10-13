@@ -74,6 +74,59 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
     each glibc on a modern kernel, not testing on old distributions or kernels.
   - Users must qualify their own targets.
 
+## Next work (after 0.1.0, 2026-10-13)
+
+In this order; each item says who it waits on.
+
+1. [ ] **Python extensions (maturin).** A PyO3 extension is a `cdylib`, which 0.1.0
+   could not link against a provider: `libc-linker` added `crt1.o` and the flags forced
+   `-C relocation-model=static`. Fixed locally (2026-10-13). Rust code is now
+   position-independent (Rust's default), shared links leave out `crt1.o` and the
+   loader and use `crtbeginS.o`/`crtendS.o`, and executables still link non-PIE with
+   `crt1.o` after rustc's `-pie` is dropped.
+   - The documented route is `cargo libc env`, then `maturin build --target
+     x86_64-unknown-linux-gnu --compatibility manylinux_2_NN`. It is in the user guide
+     ([Python extensions](USER-GUIDE.md#python-extensions-maturin)), with
+     `examples/python-ext` and `scripts/smoke-python-ext.sh` in CI.
+   - CI covers every release 2.17–2.44: maturin's manylinux audit (up to glibc 2.42;
+     maturin 1.15 has no newer policies), `cargo libc inspect`, an import on the
+     runner, and imports in manylinux2014 (CentOS 7, glibc 2.17) and manylinux_2_28
+     (AlmaLinux 8, glibc 2.28).
+   - A real PyO3/maturin project (abi3, about 970 Python tests) also passed: its glibc
+     2.17 wheel's full test suite ran on CentOS 7.9 (glibc 2.17), and under
+     `kernel-seccomp` with the CentOS 7 and SLES 12 SP5 kernel tables.
+   - Remaining: release it as 0.1.1, which waits on the maintainer's go-ahead to publish.
+2. [ ] **Rust API documentation of the workspace crates.** This is
+   linux-abi-tools' [Rust API documentation](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/ROADMAP.md#rust-api-documentation)
+   work:
+   - document every public item (about 60 in `libc-abi-tools`, 26 in `linux-abi-scan`,
+     15 in `kernel-abi-tools`, 5 in `linux-targets`) and turn on `missing_docs`;
+   - give each crate an overview with a doc-test example;
+   - add a `cargo doc -D warnings` CI job, docs.rs metadata and badges;
+   - release the result as 0.3.1.
+
+   Needs no decisions.
+3. [ ] **Tidy this roadmap.** Several items under "Ordinary Cargo remains a supported
+   design objective" look covered by `cargo libc env` and its CI (step 10). Check each
+   against the evidence and mark it, or say what remains.
+4. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
+   and SLES 12 SP5 (glibc 2.22, Linux 4.12), for executables and Python extensions.
+   This is the main missing evidence behind 0.1.0, and waits on the maintainer
+   providing or approving the hosts or VMs.
+5. [ ] **Maintainer decisions:**
+   - a release and versioning policy (below);
+   - the [feature review](FEATURE-REVIEW.md) (approve, defer or reject each item);
+   - the legal review, which gates `prebuilt` mode and `glibc-provider-binaries`.
+6. [ ] **Later features,** after the above:
+   - C++ dependencies (a target C++ runtime; `libc-cxx` refuses them now);
+   - pkg-config and host system libraries;
+   - finding imported providers regardless of the importing machine's GCC and
+     binutils;
+   - distribution-specific providers;
+   - PIE executables (F31);
+   - other library outputs (F11: `staticlib`, `dylib` policy);
+   - other architectures and C libraries.
+
 ## Team handoff (2026-10-10)
 
 F01 versioned targets and F02 Cargo flags/workspace qualification are complete

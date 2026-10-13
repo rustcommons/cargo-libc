@@ -73,6 +73,18 @@ jobs:
       - run: bash scripts/install-clang.sh "${{ matrix.clang }}"
       - run: cmake --version
       - run: bash scripts/smoke-c-deps.sh /usr/bin/clang-${{ matrix.clang }}
+  python-extension:
+    name: Python extension (maturin), every release, CentOS 7 and AlmaLinux 8 imports (Clang 21)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99.0
+      - run: cargo fetch --locked
+      - run: bash scripts/install-clang.sh 21
+      - run: bash scripts/smoke-python-ext.sh /usr/bin/clang-21
+        env:
+          PYTHON_EXT_CONTAINERS: 1
+          CONTAINER_ENGINE: docker
   commands:
     name: clippy, doc, rustc, install and plain Cargo, glibc ${{ matrix.releases }} (Clang 21)
     runs-on: ubuntu-24.04

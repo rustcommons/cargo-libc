@@ -13,6 +13,7 @@ your tests under a simulation of the target's kernel.
 - [C dependencies](#c-dependencies)
 - [Testing tiers](#testing-tiers)
 - [Plain Cargo and CI](#plain-cargo-and-ci)
+- [Python extensions (maturin)](#python-extensions-maturin)
 - [Troubleshooting](#troubleshooting)
 - [Limits](#limits)
 - [Reference](#reference)
@@ -352,6 +353,107 @@ A GitHub Actions job on `ubuntu-24.04`, which has GCC, Clang and binutils:
 - run: cargo libc test --target x86_64-unknown-linux-gnu.2.17 --kernel 3.10 --runner local -- --locked
 ```
 
+## Python extensions (maturin)
+
+A Rust extension module for Python, such as one built with
+[PyO3](https://pyo3.rs) and [maturin](https://www.maturin.rs), is a shared library
+that Python loads. cargo-libc 0.1.1 or later links it for an older glibc the same way
+as an executable, so one wheel built on a current machine installs and imports on old
+Linux. maturin calls Cargo itself, so this uses [`cargo libc env`](#plain-cargo-and-ci).
+
+### How it works
+
+- **The extension's glibc requirements come from the provider.** It links against
+  the stubs of the release you choose, so the extension requires no `GLIBC_*`
+  version newer than that release.
+- **libpython is not linked.** maturin builds PyO3 as an extension module, and
+  Python supplies its own symbols when it loads the extension. The provider needs
+  nothing from Python.
+- **The wheel tag is maturin's.** `--compatibility manylinux_2_NN` makes maturin
+  audit the extension against that [manylinux](https://github.com/pypa/manylinux)
+  policy and tag the wheel with it. pip then installs it on any Linux with glibc
+  2.NN or newer. The policy also checks that the extension links only libraries every
+  such system has.
+- **Python's version is separate.** The wheel needs a CPython its tag accepts, for
+  example 3.10 or later for an `abi3-py310` wheel. Old distributions often ship an
+  older Python, so the target machine may need a newer CPython installed alongside.
+
+### Steps
+
+1. Install cargo-libc and maturin on an x86_64 Linux build machine with Clang, GCC
+   and binutils (see [Install](#install)). A Python 3 interpreter that can build
+   your extension must be on `PATH`. For an `abi3` extension any supported version
+   works.
+2. Set the target settings in the shell, for the oldest glibc you support:
+
+   ```sh
+   eval "$(cargo libc env --target x86_64-unknown-linux-gnu.2.17)"
+   ```
+
+3. Build the wheel, from the directory with `pyproject.toml`:
+
+   ```sh
+   maturin build --release --target x86_64-unknown-linux-gnu \
+     --compatibility manylinux_2_17 --out dist
+   ```
+
+   - **`--target x86_64-unknown-linux-gnu` is required.** Without it, build
+     scripts (PyO3's among them) and procedural macros would be built with the target
+     settings too.
+   - **Use `--compatibility manylinux_2_NN` with the same release.** For glibc 2.17
+     the wheel is tagged `manylinux_2_17_x86_64.manylinux2014_x86_64`. maturin knows
+     policies only up to a release (glibc 2.42 for maturin 1.15). For a newer target,
+     pass `--auditwheel skip` as well, and rely on step 4.
+   - **Do not add `--zig`.** It is maturin's own way of targeting an older glibc,
+     and the settings from step 2 already do that.
+4. Check the extension inside the wheel:
+
+   ```sh
+   python3 -m zipfile -e dist/*.whl dist/check
+   cargo libc inspect dist/check/PACKAGE/*.so --max-glibc 2.17
+   cargo libc inspect dist/check/PACKAGE/*.so --distro centos-7    # tier 1 scan
+   ```
+
+5. Test on the old glibc. The manylinux images are old distributions with every
+   supported CPython under `/opt/python`. `quay.io/pypa/manylinux2014_x86_64` is
+   CentOS 7 with glibc 2.17, and `quay.io/pypa/manylinux_2_28_x86_64` is AlmaLinux 8
+   with glibc 2.28:
+
+   ```sh
+   podman run --rm -v "$PWD:/src:ro" quay.io/pypa/manylinux2014_x86_64 bash -c '
+     /opt/python/cp310-cp310/bin/python -m venv /v && . /v/bin/activate
+     pip install /src/dist/*.whl pytest && cd /src && python -m pytest tests'
+   ```
+
+   Make sure the tests import the installed wheel, not your source tree. If your
+   pytest configuration adds the source directory to `sys.path`, override that, for
+   example with `-o pythonpath=`, or copy only the tests.
+6. Optionally, simulate the target kernel too (tier 2). `kernel-seccomp` from
+   [kernel-abi-tools](https://crates.io/crates/kernel-abi-tools) runs any command
+   under the target kernel's syscall table. Build it for glibc 2.17 so it runs inside
+   the image, and run the tests under it there:
+
+   ```sh
+   cargo libc install --target x86_64-unknown-linux-gnu.2.17 -- kernel-abi-tools --locked --root ks
+   # inside the container, with ks/bin mounted at /ks:
+   /ks/kernel-seccomp run --distro centos-7 --runner local -- python -m pytest tests
+   ```
+
+The container shares your machine's kernel. Both steps 5 and 6 are evidence, not
+qualification: only a real target system, [tier 3](#testing-tiers), qualifies a
+release.
+
+### Things to know
+
+- **Building from source on the target bypasses all of this.** If pip builds the
+  sdist on the target, it uses that machine's toolchain. Publish wheels.
+- **The source tree's own `.so` can hide problems.** `maturin develop` and editable
+  installs build for your machine, not the target.
+- **C dependencies work as described in [C dependencies](#c-dependencies)**,
+  including the C-only and no-host-libraries limits.
+- **Extensions that link libpython are not supported.** Build PyO3 as an extension
+  module, which maturin does by default.
+
 ## Troubleshooting
 
 | Message | Cause and fix |
@@ -372,9 +474,9 @@ startup files are being used.
 ## Limits
 
 - **Platform.** It targets x86_64 Linux and glibc 2.17–2.44, and builds dynamically
-  linked executables. It has no other architectures and no other C libraries yet.
-- **What is checked.** Checks cover the executable itself, not the shared libraries
-  it loads, `dlopen`, C++ runtime versions, or CPU instructions.
+  linked executables and shared libraries (`cdylib`), such as Python extensions. It has no other architectures and no other C libraries yet.
+- **What is checked.** Checks cover the executable or library itself, not the
+  shared libraries it loads, `dlopen`, C++ runtime versions, or CPU instructions.
 - **Dependencies.** C dependencies are supported, but C++, pkg-config and host
   system libraries are not.
 - **Release status.** 0.1.0 is the first release. It does not replace testing on a

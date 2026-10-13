@@ -43,6 +43,9 @@ every command, C dependencies, the testing tiers, CI use and troubleshooting.
 - **Covers the whole Cargo workflow.** It supports `build`, `check`, `clippy`,
   `doc`, `rustc`, `test`, `run` and `install`, and `env` configures plain Cargo
   for CI or other tools.
+- **Builds Python extensions.** A PyO3 extension built by maturin with the
+  `cargo libc env` settings gives one wheel that installs on old Linux; see
+  [Python extensions](docs/USER-GUIDE.md#python-extensions-maturin).
 - **Builds C dependencies for the target.** C built through the `cc` crate or
   CMake gets the target's headers and links against its stubs. Build scripts and
   procedural macros stay native.
@@ -86,13 +89,16 @@ host artifacts too.
 
 The `libc-linker` helper runs the Clang driver with rustc's arguments.
 
-- **With a provider,** it links with `-nostdlib -no-pie` and supplies the inputs
-  explicitly:
+- **With a provider,** it links executables with `-nostdlib -no-pie` and supplies the
+  inputs explicitly:
   - the provider's `crt1.o` and `crti.o`, and GCC's `crtbegin.o`;
   - rustc's objects and libraries;
   - the provider's stubs (`-L`) and `libgcc_s` stub;
   - the nonshared archives, `crtend.o` and `crtn.o`;
   - `--dynamic-linker=/lib64/ld-linux-x86-64.so.2`.
+
+  A shared library (a `cdylib`, such as a Python extension) gets the same inputs
+  without `crt1.o` and the loader, and with `crtbeginS.o`/`crtendS.o`.
 - **With `--sysroot`,** it adds:
 
   ```text
@@ -131,7 +137,7 @@ arguments can still add files.
 | `src/report.rs` | glibc assessment, tier 1 scan, human and JSON reports |
 | `src/elf.rs`, `src/cargo_output.rs`, `src/version.rs` | Bounded ELF reader, Cargo JSON messages, versions |
 | `src/provider.rs` | Provider descriptor (v1) |
-| `examples/` | CI fixtures: `hello` (host build script, proc macro, threads), `c-deps`, `too-new` |
+| `examples/` | CI fixtures: `hello` (host build script, proc macro, threads), `c-deps`, `python-ext` (PyO3 and maturin), `too-new` |
 
 ## Credits and licensing
 
