@@ -67,7 +67,7 @@ Requirements are an x86_64 Linux host, Rust 1.90 or later, a Clang that supports
 
 ## Status
 
-0.1.0 is the first release. Hosted CI, on every push:
+This is an early release (0.1). Hosted CI, on every push:
 - builds, checks, runs and inspects with the automatic provider for every release
   2.17–2.44, including C dependencies and every command;
 - in [linux-abi-tools](https://github.com/rustcommons/linux-abi-tools), qualifies
