@@ -78,7 +78,7 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
 
 In this order; each item says who it waits on.
 
-1. [ ] **Python extensions (maturin).** A PyO3 extension is a `cdylib`, which 0.1.0
+1. [x] **Python extensions (maturin).** Released in 0.1.1 (2026-10-13). A PyO3 extension is a `cdylib`, which 0.1.0
    could not link against a provider: `libc-linker` added `crt1.o` and the flags forced
    `-C relocation-model=static`. Fixed locally (2026-10-13). Rust code is now
    position-independent (Rust's default), shared links leave out `crt1.o` and the
@@ -95,7 +95,9 @@ In this order; each item says who it waits on.
    - A real PyO3/maturin project (abi3, about 970 Python tests) also passed: its glibc
      2.17 wheel's full test suite ran on CentOS 7.9 (glibc 2.17), and under
      `kernel-seccomp` with the CentOS 7 and SLES 12 SP5 kernel tables.
-   - Remaining: release it as 0.1.1, which waits on the maintainer's go-ahead to publish.
+   - Released as 0.1.1 on 2026-10-13 from `b9d2c4f17848d8b0bba56178d5ee6090b1feffd6`
+     (tag `v0.1.1`, CI 13/13). `cargo install cargo-libc --version 0.1.1` from crates.io
+     then built the example's glibc 2.17 wheel.
 2. [ ] **Rust API documentation of the workspace crates.** This is
    linux-abi-tools' [Rust API documentation](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/ROADMAP.md#rust-api-documentation)
    work:
@@ -323,6 +325,8 @@ and link to the user documentation, and the library API must be documented. Toda
   `v0.1.0`, CI 12/12), on linux-abi-tools 0.3.0 and glibc-provider-sources 0.1.0;
   `cargo install cargo-libc --locked` from crates.io then built and ran a glibc 2.17
   program on WSL Ubuntu.
+- [x] 0.1.1 on 2026-10-13 from `b9d2c4f17848d8b0bba56178d5ee6090b1feffd6` (tag `v0.1.1`,
+  CI 13/13): Python extensions and other `cdylib` outputs link against providers.
 
 ## Experimental provider checkpoint
 
