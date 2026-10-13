@@ -7,7 +7,7 @@
 [![CI](https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml/badge.svg)](https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml)
 ![Rust 1.90+](https://img.shields.io/badge/Rust-1.90%2B-orange)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-![Status: pre-release](https://img.shields.io/badge/status-pre--release-yellow)
+[![crates.io](https://img.shields.io/crates/v/cargo-libc)](https://crates.io/crates/cargo-libc)
 
 A Cargo subcommand that builds Rust programs on a current x86_64 Linux machine for
 an older glibc, 2.17 through 2.44. It links against exactly what the release you
@@ -53,11 +53,8 @@ Python or downloaded SDK.
 
 ## Install
 
-cargo-libc is not on crates.io yet:
-
 ```sh
-git clone https://github.com/rustcommons/cargo-libc
-cargo install --path cargo-libc --locked
+cargo install cargo-libc --locked
 ```
 
 Requirements are an x86_64 Linux host, Rust 1.90 or later, a Clang that supports
@@ -67,7 +64,7 @@ Requirements are an x86_64 Linux host, Rust 1.90 or later, a Clang that supports
 
 ## Status
 
-This is a pre-release. Hosted CI, on every push:
+0.1.0 is the first release. Hosted CI, on every push:
 - builds, checks, runs and inspects with the automatic provider for every release
   2.17–2.44, including C dependencies and every command;
 - in [linux-abi-tools](https://github.com/rustcommons/linux-abi-tools), qualifies

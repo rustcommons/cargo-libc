@@ -36,10 +36,9 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
   2.17–2.44 (since step 10).
 - [x] Depend on the 0.2 workspace crates (2026-10-12: `kernel-abi-tools`,
   `linux-abi-scan` and `linux-targets` 0.2.0, no code changes) and the provider module
-  of `libc-abi-tools`, from a git revision until it is published (step 12). Packaging
-  replaces the git source with the version (`0.2.0`), which has no provider module, so
-  `cargo package` and `cargo publish` fail verification until the provider module is
-  released and the requirement names that release.
+  of `libc-abi-tools`, from a git revision until it was published. Since step 12
+  (2026-10-13) all four come from crates.io at 0.3.0, the release with the provider
+  module.
 - [x] Packaging (2026-10-12): crate metadata (description, readme, keywords,
   categories, docs.rs), an `include` list of the source, README, LICENSE and NOTICE
   (22 files, 61 KiB packed; CI checks the list), no `publish = false`. The name stays
@@ -257,13 +256,14 @@ and link to the user documentation, and the library API must be documented. Toda
 | Description | Cargo builds for selected libc environments and ELF requirement inspection, starting with glibc. |
 | Topics | rust, cargo, libc, glibc, elf, abi, linux, cross-compilation, build-tools |
 | README image | docs/assets/banner.svg; original editable gear and ABI diagram |
-| Badges | CI workflow, Rust 1.90+, MIT, prototype status |
+| Badges | CI workflow, Rust 1.90+, MIT, crates.io version |
 
 - [x] Apply the description/topics in GitHub repository settings (2026-10-11).
 - [ ] Upload a raster social preview if wanted; the README uses SVG directly.
 - [x] Observe hosted companion and producer integration CI passing.
 - [x] Qualify the Rust 1.90 minimum with hosted all-targets compilation checks.
-- [ ] Confirm crate-name availability and choose release/versioning policy.
+- [x] Confirm the crate name: `cargo-libc` (decided 2026-10-12).
+- [ ] Choose a release/versioning policy.
 - [ ] Publish a release only after its supported environment is qualified. For 0.1.0 (decided 2026-10-11),
   tier 3 is deferred and the release documents its tier 1 and 2 evidence instead.
 

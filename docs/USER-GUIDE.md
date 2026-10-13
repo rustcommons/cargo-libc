@@ -32,11 +32,10 @@ You need:
 - **podman or docker**, only for container-mode providers or the container
   test runner.
 
-cargo-libc is not on crates.io yet. Install it from a checkout:
+Install it from crates.io:
 
 ```sh
-git clone https://github.com/rustcommons/cargo-libc
-cargo install --path cargo-libc --locked
+cargo install cargo-libc --locked
 cargo libc --help
 ```
 
@@ -347,7 +346,7 @@ Things to keep in mind:
 A GitHub Actions job on `ubuntu-24.04`, which has GCC, Clang and binutils:
 
 ```yaml
-- run: cargo install --git https://github.com/rustcommons/cargo-libc --locked
+- run: cargo install cargo-libc --locked
 - run: cargo libc build --target x86_64-unknown-linux-gnu.2.17 --kernel 3.10
          --artifact target/x86_64-unknown-linux-gnu/release/myapp -- --release --locked
 - run: cargo libc test --target x86_64-unknown-linux-gnu.2.17 --kernel 3.10 --runner local -- --locked
@@ -378,8 +377,8 @@ startup files are being used.
   it loads, `dlopen`, C++ runtime versions, or CPU instructions.
 - **Dependencies.** C dependencies are supported, but C++, pkg-config and host
   system libraries are not.
-- **Release status.** This is a pre-release. It does not replace testing on a real
-  target (tier 3).
+- **Release status.** 0.1.0 is the first release. It does not replace testing on a
+  real target (tier 3).
 
 ## Reference
 
