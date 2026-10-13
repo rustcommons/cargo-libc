@@ -98,7 +98,8 @@ In this order; each item says who it waits on.
    - Released as 0.1.1 on 2026-10-13 from `b9d2c4f17848d8b0bba56178d5ee6090b1feffd6`
      (tag `v0.1.1`, CI 13/13). `cargo install cargo-libc --version 0.1.1` from crates.io
      then built the example's glibc 2.17 wheel.
-2. [ ] **Rust API documentation of the workspace crates.** This is
+2. [x] **Rust API documentation of the workspace crates.** Released as linux-abi-tools
+   0.3.1 on 2026-10-13 (tag `v0.3.1`); docs.rs shows it. This is
    linux-abi-tools' [Rust API documentation](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/ROADMAP.md#rust-api-documentation)
    work:
    - document every public item (about 60 in `libc-abi-tools`, 26 in `linux-abi-scan`,
