@@ -18,6 +18,13 @@ restrictions. It shares the managed target flags with `build`, so host build
 scripts and procedural macros stay native; it does not link and makes no
 claim about the final executable.
 
+`clippy`, `doc` and `rustc` work like `check`. `clippy` and `rustc` accept
+Cargo's own `--` for tool arguments, which must not name a target, linker, link
+arguments or relocation model. `install` works like `build` without
+`--artifact` and checks every executable it built. `env` prints the same
+configuration for plain Cargo (README, "Plain Cargo"). `scripts/smoke-commands.sh`
+covers all five with automatic providers in CI.
+
 ## Qualified workflow fixtures
 
 The hello fixture has a second workspace package, a feature-gated example, and a

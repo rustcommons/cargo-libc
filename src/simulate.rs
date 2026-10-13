@@ -100,18 +100,23 @@ impl Simulation {
     }
 
     /// Passes the selection to the helper.
-    pub fn set_environment(&self, cmd: &mut Command, ceiling: Version) {
-        cmd.env(GLIBC_ENV, ceiling.to_string());
+    /// The `libc-runner` variables; `None` means unset.
+    pub fn variables(&self, ceiling: Version) -> [(&'static str, Option<String>); 5] {
         let runner = self.runner.map(|r| match r {
-            Runner::Local => "local",
-            Runner::Container => "container",
+            Runner::Local => "local".to_string(),
+            Runner::Container => "container".to_string(),
         });
-        for (key, value) in [
-            (DISTRO_ENV, self.distro.as_deref()),
-            (KERNEL_ENV, self.kernel.as_deref()),
+        [
+            (GLIBC_ENV, Some(ceiling.to_string())),
+            (DISTRO_ENV, self.distro.clone()),
+            (KERNEL_ENV, self.kernel.clone()),
             (RUNNER_ENV, runner),
-            (IMAGE_ENV, self.image.as_deref()),
-        ] {
+            (IMAGE_ENV, self.image.clone()),
+        ]
+    }
+
+    pub fn set_environment(&self, cmd: &mut Command, ceiling: Version) {
+        for (key, value) in self.variables(ceiling) {
             match value {
                 Some(v) => cmd.env(key, v),
                 None => cmd.env_remove(key),

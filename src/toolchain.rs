@@ -19,6 +19,7 @@ const SYSROOT_ENV: &str = "CARGO_LIBC_SYSROOT";
 const GCC_ENV: &str = "CARGO_LIBC_GCC_RUNTIME";
 const CC_ENV: &str = "CARGO_LIBC_CC";
 const LD_ENV: &str = "CARGO_LIBC_LD";
+const DESCRIPTOR_ENV: &str = "CARGO_LIBC_PROVIDER_DESCRIPTOR";
 
 #[derive(Clone, Debug)]
 pub struct Toolchain {
@@ -280,6 +281,10 @@ impl Toolchain {
     }
 
     pub fn rustflags(&self, driver: &Path) -> Result<OsString, String> {
+        Ok(self.rustflag_list(driver)?.join("\u{1f}").into())
+    }
+
+    pub fn rustflag_list(&self, driver: &Path) -> Result<Vec<String>, String> {
         // These input paths deliberately also appear in rustc flags: Cargo then sees
         // profile-path changes in its fingerprints rather than only hidden env vars.
         let mut flags = vec![
@@ -306,7 +311,7 @@ impl Toolchain {
         if self.provider.is_some() {
             flags.extend(["-C".into(), "relocation-model=static".into()]);
         }
-        Ok(flags.join("\u{1f}").into())
+        Ok(flags)
     }
 
     fn profile_fingerprint(&self) -> Result<String, String> {
@@ -333,22 +338,37 @@ impl Toolchain {
         Ok(format!("{hash:016x}"))
     }
 
-    pub fn set_environment(&self, cmd: &mut Command) {
+    /// The selection the helpers read (libc-linker, libc-cc).
+    pub fn variables(&self) -> Vec<(&'static str, OsString)> {
+        let mut variables = vec![
+            (SYSROOT_ENV, self.sysroot.clone().into_os_string()),
+            (GCC_ENV, self.gcc_runtime.clone().into_os_string()),
+            (CC_ENV, self.cc.clone().into_os_string()),
+            (LD_ENV, self.ld.clone().into_os_string()),
+        ];
         if let Some(provider) = &self.provider {
-            cmd.env("CARGO_LIBC_PROVIDER_DESCRIPTOR", &provider.descriptor);
-        } else {
-            cmd.env_remove("CARGO_LIBC_PROVIDER_DESCRIPTOR");
+            variables.push((DESCRIPTOR_ENV, provider.descriptor.clone().into()));
         }
-        cmd.env(SYSROOT_ENV, &self.sysroot)
-            .env(GCC_ENV, &self.gcc_runtime)
-            .env(CC_ENV, &self.cc)
-            .env(LD_ENV, &self.ld);
+        variables
+    }
+
+    pub fn set_environment(&self, cmd: &mut Command) {
+        cmd.env_remove(DESCRIPTOR_ENV);
+        cmd.envs(self.variables());
     }
 }
 
-pub fn validate_cargo_args(args: &[OsString]) -> Result<(), String> {
-    for arg in args {
+/// Cargo subcommands whose own `--` passes the rest to the compiler or linter.
+fn has_tool_arguments(subcommand: &str) -> bool {
+    matches!(subcommand, "clippy" | "rustc")
+}
+
+pub fn validate_cargo_args(subcommand: &str, args: &[OsString]) -> Result<(), String> {
+    for (i, arg) in args.iter().enumerate() {
         let text = arg.to_string_lossy();
+        if text == "--" && has_tool_arguments(subcommand) {
+            return validate_tool_args(&args[i + 1..]);
+        }
         if text == "--target"
             || text.starts_with("--target=")
             || text == "--config"
@@ -359,6 +379,24 @@ pub fn validate_cargo_args(args: &[OsString]) -> Result<(), String> {
             || text.starts_with('+')
         {
             return Err(format!("Cargo argument {text:?} conflicts with this prototype's controlled target configuration"));
+        }
+    }
+    Ok(())
+}
+
+/// Arguments after `cargo clippy --` or `cargo rustc --` reach rustc directly:
+/// they must not replace the target, linker or relocation model.
+fn validate_tool_args(args: &[OsString]) -> Result<(), String> {
+    for arg in args {
+        let text = arg.to_string_lossy();
+        if text.starts_with("--target")
+            || text.contains("linker")
+            || text.contains("relocation-model")
+            || text.contains("link-arg")
+        {
+            return Err(format!(
+                "compiler argument {text:?} conflicts with the managed target configuration"
+            ));
         }
     }
     Ok(())
@@ -401,9 +439,10 @@ fn cargo_command(
     subcommand: &str,
     cargo_args: &[OsString],
 ) -> Result<(Command, PathBuf), String> {
-    validate_cargo_args(cargo_args)?;
-    // `test` also compiles doctests with rustdoc, which needs the same flags.
-    let doctests = subcommand == "test";
+    validate_cargo_args(subcommand, cargo_args)?;
+    // `test` compiles doctests and `doc` documents with rustdoc, which needs the
+    // same flags (the cfg, and the linker for doctests).
+    let doctests = matches!(subcommand, "test" | "doc");
     let mut managed = vec!["RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS"];
     if doctests {
         managed.extend(["RUSTDOCFLAGS", "CARGO_ENCODED_RUSTDOCFLAGS"]);
@@ -477,6 +516,17 @@ pub fn build(
     {
         return Err(format!("{} was not reported as an executable by this Cargo invocation; select an executable it actually built or found fresh", artifact.display()));
     }
+    let passed = verify_executable(config, artifact, scan)?;
+    Ok(if passed { 0 } else { 2 })
+}
+
+/// The direct ELF check (and the tier 1 scan when requested) of one executable
+/// from this build; prints the report and returns whether it passed.
+fn verify_executable(
+    config: &Toolchain,
+    artifact: &Path,
+    scan: Option<&ScanOptions>,
+) -> Result<bool, String> {
     let bytes = report::read_bytes(artifact)?;
     let info = crate::elf::inspect(&bytes)?;
     let mut assessment = report::assess(&info, Some(config.ceiling));
@@ -515,32 +565,212 @@ pub fn build(
             false
         )
     );
-    let passed = assessment.errors.is_empty() && scan.as_ref().is_none_or(report::Scan::passed);
-    Ok(if passed { 0 } else { 2 })
+    Ok(assessment.errors.is_empty() && scan.as_ref().is_none_or(report::Scan::passed))
 }
 
-/// `cargo libc check`: type-checks with the same managed target flags as
-/// `build`. Cargo's diagnostics and exit status pass through unchanged;
-/// nothing is linked, so there is no artifact to verify.
-pub fn check(config: &Toolchain, cargo_args: &[OsString], dry_run: bool) -> Result<i32, String> {
-    let (mut cmd, driver) = cargo_command(config, "check", cargo_args)?;
+/// `cargo libc check|clippy|doc|rustc`: Cargo with the same managed target
+/// flags as `build`. Cargo's diagnostics and exit status pass through
+/// unchanged; there is no artifact to verify (`rustc` may link one: inspect it).
+pub fn cargo_passthrough(
+    config: &Toolchain,
+    subcommand: &str,
+    cargo_args: &[OsString],
+    dry_run: bool,
+) -> Result<i32, String> {
+    let (mut cmd, driver) = cargo_command(config, subcommand, cargo_args)?;
     cmd.args(cargo_args);
     print_command(&cmd);
+    let links = subcommand == "rustc";
     println!(
-        "Rust linker driver: {} (configured; check does not link)",
-        driver.display()
+        "Rust linker driver: {}{}",
+        driver.display(),
+        if links {
+            ""
+        } else {
+            " (configured; this command does not link)"
+        }
     );
     if dry_run {
         return Ok(0);
     }
     let status = cmd.status().map_err(|e| format!("cannot run Cargo: {e}"))?;
     if status.success() {
-        println!(
-            "Type check passed for glibc {} target flags. Nothing was linked: build and inspect the executable to check its requirements.",
-            config.ceiling
-        );
+        if subcommand == "check" {
+            println!(
+                "Type check passed for glibc {} target flags. Nothing was linked: build and inspect the executable to check its requirements.",
+                config.ceiling
+            );
+        } else if links {
+            println!(
+                "Built with glibc {} target flags. The output was not checked: run cargo libc inspect on it.",
+                config.ceiling
+            );
+        }
     }
     Ok(status.code().unwrap_or(1))
+}
+
+/// `cargo libc install`: `cargo install` with the managed target flags, then
+/// the same direct ELF check (and scan) as `build` for every executable built.
+/// The check runs after Cargo installed them; a failure exits with 2.
+pub fn install(
+    config: &Toolchain,
+    cargo_args: &[OsString],
+    scan: Option<&ScanOptions>,
+    dry_run: bool,
+) -> Result<i32, String> {
+    let (mut cmd, driver) = cargo_command(config, "install", cargo_args)?;
+    cmd.arg("--message-format=json-render-diagnostics");
+    // cargo install deletes its temporary target directory; keep the
+    // executables until they are checked.
+    let explicit = env::var_os("CARGO_TARGET_DIR").is_some_and(|v| !v.is_empty())
+        || cargo_args.iter().any(|arg| {
+            let text = arg.to_string_lossy();
+            text == "--target-dir" || text.starts_with("--target-dir=")
+        });
+    let temporary = (!explicit).then(|| {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_nanos());
+        env::temp_dir().join(format!("cargo-libc-install-{}-{nanos}", std::process::id()))
+    });
+    if let Some(dir) = &temporary {
+        cmd.arg("--target-dir").arg(dir);
+    }
+    cmd.args(cargo_args);
+    print_command(&cmd);
+    println!("Rust linker driver: {}", driver.display());
+    println!(
+        "Every executable this install builds is checked against glibc {}.",
+        config.ceiling
+    );
+    if dry_run {
+        return Ok(0);
+    }
+    let result = (|| {
+        let (status, artifacts) = run_cargo(&mut cmd)?;
+        if !status.success() {
+            return Ok(status.code().unwrap_or(1));
+        }
+        if artifacts.is_empty() {
+            println!("Cargo built no executable (already installed?); nothing was checked.");
+            return Ok(0);
+        }
+        let mut passed = true;
+        for artifact in &artifacts {
+            passed &= verify_executable(config, artifact, scan)?;
+        }
+        if !passed {
+            println!("An installed executable failed the check above; remove it or rebuild for a newer target.");
+        }
+        Ok(if passed { 0 } else { 2 })
+    })();
+    if let Some(dir) = &temporary {
+        let _ = fs::remove_dir_all(dir);
+    }
+    result
+}
+
+/// Output format of `cargo libc env`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EnvFormat {
+    /// POSIX shell `export` lines.
+    Shell,
+    /// Cargo configuration (TOML) for `--config FILE` or `.cargo/config.toml`.
+    Cargo,
+}
+
+fn shell_quote(text: &str) -> String {
+    format!("'{}'", text.replace('\'', "'\\''"))
+}
+
+/// `cargo libc env`: the configuration `build`/`test` apply, for plain Cargo
+/// with `--target x86_64-unknown-linux-gnu`.
+pub fn plain_cargo(
+    config: &Toolchain,
+    simulation: &Simulation,
+    format: EnvFormat,
+) -> Result<String, String> {
+    simulation.plan()?;
+    config.diagnose()?;
+    let driver = sibling("libc-linker")?;
+    let runner = sibling("libc-runner")?;
+    let (cc, cxx) = crate::cc::wrappers()?;
+    let flags = config.rustflag_list(&driver)?;
+    let runner = text_path(&runner)?.to_string();
+    let mut variables: Vec<(String, String)> = Vec::new();
+    let utf8 = |key: &str, value: OsString| {
+        value
+            .into_string()
+            .map_err(|_| format!("{key} must be UTF-8 for plain Cargo configuration"))
+    };
+    for (key, value) in config.variables() {
+        variables.push((key.to_string(), utf8(key, value)?));
+    }
+    for (key, value) in crate::cc::variables(&cc, &cxx, format == EnvFormat::Shell)? {
+        let value = utf8(&key, value)?;
+        variables.push((key, value));
+    }
+    for (key, value) in simulation.variables(config.ceiling) {
+        if let Some(value) = value {
+            variables.push((key.to_string(), value));
+        }
+    }
+    let triple_key = TARGET.to_uppercase().replace('-', "_");
+    let mut out = format!(
+        "# cargo-libc {}: glibc {} for {TARGET}, generated for this machine.\n\
+         # Use with: cargo build --target {TARGET} (always pass --target, so build\n\
+         # scripts and proc macros stay native). RUSTFLAGS or CARGO_ENCODED_RUSTFLAGS in\n\
+         # the environment replace these flags. Nothing checks the output: run\n\
+         # cargo libc inspect FILE --max-glibc {}. Regenerate after updating\n\
+         # cargo-libc or the provider.\n",
+        env!("CARGO_PKG_VERSION"),
+        config.ceiling,
+        config.ceiling
+    );
+    match format {
+        EnvFormat::Shell => {
+            if let Some(flag) = flags
+                .iter()
+                .chain([&runner])
+                .find(|f| f.chars().any(char::is_whitespace))
+            {
+                return Err(format!("{flag:?} contains whitespace, which Cargo's flag variables cannot hold; use --format cargo"));
+            }
+            let joined = flags.join(" ");
+            out.push_str(&format!(
+                "export CARGO_TARGET_{triple_key}_RUSTFLAGS={}\n",
+                shell_quote(&joined)
+            ));
+            out.push_str(&format!("export RUSTDOCFLAGS={}\n", shell_quote(&joined)));
+            out.push_str(&format!(
+                "export CARGO_TARGET_{triple_key}_RUNNER={}\n",
+                shell_quote(&runner)
+            ));
+            for (key, value) in variables {
+                out.push_str(&format!("export {key}={}\n", shell_quote(&value)));
+            }
+        }
+        EnvFormat::Cargo => {
+            let list = |items: &[String]| {
+                items
+                    .iter()
+                    .map(|f| toml_string(f))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+            out.push_str(&format!(
+                "\n[target.{TARGET}]\nrustflags = [{}]\nrunner = [{}]\n\n[build]\nrustdocflags = [{}]\n\n[env]\n",
+                list(&flags),
+                toml_string(&runner),
+                list(&flags)
+            ));
+            for (key, value) in variables {
+                out.push_str(&format!("{key} = {}\n", toml_string(&value)));
+            }
+        }
+    }
+    Ok(out)
 }
 
 /// `cargo libc test` / `cargo libc run`: Cargo builds with the managed target
@@ -861,13 +1091,16 @@ mod tests {
             "--",
             "+nightly",
         ] {
-            assert!(validate_cargo_args(&[value.into()]).is_err());
+            assert!(validate_cargo_args("build", &[value.into()]).is_err());
         }
-        assert!(validate_cargo_args(&[
-            "--release".into(),
-            "--target-dir".into(),
-            "target with spaces".into()
-        ])
+        assert!(validate_cargo_args(
+            "build",
+            &[
+                "--release".into(),
+                "--target-dir".into(),
+                "target with spaces".into()
+            ]
+        )
         .is_ok());
     }
 
@@ -899,5 +1132,11 @@ mod tests {
             .unwrap()
             .split('\u{1f}')
             .any(|s| s == "link-arg=--sysroot=/sdk root"));
+    }
+
+    #[test]
+    fn shell_values_are_single_quoted() {
+        assert_eq!(shell_quote("/a b/c"), "'/a b/c'");
+        assert_eq!(shell_quote("it's"), "'it'\\''s'");
     }
 }

@@ -65,8 +65,9 @@ does not attempt to replace Rust's compiler backend or reimplement glibc.
 
     cargo libc build --target x86_64-unknown-linux-gnu.2.28 --artifact target/x86_64-unknown-linux-gnu/release/app -- --release
 
-With no `--provider` or `--sysroot`, `build`, `check`, `test`, `run` and `doctor`
-use a provider for the selected glibc release, prepared on first use and cached in
+With no `--provider` or `--sysroot`, every command that selects a target (`build`,
+`check`, `clippy`, `doc`, `rustc`, `install`, `test`, `run`, `env`, `doctor`) uses a
+provider for the selected glibc release, prepared on first use and cached in
 `$CARGO_LIBC_PROVIDER_DIR` (default `$CARGO_HOME/libc-providers`):
 
 - **`source` (default):** compiles `crt1.o`, `crti.o`, `crtn.o` and the nonshared
@@ -85,7 +86,7 @@ machine.
 
 ## C dependencies
 
-`build`, `check`, `test` and `run` configure C code compiled by build scripts for
+The Cargo commands (and `env`) configure C code compiled by build scripts for
 the target: the [`cc`](https://crates.io/crates/cc) crate, and CMake through the
 [`cmake`](https://crates.io/crates/cmake) crate, use the `libc-cc` helper, which
 runs the `--cc` Clang with the selected provider's (or `--sysroot`'s) glibc headers
@@ -408,6 +409,58 @@ diagnostics and exit status pass through unchanged. It needs no
 about the executable's glibc or kernel requirements. Use `build` (and
 `inspect`) for that.
 
+### 7. clippy, doc and rustc
+
+```sh
+cargo libc clippy --target x86_64-unknown-linux-gnu.2.17 -- --workspace --all-targets -- -D warnings
+cargo libc doc    --target x86_64-unknown-linux-gnu.2.17 -- --no-deps
+cargo libc rustc  --target x86_64-unknown-linux-gnu.2.17 -- --bin app -- -C opt-level=1
+```
+
+They take the same options as `check` and run `cargo clippy`, `cargo doc` and
+`cargo rustc` with the managed target flags (`doc` also gives rustdoc the
+flags, so documentation sees the target's cfg). After Cargo's own `--`,
+`clippy` and `rustc` pass arguments to clippy or rustc; arguments there that
+name a target, a linker, link arguments or a relocation model are refused.
+`rustc` builds and may link, but checks nothing: run `inspect` on its output.
+
+### 8. Install
+
+```sh
+cargo libc install --target x86_64-unknown-linux-gnu.2.17 --kernel 3.10 -- ripgrep --locked
+```
+
+`cargo install` with the `build` options except `--artifact`. Every executable
+the install builds gets the same direct check (and, with `--distro`/`--kernel`,
+the tier 1 scan) as `build`. Cargo installs before the check runs, so a failure
+exits with 2 and leaves the installed file for you to remove. Without
+`--target-dir` (or `CARGO_TARGET_DIR`) the build uses a temporary directory that
+is removed afterwards, as `cargo install` itself does.
+
+### 9. Plain Cargo
+
+```sh
+eval "$(cargo libc env --target x86_64-unknown-linux-gnu.2.17)"
+cargo build --target x86_64-unknown-linux-gnu --release
+
+cargo libc env --target x86_64-unknown-linux-gnu.2.17 --format cargo > glibc-2.17.toml
+cargo build --target x86_64-unknown-linux-gnu --config glibc-2.17.toml --release
+```
+
+`env` prepares the same selection as `build` and prints what the wrapper would
+apply: shell `export` lines (`--format sh`, the default) or a Cargo
+configuration file (`--format cargo`, also for `.cargo/config.toml`). It sets the
+target's rustflags (the linker helper, provider paths, the profile cfg),
+rustdoc flags, the `libc-runner` target runner (with any `--distro`, `--kernel`,
+`--runner` and `--image`), and the C compiler wrappers. Always pass
+`--target x86_64-unknown-linux-gnu` to Cargo; without it, build scripts and
+procedural macros get the target flags too. `RUSTFLAGS` or
+`CARGO_ENCODED_RUSTFLAGS` in the environment replace the printed flags (Cargo
+does not merge them). Plain Cargo checks nothing, so run `cargo libc inspect` on
+the result. The output names absolute paths on this machine: regenerate it after
+updating cargo-libc or a provider. `--format sh` refuses paths with whitespace,
+which Cargo's flag variables cannot hold.
+
 ## How the build is controlled
 
 The Rust helper invokes the configured Clang driver with rustc's arguments and
@@ -477,7 +530,9 @@ succeeded, 2 means the requested direct requirement check or the scan failed
 format error. For `build`, a failed Cargo invocation preserves Cargo's numeric
 exit code; configuration/inspection errors return 1, and a failed post-build
 requirement/interpreter/path check or scan returns 2. Signal-only termination
-maps to 1. `check`, `test`, and `run` return Cargo's exit code; `libc-runner` makes a
+maps to 1. `install` returns Cargo's exit code when Cargo fails and 2 when an
+installed executable fails its check. `check`, `clippy`, `doc`, `rustc`, `test`,
+and `run` return Cargo's exit code; `libc-runner` makes a
 binary fail with 2 when it needs a newer glibc than the selected version or,
 on the host userland, than the host's libraries provide; otherwise it returns the
 binary's own status (128 when killed by a signal).

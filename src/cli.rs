@@ -21,6 +21,9 @@ USAGE
   cargo libc test   --sysroot DIR --gcc-runtime DIR --glibc VERSION
                     [OPTIONS] [-- CARGO TEST ARGUMENTS]
   cargo libc run    (same as test) [-- CARGO RUN ARGUMENTS]
+  cargo libc clippy|doc|rustc  (same as check) [-- CARGO ARGUMENTS [-- TOOL ARGUMENTS]]
+  cargo libc install (same as build, without --artifact) [-- CARGO INSTALL ARGUMENTS]
+  cargo libc env    (same selection as build) [--format sh|cargo]
   cargo libc inspect FILE [--max-glibc VERSION | --distro ID] [--kernel VERSION]
                      [--scan] [--strict] [--verbose] [--json]
   cargo libc provider prepare|list|path|verify|export|import|remove ...
@@ -63,6 +66,19 @@ CONTAINER_ENGINE). Neither replaces testing on a real target host (tier 3).
 check type-checks with the same target selection and flags as build, so host
 build scripts and procedural macros stay native. It does not link, so it
 proves nothing about the final executable's glibc or kernel requirements.
+clippy and doc work the same way (doc also gives rustdoc the flags); rustc
+builds and may link, but checks nothing: inspect its output. Arguments after
+Cargo's own -- (clippy, rustc) must not replace the target or the linker.
+
+install runs cargo install with the build flags, then checks every executable
+it built like build does (--distro/--kernel add the tier 1 scan, --strict).
+The check runs after Cargo installed them; a failure exits with 2.
+
+env prints the configuration build/test apply, for plain Cargo with
+`--target x86_64-unknown-linux-gnu`: shell exports (--format sh, default) or a
+Cargo configuration file (--format cargo, for --config FILE). It includes the
+libc-runner target runner (with --distro/--kernel/--runner/--image) and the C
+compiler wrappers. Plain Cargo does not check the output; use inspect.
 
 doctor with --distro or --kernel also checks both runners: it installs the
 filter and runs /bin/sh under it, and starts `true` in the image under the
@@ -168,10 +184,23 @@ enum ParsedCommand {
         dry_run: bool,
         cargo_args: Vec<OsString>,
     },
-    Check {
+    /// check, clippy, doc, rustc.
+    Passthrough {
         config: RawConfig,
+        subcommand: &'static str,
         dry_run: bool,
         cargo_args: Vec<OsString>,
+    },
+    Install {
+        config: RawConfig,
+        scan: Option<ScanOptions>,
+        dry_run: bool,
+        cargo_args: Vec<OsString>,
+    },
+    Env {
+        config: RawConfig,
+        simulation: Simulation,
+        format: toolchain::EnvFormat,
     },
     Test {
         config: RawConfig,
@@ -222,7 +251,10 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         Some("-V" | "--version") => return Ok(ParsedCommand::Version),
         Some("inspect") => return parse_inspect(&args[1..]),
         Some("provider") => return Ok(ParsedCommand::Provider(args[1..].to_vec())),
-        Some("doctor" | "build" | "check" | "test" | "run") => {}
+        Some(
+            "doctor" | "build" | "check" | "test" | "run" | "clippy" | "doc" | "rustc" | "install"
+            | "env",
+        ) => {}
         _ => {
             return Err(format!(
                 "unknown command {command:?}; run cargo libc --help"
@@ -234,11 +266,20 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         Some("check") => "check",
         Some("test") => "test",
         Some("run") => "run",
+        Some("clippy") => "clippy",
+        Some("doc") => "doc",
+        Some("rustc") => "rustc",
+        Some("install") => "install",
+        Some("env") => "env",
         _ => "doctor",
     };
     let build = subcommand == "build";
-    let cargo_command = subcommand != "doctor";
+    // build and install check the executables they build.
+    let checks = build || subcommand == "install";
+    let cargo_command = !matches!(subcommand, "doctor" | "env");
     let runs = matches!(subcommand, "test" | "run");
+    let configures_runner = runs || !cargo_command;
+    let mut format = None;
     let mut simulation = Simulation::default();
     let mut strict = false;
     let mut provider = None;
@@ -326,8 +367,19 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
                     return Err(format!("duplicate {flag}"));
                 }
             }
-            Some("--strict") if build => strict = true,
-            Some("--runner") if runs || !cargo_command => {
+            Some("--strict") if checks => strict = true,
+            Some("--format") if subcommand == "env" => {
+                let value = next_value(&args, &mut i, "--format")?;
+                let parsed = match value.to_str() {
+                    Some("sh") => toolchain::EnvFormat::Shell,
+                    Some("cargo") => toolchain::EnvFormat::Cargo,
+                    _ => return Err(format!("--format must be sh or cargo, not {value:?}")),
+                };
+                if format.replace(parsed).is_some() {
+                    return Err("duplicate --format".into());
+                }
+            }
+            Some("--runner") if configures_runner => {
                 let value = next_value(&args, &mut i, "--runner")?;
                 let runner = kernel_abi_tools::Runner::parse(
                     value.to_str().ok_or("--runner must be UTF-8")?,
@@ -336,7 +388,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
                     return Err("duplicate --runner".into());
                 }
             }
-            Some("--image") if runs || !cargo_command => {
+            Some("--image") if configures_runner => {
                 let value = next_value(&args, &mut i, "--image")?
                     .into_string()
                     .map_err(|_| "--image must be UTF-8".to_string())?;
@@ -387,7 +439,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         ceiling = Some(parse_version(preset.glibc.to_string().into(), "--distro")?);
     }
     // doctor --distro/--kernel without toolchain inputs checks the runners only.
-    if !cargo_command
+    if subcommand == "doctor"
         && !explicit
         && mode.is_none()
         && (simulation.distro.is_some() || simulation.kernel.is_some())
@@ -429,8 +481,8 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         ld,
         ceiling: ceiling.ok_or("--glibc is required")?,
     };
-    if build {
-        toolchain::validate_cargo_args(&cargo_args)?;
+    if checks {
+        toolchain::validate_cargo_args(subcommand, &cargo_args)?;
         let scan =
             (simulation.distro.is_some() || simulation.kernel.is_some()).then(|| ScanOptions {
                 distro: simulation.distro.clone(),
@@ -441,6 +493,14 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         if strict && scan.is_none() {
             return Err("--strict applies to the scan; add --distro or --kernel".into());
         }
+        if subcommand == "install" {
+            return Ok(ParsedCommand::Install {
+                config,
+                scan,
+                dry_run,
+                cargo_args,
+            });
+        }
         Ok(ParsedCommand::Build {
             config,
             artifact: artifact.ok_or(
@@ -450,21 +510,28 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
             dry_run,
             cargo_args,
         })
-    } else if subcommand == "check" {
+    } else if matches!(subcommand, "check" | "clippy" | "doc" | "rustc") {
         if simulation.kernel.is_some() {
-            return Err(
-                "check does not link or run anything; --kernel applies to build, test, run, and doctor"
-                    .into(),
-            );
+            return Err(format!(
+                "{subcommand} does not check or run anything; --kernel applies to build, install, test, run, env and doctor"
+            ));
         }
-        toolchain::validate_cargo_args(&cargo_args)?;
-        Ok(ParsedCommand::Check {
+        toolchain::validate_cargo_args(subcommand, &cargo_args)?;
+        Ok(ParsedCommand::Passthrough {
             config,
+            subcommand,
             dry_run,
             cargo_args,
         })
+    } else if subcommand == "env" {
+        simulation.plan()?;
+        Ok(ParsedCommand::Env {
+            config,
+            simulation,
+            format: format.unwrap_or(toolchain::EnvFormat::Shell),
+        })
     } else if runs {
-        toolchain::validate_cargo_args(&cargo_args)?;
+        toolchain::validate_cargo_args(subcommand, &cargo_args)?;
         simulation.plan()?;
         Ok(ParsedCommand::Test {
             config,
@@ -598,11 +665,29 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
             scan.as_ref(),
             dry_run,
         ),
-        ParsedCommand::Check {
+        ParsedCommand::Passthrough {
             config,
+            subcommand,
             dry_run,
             cargo_args,
-        } => toolchain::check(&config.resolve()?, &cargo_args, dry_run),
+        } => toolchain::cargo_passthrough(&config.resolve()?, subcommand, &cargo_args, dry_run),
+        ParsedCommand::Install {
+            config,
+            scan,
+            dry_run,
+            cargo_args,
+        } => toolchain::install(&config.resolve()?, &cargo_args, scan.as_ref(), dry_run),
+        ParsedCommand::Env {
+            config,
+            simulation,
+            format,
+        } => {
+            print!(
+                "{}",
+                toolchain::plain_cargo(&config.resolve()?, &simulation, format)?
+            );
+            Ok(0)
+        }
         ParsedCommand::Test {
             config,
             subcommand,
@@ -972,10 +1057,11 @@ mod tests {
 
     #[test]
     fn check_uses_the_build_selection_without_an_artifact() {
-        let ParsedCommand::Check {
+        let ParsedCommand::Passthrough {
             config,
             dry_run,
             cargo_args,
+            ..
         } = parse(with_sdk(
             "check",
             &[
@@ -994,7 +1080,7 @@ mod tests {
         assert_eq!(config.ceiling, "2.17".parse().unwrap());
         assert!(dry_run);
         assert_eq!(cargo_args, args(&["--workspace", "--all-targets"]));
-        let ParsedCommand::Check { config, .. } =
+        let ParsedCommand::Passthrough { config, .. } =
             parse(with_sdk("check", &["--distro", "sles-12-sp5"])).unwrap()
         else {
             panic!("wrong command")
@@ -1086,6 +1172,95 @@ mod tests {
             vec!["inspect", "app", "--kernel"],
         ] {
             assert!(parse(args(&argv)).is_err(), "{argv:?}");
+        }
+    }
+
+    #[test]
+    fn clippy_doc_and_rustc_pass_through_with_the_build_selection() {
+        for command in ["clippy", "doc", "rustc"] {
+            let ParsedCommand::Passthrough {
+                subcommand,
+                cargo_args,
+                ..
+            } = parse(with_sdk(command, &["--glibc", "2.17", "--", "--workspace"])).unwrap()
+            else {
+                panic!("wrong command")
+            };
+            assert_eq!(subcommand, command);
+            assert_eq!(cargo_args, args(&["--workspace"]));
+            assert!(parse(with_sdk(command, &["--glibc", "2.17", "--kernel", "3.10"])).is_err());
+        }
+        // clippy and rustc take tool arguments after their own --.
+        assert!(parse(with_sdk(
+            "clippy",
+            &["--glibc", "2.17", "--", "--", "-D", "warnings"]
+        ))
+        .is_ok());
+        assert!(parse(with_sdk(
+            "rustc",
+            &["--glibc", "2.17", "--", "--", "-C", "opt-level=1"]
+        ))
+        .is_ok());
+        assert!(parse(with_sdk(
+            "rustc",
+            &["--glibc", "2.17", "--", "--", "-C", "linker=cc"]
+        ))
+        .is_err());
+        assert!(parse(with_sdk(
+            "rustc",
+            &["--glibc", "2.17", "--", "--", "--target=x"]
+        ))
+        .is_err());
+        assert!(parse(with_sdk("doc", &["--glibc", "2.17", "--", "--", "-D"])).is_err());
+    }
+
+    #[test]
+    fn install_checks_like_build_without_an_artifact() {
+        let ParsedCommand::Install {
+            scan, cargo_args, ..
+        } = parse(with_sdk(
+            "install",
+            &[
+                "--glibc", "2.17", "--kernel", "3.10", "--strict", "--", "--path", "app",
+            ],
+        ))
+        .unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert!(scan.unwrap().strict);
+        assert_eq!(cargo_args, args(&["--path", "app"]));
+        assert!(parse(with_sdk("install", &["--glibc", "2.17", "--artifact", "x"])).is_err());
+        assert!(parse(with_sdk("install", &["--glibc", "2.17", "--strict"])).is_err());
+    }
+
+    #[test]
+    fn env_selects_a_format_and_takes_no_cargo_arguments() {
+        let ParsedCommand::Env {
+            format, simulation, ..
+        } = parse(with_sdk(
+            "env",
+            &["--glibc", "2.17", "--kernel", "3.10", "--format", "cargo"],
+        ))
+        .unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert_eq!(format, toolchain::EnvFormat::Cargo);
+        assert_eq!(simulation.kernel.as_deref(), Some("3.10"));
+        let ParsedCommand::Env { format, .. } =
+            parse(args(&["env", "--target", "x86_64-unknown-linux-gnu.2.28"])).unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert_eq!(format, toolchain::EnvFormat::Shell);
+        for extra in [
+            &["--glibc", "2.17", "--format", "json"][..],
+            &["--glibc", "2.17", "--", "--release"],
+            &["--glibc", "2.17", "--dry-run"],
+            &["--glibc", "2.17", "--format", "sh", "--format", "sh"],
+        ] {
+            assert!(parse(with_sdk("env", extra)).is_err(), "{extra:?}");
         }
     }
 }

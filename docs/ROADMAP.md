@@ -26,10 +26,14 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
   The flags live in the wrapper rather than `CFLAGS`, which host units would also
   read; the host `ar` archives. C++ and `-static` are refused. CI builds and runs
   `examples/c-deps` for every release 2.17–2.44 and with `--sysroot`.
-- [ ] More Cargo commands: `clippy`, `doc`, `rustc` and `install` alongside `build`,
-  `check`, `test` and `run`.
-- [ ] Plain-Cargo use: a command that prints the environment and Cargo configuration
-  for using a provider without the wrapper.
+- [x] More Cargo commands (2026-10-12): `clippy`, `doc` and `rustc` (like `check`;
+  tool arguments after Cargo's `--` may not replace the target or linker) and
+  `install` (like `build`; checks every executable it built, after installation).
+- [x] Plain-Cargo use (2026-10-12): `cargo libc env [--format sh|cargo]` prints the
+  rustflags, rustdoc flags, runner, helper variables and C compiler wrappers for
+  `cargo build --target x86_64-unknown-linux-gnu`. CI builds, runs and inspects with
+  both formats (the C dependency example with the shell one) for 2.17, 2.27, 2.28, 2.34, 2.38
+  and 2.44.
 - [ ] Depend on the 0.2+ workspace crates and the provider module of `libc-abi-tools`.
   The provider module is used from a git revision until it is published (step 12).
 - [ ] Packaging: crate metadata, `include` list, remove `publish = false`, and confirm

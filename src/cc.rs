@@ -37,9 +37,16 @@ fn compiler_variables(base: &str) -> [String; 4] {
     ]
 }
 
-/// Points `CC`/`CXX` for the target triple at the wrappers. The host's own
-/// choice (`HOST_CC`, `CC`, or the `cc` crate's default) is kept for host units.
-pub fn set_environment(cmd: &mut Command, cc: &Path, cxx: &Path) -> Result<(), String> {
+/// The variables pointing `CC`/`CXX` for the target triple at the wrappers.
+/// The host's own choice (`HOST_CC`, `CC`, or the `cc` crate's default) is kept
+/// for host units. `shell_names` uses `CC_x86_64_unknown_linux_gnu`, which a
+/// shell can export, instead of the spelling the `cc` crate reads first.
+pub fn variables(
+    cc: &Path,
+    cxx: &Path,
+    shell_names: bool,
+) -> Result<Vec<(String, OsString)>, String> {
+    let mut variables = Vec::new();
     for (base, wrapper, host_env, default) in [
         ("CC", cc, HOST_CC_ENV, "cc"),
         ("CXX", cxx, HOST_CXX_ENV, "c++"),
@@ -54,8 +61,15 @@ pub fn set_environment(cmd: &mut Command, cc: &Path, cxx: &Path) -> Result<(), S
             .into_iter()
             .find_map(|key| env::var_os(key).filter(|value| !value.is_empty()))
             .unwrap_or_else(|| default.into());
-        cmd.env(host_env, host_compiler).env(&hyphen, wrapper);
+        variables.push((host_env.to_string(), host_compiler));
+        let key = if shell_names { underscore } else { hyphen };
+        variables.push((key, wrapper.as_os_str().to_owned()));
     }
+    Ok(variables)
+}
+
+pub fn set_environment(cmd: &mut Command, cc: &Path, cxx: &Path) -> Result<(), String> {
+    cmd.envs(variables(cc, cxx, false)?);
     Ok(())
 }
 

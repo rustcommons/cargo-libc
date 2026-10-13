@@ -64,6 +64,17 @@ jobs:
       - run: bash scripts/install-clang.sh "${{ matrix.clang }}"
       - run: cmake --version
       - run: bash scripts/smoke-c-deps.sh /usr/bin/clang-${{ matrix.clang }}
+  commands:
+    name: clippy, doc, rustc, install and plain Cargo (Clang 21)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          components: clippy
+      - run: cargo fetch --locked
+      - run: bash scripts/install-clang.sh 21
+      - run: bash scripts/smoke-commands.sh /usr/bin/clang-21 2.17 2.27 2.28 2.34 2.38 2.44
   container-provider:
     name: Automatic provider in container mode (glibc 2.28)
     runs-on: ubuntu-24.04
