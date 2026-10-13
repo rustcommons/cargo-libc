@@ -49,7 +49,12 @@ x86_64 Linux glibc**, plus everything already built. Target: build for any glibc
   each for every release; container mode for 2.28 here, and for every release in
   linux-abi-tools' provider workflow, which also runs the full Cargo suite with both
   modes' providers.
-- [ ] User documentation.
+- [x] User documentation (2026-10-12): [USER-GUIDE.md](USER-GUIDE.md) (install, choosing a
+  target, providers, every command, C dependencies, testing tiers, plain Cargo and CI,
+  troubleshooting, limits, reference), a README rewritten as the front page, the
+  provider guide in linux-abi-tools
+  ([USING-PROVIDERS.md](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/USING-PROVIDERS.md)),
+  and a crate-level page for docs.rs.
 
 **Already built and included:**
 - versioned targets;

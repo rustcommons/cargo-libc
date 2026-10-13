@@ -22,7 +22,7 @@ claim about the final executable.
 Cargo's own `--` for tool arguments, which must not name a target, linker, link
 arguments or relocation model. `install` works like `build` without
 `--artifact` and checks every executable it built. `env` prints the same
-configuration for plain Cargo (README, "Plain Cargo"). `scripts/smoke-commands.sh`
+configuration for plain Cargo ([user guide](USER-GUIDE.md#plain-cargo-and-ci)). `scripts/smoke-commands.sh`
 covers all five with automatic providers in CI.
 
 ## Qualified workflow fixtures
@@ -58,7 +58,7 @@ The wrapper validates the one executable named by its artifact option.
 Building several workspace outputs does not imply compatibility validation of
 every output. Workspace-wide checks and library output policies remain separate
 features (F10/F11). C dependencies built with `cc` or CMake are configured for the
-target (README, "C dependencies"); C++ and `pkg-config` dependencies are not.
+target ([user guide](USER-GUIDE.md#c-dependencies)); C++ and `pkg-config` dependencies are not.
 Build flags not exercised by these fixtures are forwarded, but this document
 does not claim qualification of every Cargo flag or compiler combination.
 

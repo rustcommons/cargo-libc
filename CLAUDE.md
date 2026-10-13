@@ -28,6 +28,9 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
 - Provider preparation lives in `libc-abi-tools` (`provider::cli`); cargo-libc
   exposes it (`cargo libc provider`, automatic providers) and must not
   reimplement it. Never fall back silently from one provider mode to another.
+- [docs/USER-GUIDE.md](docs/USER-GUIDE.md) is the user documentation: keep commands,
+  options, messages and limits in it in step with the code. The README is the front
+  page and links to it.
 - Present the `inspect`/`build` scan as tier 1 (least reliable) and
   `test`/`run` as tier 2 (simulation); never either as qualification.
 - Preserve upstream attribution and license notices for any reused material.

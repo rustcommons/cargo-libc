@@ -160,7 +160,7 @@ able to run on the build machine. A global `CC` or library-path override is
 not a sufficient design for this distinction.
 
 Status (2026-10-12): `cc` and CMake are configured for C through the `libc-cc`
-wrapper (README, "C dependencies"). It separates host and target units by the
+wrapper ([user guide](docs/USER-GUIDE.md#c-dependencies)). It separates host and target units by the
 target-only `cargo_libc_profile` cfg in the build script environment, not by a
 global override. C++ and `pkg-config` remain open.
 
