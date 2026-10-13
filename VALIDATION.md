@@ -158,3 +158,16 @@ than the CI host's glibc 2.39: a program using `sched_getattr@GLIBC_2.41` built 
 the 2.41–2.44 providers was refused ("the host's libraries lack libc.so.6
 GLIBC_2.41"), while every provider's normal local run still passed. Releases whose
 libc defines no version beyond the host skip that check.
+
+## C dependencies with cc and CMake (2026-10-12)
+
+cargo-libc `cef1ad2d2d7953d7c44e1fb88ddf1e3a47b507d0`'s [CI run](https://github.com/rustcommons/cargo-libc/actions/runs/38329386232)
+built and ran `examples/c-deps` with automatic providers for every release 2.17–2.44
+(Rust 1.99, Clang 21, CMake from the Ubuntu 24.04 runner). For each release the
+executable needed no glibc version above the release. Under the tier 2 local runner
+it reported that C compiled by the `cc` crate and by CMake saw that release's headers;
+CMake's `check_function_exists(memfd_create)` failed before 2.27 and succeeded from
+2.27; and the proc macro's C code saw the host's 2.39 headers. The same C code built
+with plain Cargo needed `__isoc23_strtol@GLIBC_2.38`. C++ for the target was refused.
+The Linux smoke test ran the example with `--sysroot /` too. C++, pkg-config and
+system-library dependencies remain unqualified.
