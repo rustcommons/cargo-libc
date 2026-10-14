@@ -180,3 +180,15 @@ built `examples/too-new`, which calls `memfd_create` (`GLIBC_2.27`), with plain
 every release 2.17–2.44 (Rust 1.99, Clang 21). For each release before 2.27 the link
 failed with an undefined reference to `memfd_create`, as it does with `cargo libc
 build`; from 2.27 on it linked and needed no glibc version above the release.
+
+## Container runner in SLES 12 SP5 userland (2026-10-14)
+
+cargo-libc `a3a2d38dcc23e107c730e8f9fef515c2030188c1`'s [CI run](https://github.com/rustcommons/cargo-libc/actions/runs/38562062202)
+(job `container-runner`, Rust 1.99, Clang 21, podman with static crun 1.28) built with
+the `sles-12-sp5` preset (glibc 2.22 provider, Linux 4.12 kernel profile) and ran under
+`--runner container` in `registry.suse.com/suse/sles12sp5:latest`: `examples/hello`
+(thread result 42) and its unit test (with `--nocapture` passed to the harness) each
+reported runtime glibc 2.22, and `examples/c-deps` reported glibc 2.22 headers for C
+compiled by `cc` and CMake and ran on glibc 2.22. This is tier 2: SLES's real userland
+on the runner's modern kernel, with older kernels simulated by seccomp; it is not a
+SLES 12 SP5 host.
