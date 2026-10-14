@@ -9,18 +9,12 @@ approval.
 
 In this order; each item says what it waits on.
 
-1. [ ] **Plain-Cargo refusal test.** CI shows that `cargo libc build` refuses a symbol
-   newer than the target (`examples/too-new` calls `memfd_create`, glibc 2.27, and
-   must fail to link for every release before 2.27). Add the same case for plain
-   Cargo configured by `cargo libc env` to `scripts/smoke-commands.sh`. Both routes
-   link through `libc-linker`, so it should pass; the test makes that evidence rather
-   than an assumption. Needs no decisions.
-2. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
+1. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
    and SLES 12 SP5 (glibc 2.22, Linux 4.12), for executables and Python extensions,
    including native C dependencies; and a real Rocky Linux 9 build host. This is the
    main missing evidence behind the releases. Waits on the maintainer providing or
    approving the hosts or VMs.
-3. [ ] **Maintainer decisions:**
+2. [ ] **Maintainer decisions:**
    - a release and versioning policy;
    - the [feature review](FEATURE-REVIEW.md): approve, defer, reject or ask for
      evidence on each item, starting with core delivery and plain Cargo, then native

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # clippy, doc, rustc, install and plain Cargo (cargo libc env) with automatic
-# providers, for each requested glibc release.
+# providers, for each requested glibc release. Plain Cargo must also refuse a symbol
+# newer than the target, as cargo libc build does.
 # Usage: smoke-commands.sh CLANG RELEASE...
 set -euo pipefail
 repo_dir=$(cd "$(dirname "$0")/.." && pwd)
@@ -12,12 +13,30 @@ trap 'chmod -R u+w "$test_dir"; rm -rf -- "$test_dir"' EXIT
 export CARGO_LIBC_PROVIDER_DIR=${CARGO_LIBC_PROVIDER_DIR:-$test_dir/providers}
 hello="$repo_dir/examples/hello/Cargo.toml"
 c_deps="$repo_dir/examples/c-deps/Cargo.toml"
+too_new="$repo_dir/examples/too-new/Cargo.toml"
 cargo build --manifest-path "$repo_dir/Cargo.toml" --locked --offline --target-dir "$test_dir/tools"
 cargo fetch --manifest-path "$c_deps" --locked
 export PATH="$test_dir/tools/debug:$PATH"
 host_glibc=$(getconf GNU_LIBC_VERSION)
 host_glibc=${host_glibc#glibc }
 triple=x86_64-unknown-linux-gnu
+
+# Plain Cargo with EXTRA_ARGS builds examples/too-new, which calls memfd_create
+# (GLIBC_2.27): the link must fail for older targets and succeed from 2.27 on.
+plain_too_new() {
+  local release=$1 out=$2
+  shift 2
+  if [ "$(printf '%s
+2.27
+' "$release" | sort -V | head -1)" = 2.27 ]; then
+    cargo build --target "$triple" --manifest-path "$too_new" --target-dir "$out"       --locked --offline "$@"
+    cargo libc inspect "$out/$triple/debug/glibc-too-new" --max-glibc "$release"
+  elif cargo build --target "$triple" --manifest-path "$too_new" --target-dir "$out"     --locked --offline "$@" > "$out.log" 2>&1; then
+    echo "plain Cargo for glibc $release accepted memfd_create" >&2; exit 1
+  else
+    grep -E 'undefined (reference|symbol).*memfd_create' "$out.log"
+  fi
+}
 
 for release in "$@"; do
   target="$triple.$release"
@@ -60,6 +79,7 @@ for release in "$@"; do
     # C dependencies through the same variables.
     cargo build --target "$triple" --manifest-path "$c_deps" --target-dir "$out/plain-c" --locked --offline
     cargo libc inspect "$out/plain-c/$triple/debug/glibc-c-deps" --max-glibc "$release"
+    plain_too_new "$release" "$out/plain-too-new"
     # The runner (libc-runner) checks glibc before running, when this host can run it.
     if cargo libc inspect "$out/plain-sh/$triple/debug/glibc-hello" --max-glibc "$host_glibc" > /dev/null; then
       cargo run --target "$triple" --manifest-path "$hello" --target-dir "$out/plain-sh" \
@@ -76,5 +96,6 @@ for release in "$@"; do
   cargo build --target "$triple" --config "$out-config.toml" --manifest-path "$hello" \
     --target-dir "$out/plain-cargo" --locked --offline
   cargo libc inspect "$out/plain-cargo/$triple/debug/glibc-hello" --max-glibc "$release"
+  plain_too_new "$release" "$out/plain-cargo-too-new" --config "$out-config.toml"
 done
 echo "Commands: clippy, doc, rustc, install and plain Cargo passed for $*."
