@@ -363,11 +363,20 @@ fn has_tool_arguments(subcommand: &str) -> bool {
     matches!(subcommand, "clippy" | "rustc")
 }
 
+/// `cargo test -- ARGS` and `cargo run -- ARGS` hand ARGS to the test harness or
+/// the program, after the build: they cannot change the target configuration.
+fn has_program_arguments(subcommand: &str) -> bool {
+    matches!(subcommand, "test" | "run")
+}
+
 pub(crate) fn validate_cargo_args(subcommand: &str, args: &[OsString]) -> Result<(), String> {
     for (i, arg) in args.iter().enumerate() {
         let text = arg.to_string_lossy();
         if text == "--" && has_tool_arguments(subcommand) {
             return validate_tool_args(&args[i + 1..]);
+        }
+        if text == "--" && has_program_arguments(subcommand) {
+            return Ok(());
         }
         if text == "--target"
             || text.starts_with("--target=")
@@ -1151,6 +1160,22 @@ mod tests {
             ]
         )
         .is_ok());
+    }
+
+    #[test]
+    fn test_and_run_pass_arguments_after_the_second_separator() {
+        let args = |list: &[&str]| list.iter().map(OsString::from).collect::<Vec<_>>();
+        for subcommand in ["test", "run"] {
+            // The harness or program gets these; they may look like Cargo's own.
+            let program = args(&["--release", "--", "--nocapture", "--target", "x"]);
+            assert!(validate_cargo_args(subcommand, &program).is_ok());
+            // Cargo's own arguments are still checked.
+            let cargo = args(&["--target", "x", "--", "--nocapture"]);
+            assert!(validate_cargo_args(subcommand, &cargo).is_err());
+        }
+        for subcommand in ["build", "check", "doc", "install"] {
+            assert!(validate_cargo_args(subcommand, &args(&["--", "x"])).is_err());
+        }
     }
 
     #[test]

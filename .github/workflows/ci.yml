@@ -116,6 +116,21 @@ jobs:
       - run: cargo fetch --locked
       - run: bash scripts/install-clang.sh 21
       - run: bash scripts/smoke-commands.sh /usr/bin/clang-21 ${{ matrix.releases }}
+  container-runner:
+    name: Container runner in SLES 12 SP5 userland (glibc 2.22, Linux 4.12)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.99.0
+      - run: cargo fetch --locked
+      - run: bash scripts/install-clang.sh 21
+      - run: sudo apt-get install -y podman curl cmake
+      # Static crun: its libseccomp names every syscall in the kernel profiles.
+      - run: bash scripts/install-crun.sh "$RUNNER_TEMP/crun"
+      - run: bash scripts/smoke-container-runner.sh /usr/bin/clang-21
+        env:
+          KERNEL_ABI_ENGINE_ARGS: --runtime ${{ runner.temp }}/crun
   container-provider:
     name: Automatic provider in container mode (glibc 2.28)
     runs-on: ubuntu-24.04

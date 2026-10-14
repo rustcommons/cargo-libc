@@ -189,8 +189,11 @@ it built.
 
 ```sh
 cargo libc test --distro rhel-8 --runner local -- --release
-cargo libc run  --target x86_64-unknown-linux-gnu.2.17 --kernel 3.10 -- --bin myapp
+cargo libc test --distro sles-12-sp5 --runner container -- --release -- --nocapture
+cargo libc run  --target x86_64-unknown-linux-gnu.2.17 --kernel 3.10 -- --bin myapp -- ARGS
 ```
+
+As with Cargo, arguments after a second `--` go to the test harness or the program.
 
 Cargo runs every target binary through `libc-runner`: unit and integration tests,
 doctests, and `cargo run`'s program. For each binary it:

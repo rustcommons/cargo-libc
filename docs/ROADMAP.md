@@ -9,12 +9,24 @@ approval.
 
 In this order; each item says what it waits on.
 
-1. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
+1. [ ] **Broken pipe, then 0.2.1.** Piped into a reader that exits early
+   (`cargo libc inspect ... | head`), `cargo-libc` panics with "failed printing to
+   stdout: Broken pipe" and exits with status 101: Rust ignores SIGPIPE, so the write
+   fails, and `print!` panics on a failed write. Fix it as linux-abi-tools'
+   `kernel-seccomp` was (2026-10-14): write stdout through a helper that stops quietly
+   on `BrokenPipe`, tested against a pipe whose read end is closed. Then release
+   0.2.1 with that fix and the one already on `main` (`test` and `run` pass arguments
+   after a second `--` to the test harness or program, as the user guide always
+   said; 0.2.0 refused them). Releasing needs the maintainer's go-ahead.
+2. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
    and SLES 12 SP5 (glibc 2.22, Linux 4.12), for executables and Python extensions,
    including native C dependencies; and a real Rocky Linux 9 build host. This is the
-   main missing evidence behind the releases. Waits on the maintainer providing or
-   approving the hosts or VMs.
-2. [ ] **Maintainer decisions:**
+   main missing evidence behind the releases. There are no hosts; a possible route is
+   virtual machines in CI (GitHub's Linux runners can usually run KVM): CentOS 7's
+   cloud image from its archive, and openSUSE Leap 42.x (also glibc 2.22) as a free
+   stand-in for SLES 12 SP5, which needs a SUSE subscription. Check first that the
+   runners allow it.
+3. [ ] **Maintainer decisions:**
    - a release and versioning policy;
    - the [feature review](FEATURE-REVIEW.md): approve, defer, reject or ask for
      evidence on each item, starting with core delivery and plain Cargo, then native
