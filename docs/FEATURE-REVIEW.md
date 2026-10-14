@@ -181,11 +181,11 @@ workflow. A feature review does not authorize a rename or SDK publication.
 
 | Feature IDs | Proposed disposition | User decision | Notes |
 | --- | --- | --- | --- |
-| F01/F02 | Retain qualified behavior | Authorized by proceed instructions; complete within tested scope | Evidence recorded below and in ROADMAP.md |
+| F01/F02 | Retain qualified behavior | Authorized by proceed instructions; complete within tested scope | Evidence recorded below and in VALIDATION.md |
 | F03-F36 and E01-E16 | As stated per row | Pending individual implementation/review | Inventory is not approval of all proposed features |
 | Product mission / `cargo-libc` name | Retain for libc compatibility and optional coordination | Pending review of expanded scope | Revisit if broader toolchain/platform management becomes primary |
 
-See [ROADMAP.md](ROADMAP.md) for implemented checkpoints and ongoing work.
+See [ROADMAP.md](ROADMAP.md) for open work and [VALIDATION.md](../VALIDATION.md) for what was tested.
 
 F01 implementation and qualification completed following the proceed instructions.
 Producer cbf31dd / consumer ed4c997 passed the current Rust 1.99/Clang 21/24
