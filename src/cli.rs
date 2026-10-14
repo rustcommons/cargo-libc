@@ -1,3 +1,5 @@
+//! The `cargo-libc` command line: `cargo libc <command>`, parsed and run.
+
 use crate::{
     report::{self, ScanOptions},
     simulate::{self, Simulation},
@@ -634,6 +636,15 @@ fn parse_inspect(args: &[OsString]) -> Result<ParsedCommand, String> {
     })
 }
 
+/// The `cargo-libc` entry point. `args` are the arguments after the program name;
+/// Cargo passes `libc` first when run as `cargo libc`. Runs the command, or prints
+/// the help, and returns the exit code.
+///
+/// # Errors
+///
+/// Returns the message to print, for exit code 1, when the arguments are invalid or
+/// the command cannot be carried out. Failed checks are not errors: they return
+/// their exit code (2) after reporting.
 pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
     match parse(args.into_iter().collect())? {
         ParsedCommand::Help => {

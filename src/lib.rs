@@ -10,20 +10,35 @@
 //!   --artifact target/x86_64-unknown-linux-gnu/release/myapp -- --release
 //! ```
 //!
-//! Install the command and read how to use it in the
-//! [user guide](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md).
+//! Install it with `cargo install cargo-libc --locked`, and read how to use it in the
+//! [user guide](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md)
+//! and the [README](https://github.com/rustcommons/cargo-libc#readme).
 //!
-//! This library holds the implementation of the `cargo-libc`, `libc-linker`,
-//! `libc-runner`, `libc-cc` and `libc-cxx` executables; its modules are public for
-//! them and for tests.
+//! # The library
+//!
+//! This library is the implementation of cargo-libc's five executables, and is not
+//! meant to be used directly. Its public items are their entry points:
+//!
+//! | Executable | Entry point | Role |
+//! | --- | --- | --- |
+//! | `cargo-libc` | [`cli::run`] | The `cargo libc` command |
+//! | `libc-linker` | [`toolchain::run_linker`] | The linker Cargo calls for target units |
+//! | `libc-runner` | [`simulate::run_program`] | Cargo's target runner for `test` and `run` |
+//! | `libc-cc` | [`cc::run`] with [`cc::Language::C`] | The C compiler for the `cc` crate and CMake |
+//! | `libc-cxx` | [`cc::run`] with [`cc::Language::Cxx`] | The C++ compiler: host units only |
+//!
+//! To use provider preparation or ELF scanning from your own code, depend on
+//! [`libc-abi-tools`](https://docs.rs/libc-abi-tools) and
+//! [`linux-abi-scan`](https://docs.rs/linux-abi-scan).
 #![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
-pub mod cargo_output;
+mod cargo_output;
 pub mod cc;
 pub mod cli;
-pub mod elf;
-pub mod provider;
-pub mod report;
+mod elf;
+mod provider;
+mod report;
 pub mod simulate;
 pub mod toolchain;
-pub mod version;
+mod version;

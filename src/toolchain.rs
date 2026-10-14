@@ -1,3 +1,6 @@
+//! Toolchain selection and the Cargo commands that use it, and `libc-linker`, the
+//! linker Cargo calls for target units.
+
 use crate::{
     cargo_output,
     report::{self, ScanOptions},
@@ -13,8 +16,8 @@ use std::{
     process::{Command, ExitStatus, Stdio},
 };
 
-pub const TARGET: &str = "x86_64-unknown-linux-gnu";
-pub const LOADER: &str = "/lib64/ld-linux-x86-64.so.2";
+pub(crate) const TARGET: &str = "x86_64-unknown-linux-gnu";
+pub(crate) const LOADER: &str = "/lib64/ld-linux-x86-64.so.2";
 const SYSROOT_ENV: &str = "CARGO_LIBC_SYSROOT";
 const GCC_ENV: &str = "CARGO_LIBC_GCC_RUNTIME";
 const CC_ENV: &str = "CARGO_LIBC_CC";
@@ -22,21 +25,21 @@ const LD_ENV: &str = "CARGO_LIBC_LD";
 const DESCRIPTOR_ENV: &str = "CARGO_LIBC_PROVIDER_DESCRIPTOR";
 
 #[derive(Clone, Debug)]
-pub struct Toolchain {
-    pub provider: Option<crate::provider::Provider>,
-    pub sysroot: PathBuf,
-    pub gcc_runtime: PathBuf,
-    pub cc: PathBuf,
-    pub ld: PathBuf,
-    pub ceiling: Version,
+pub(crate) struct Toolchain {
+    pub(crate) provider: Option<crate::provider::Provider>,
+    pub(crate) sysroot: PathBuf,
+    pub(crate) gcc_runtime: PathBuf,
+    pub(crate) cc: PathBuf,
+    pub(crate) ld: PathBuf,
+    pub(crate) ceiling: Version,
 }
 
 #[derive(Debug)]
-pub struct Diagnostics {
-    pub header_version: Version,
-    pub compiler_version: String,
-    pub linker_version: String,
-    pub files: Vec<(String, PathBuf)>,
+pub(crate) struct Diagnostics {
+    pub(crate) header_version: Version,
+    pub(crate) compiler_version: String,
+    pub(crate) linker_version: String,
+    pub(crate) files: Vec<(String, PathBuf)>,
 }
 
 fn canonical(path: &Path, label: &str) -> Result<PathBuf, String> {
@@ -61,7 +64,7 @@ fn inside_file(path: &Path, root: &Path) -> Result<PathBuf, String> {
     Ok(actual)
 }
 
-pub fn text_path(path: &Path) -> Result<&str, String> {
+pub(crate) fn text_path(path: &Path) -> Result<&str, String> {
     let text = path
         .to_str()
         .ok_or("toolchain paths must be UTF-8 for Cargo's encoded flags")?;
@@ -72,7 +75,7 @@ pub fn text_path(path: &Path) -> Result<&str, String> {
 }
 
 impl Toolchain {
-    pub fn from_provider(
+    pub(crate) fn from_provider(
         path: &Path,
         cc: PathBuf,
         ld: PathBuf,
@@ -108,7 +111,7 @@ impl Toolchain {
             ceiling,
         })
     }
-    pub fn new(
+    pub(crate) fn new(
         sysroot: PathBuf,
         gcc_runtime: PathBuf,
         cc: PathBuf,
@@ -145,7 +148,7 @@ impl Toolchain {
         })
     }
 
-    pub fn driver_args(&self) -> Vec<OsString> {
+    pub(crate) fn driver_args(&self) -> Vec<OsString> {
         vec![
             format!("--target={TARGET}").into(),
             prefixed_path("--sysroot=", &self.sysroot),
@@ -162,7 +165,7 @@ impl Toolchain {
         cmd
     }
 
-    pub fn diagnose(&self) -> Result<Diagnostics, String> {
+    pub(crate) fn diagnose(&self) -> Result<Diagnostics, String> {
         let header = inside_file(&self.sysroot.join("usr/include/features.h"), &self.sysroot)?;
         let text =
             fs::read_to_string(&header).map_err(|e| format!("cannot read features.h: {e}"))?;
@@ -262,7 +265,7 @@ impl Toolchain {
         })
     }
 
-    pub fn print_diagnostics(&self, info: &Diagnostics) {
+    pub(crate) fn print_diagnostics(&self, info: &Diagnostics) {
         println!(
             "Target: {TARGET}; requested glibc ceiling: {}",
             self.ceiling
@@ -280,11 +283,11 @@ impl Toolchain {
         println!("Target input probes passed. Full dependency resolution and target runtime behavior remain separate checks.");
     }
 
-    pub fn rustflags(&self, driver: &Path) -> Result<OsString, String> {
+    pub(crate) fn rustflags(&self, driver: &Path) -> Result<OsString, String> {
         Ok(self.rustflag_list(driver)?.join("\u{1f}").into())
     }
 
-    pub fn rustflag_list(&self, driver: &Path) -> Result<Vec<String>, String> {
+    pub(crate) fn rustflag_list(&self, driver: &Path) -> Result<Vec<String>, String> {
         // These input paths deliberately also appear in rustc flags: Cargo then sees
         // profile-path changes in its fingerprints rather than only hidden env vars.
         let flags = vec![
@@ -336,7 +339,7 @@ impl Toolchain {
     }
 
     /// The selection the helpers read (libc-linker, libc-cc).
-    pub fn variables(&self) -> Vec<(&'static str, OsString)> {
+    pub(crate) fn variables(&self) -> Vec<(&'static str, OsString)> {
         let mut variables = vec![
             (SYSROOT_ENV, self.sysroot.clone().into_os_string()),
             (GCC_ENV, self.gcc_runtime.clone().into_os_string()),
@@ -349,7 +352,7 @@ impl Toolchain {
         variables
     }
 
-    pub fn set_environment(&self, cmd: &mut Command) {
+    pub(crate) fn set_environment(&self, cmd: &mut Command) {
         cmd.env_remove(DESCRIPTOR_ENV);
         cmd.envs(self.variables());
     }
@@ -360,7 +363,7 @@ fn has_tool_arguments(subcommand: &str) -> bool {
     matches!(subcommand, "clippy" | "rustc")
 }
 
-pub fn validate_cargo_args(subcommand: &str, args: &[OsString]) -> Result<(), String> {
+pub(crate) fn validate_cargo_args(subcommand: &str, args: &[OsString]) -> Result<(), String> {
     for (i, arg) in args.iter().enumerate() {
         let text = arg.to_string_lossy();
         if text == "--" && has_tool_arguments(subcommand) {
@@ -399,7 +402,7 @@ fn validate_tool_args(args: &[OsString]) -> Result<(), String> {
     Ok(())
 }
 
-pub fn sibling(name: &str) -> Result<PathBuf, String> {
+pub(crate) fn sibling(name: &str) -> Result<PathBuf, String> {
     let executable = env::current_exe().map_err(|e| e.to_string())?;
     let path = executable
         .parent()
@@ -483,7 +486,7 @@ fn print_command(cmd: &Command) {
     );
 }
 
-pub fn build(
+pub(crate) fn build(
     config: &Toolchain,
     cargo_args: &[OsString],
     artifact: &Path,
@@ -568,7 +571,7 @@ fn verify_executable(
 /// `cargo libc check|clippy|doc|rustc`: Cargo with the same managed target
 /// flags as `build`. Cargo's diagnostics and exit status pass through
 /// unchanged; there is no artifact to verify (`rustc` may link one: inspect it).
-pub fn cargo_passthrough(
+pub(crate) fn cargo_passthrough(
     config: &Toolchain,
     subcommand: &str,
     cargo_args: &[OsString],
@@ -610,7 +613,7 @@ pub fn cargo_passthrough(
 /// `cargo libc install`: `cargo install` with the managed target flags, then
 /// the same direct ELF check (and scan) as `build` for every executable built.
 /// The check runs after Cargo installed them; a failure exits with 2.
-pub fn install(
+pub(crate) fn install(
     config: &Toolchain,
     cargo_args: &[OsString],
     scan: Option<&ScanOptions>,
@@ -670,7 +673,7 @@ pub fn install(
 
 /// Output format of `cargo libc env`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum EnvFormat {
+pub(crate) enum EnvFormat {
     /// POSIX shell `export` lines.
     Shell,
     /// Cargo configuration (TOML) for `--config FILE` or `.cargo/config.toml`.
@@ -683,7 +686,7 @@ fn shell_quote(text: &str) -> String {
 
 /// `cargo libc env`: the configuration `build`/`test` apply, for plain Cargo
 /// with `--target x86_64-unknown-linux-gnu`.
-pub fn plain_cargo(
+pub(crate) fn plain_cargo(
     config: &Toolchain,
     simulation: &Simulation,
     format: EnvFormat,
@@ -772,7 +775,7 @@ pub fn plain_cargo(
 
 /// `cargo libc test` / `cargo libc run`: Cargo builds with the managed target
 /// flags and runs every target binary through `libc-runner` (tier 2).
-pub fn test_or_run(
+pub(crate) fn test_or_run(
     config: &Toolchain,
     subcommand: &str,
     cargo_args: &[OsString],
@@ -1005,6 +1008,19 @@ fn provider_link_args(args: impl Iterator<Item = OsString>) -> (bool, Vec<OsStri
     (shared, kept)
 }
 
+/// The `libc-linker` entry point: links a target unit with Clang and the selected
+/// sysroot or provider. `args` are rustc's linker arguments. With a provider it adds
+/// the release's startup objects, stubs and loader; for shared libraries
+/// (`-shared`, such as Python extensions) it uses the shared startup objects and no
+/// loader, and it drops rustc's `-pie`. Returns the linker's exit code.
+///
+/// The selection comes from the `CARGO_LIBC_*` environment variables that
+/// `cargo libc` or `cargo libc env` sets in the target rustflags.
+///
+/// # Errors
+///
+/// Returns a message when the selection is missing or invalid, or when Clang cannot
+/// be started.
 pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
     let selection = Selection::from_environment("this helper")?;
     let mut cmd = Command::new(&selection.cc);
@@ -1026,7 +1042,10 @@ pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
 
 /// The target C compiler command for `libc-cc`: Clang with the selected
 /// sysroot or provider. Links get the provider's startup objects and stubs.
-pub fn target_compiler(action: crate::cc::Action, args: Vec<OsString>) -> Result<Command, String> {
+pub(crate) fn target_compiler(
+    action: crate::cc::Action,
+    args: Vec<OsString>,
+) -> Result<Command, String> {
     use crate::cc::Action;
     let selection = Selection::from_environment("this compiler wrapper")?;
     let mut cmd = Command::new(&selection.cc);
@@ -1062,7 +1081,7 @@ fn validate_x86_object(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-pub fn header_version(text: &str) -> Result<Version, String> {
+pub(crate) fn header_version(text: &str) -> Result<Version, String> {
     fn number(text: &str, name: &str) -> Result<u32, String> {
         for line in text.lines() {
             let Some(rest) = line.trim_start().strip_prefix('#') else {

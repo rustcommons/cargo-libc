@@ -36,16 +36,16 @@ const IMAGE_ENV: &str = "CARGO_LIBC_RUN_IMAGE";
 /// What `test`/`run` simulate. `distro` excludes `kernel`; `image` needs a
 /// kernel floor.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Simulation {
-    pub distro: Option<String>,
-    pub kernel: Option<String>,
-    pub runner: Option<Runner>,
-    pub image: Option<String>,
+pub(crate) struct Simulation {
+    pub(crate) distro: Option<String>,
+    pub(crate) kernel: Option<String>,
+    pub(crate) runner: Option<Runner>,
+    pub(crate) image: Option<String>,
 }
 
 /// How one binary will run.
 #[derive(Debug, PartialEq, Eq)]
-pub enum Plan {
+pub(crate) enum Plan {
     /// No kernel floor: run directly on the host (the glibc check still applies).
     Direct,
     Local(String),
@@ -54,7 +54,7 @@ pub enum Plan {
 
 impl Simulation {
     /// The kernel target (with a preset's backports), if a floor was given.
-    pub fn target(&self) -> Result<Option<Target>, String> {
+    pub(crate) fn target(&self) -> Result<Option<Target>, String> {
         match (&self.distro, &self.kernel) {
             (Some(_), Some(_)) => {
                 Err("--distro sets the kernel floor; do not combine it with --kernel".into())
@@ -73,7 +73,7 @@ impl Simulation {
     /// known image (`--image`, or the preset's) means the container, otherwise
     /// the local filter. A preset's image is only a default, so `--runner
     /// local` ignores it.
-    pub fn plan(&self) -> Result<(Plan, Option<Target>), String> {
+    pub(crate) fn plan(&self) -> Result<(Plan, Option<Target>), String> {
         let target = self.target()?;
         let Some(t) = &target else {
             if self.runner.is_some() || self.image.is_some() {
@@ -101,7 +101,7 @@ impl Simulation {
 
     /// Passes the selection to the helper.
     /// The `libc-runner` variables; `None` means unset.
-    pub fn variables(&self, ceiling: Version) -> [(&'static str, Option<String>); 5] {
+    pub(crate) fn variables(&self, ceiling: Version) -> [(&'static str, Option<String>); 5] {
         let runner = self.runner.map(|r| match r {
             Runner::Local => "local".to_string(),
             Runner::Container => "container".to_string(),
@@ -115,7 +115,7 @@ impl Simulation {
         ]
     }
 
-    pub fn set_environment(&self, cmd: &mut Command, ceiling: Version) {
+    pub(crate) fn set_environment(&self, cmd: &mut Command, ceiling: Version) {
         for (key, value) in self.variables(ceiling) {
             match value {
                 Some(v) => cmd.env(key, v),
@@ -152,7 +152,7 @@ impl Simulation {
 }
 
 /// Describes the plan for `cargo libc test/run` output.
-pub fn describe(plan: &Plan) -> String {
+pub(crate) fn describe(plan: &Plan) -> String {
     match plan {
         Plan::Direct => "no kernel simulation (host kernel); glibc check only".into(),
         Plan::Local(label) => {
@@ -164,7 +164,7 @@ pub fn describe(plan: &Plan) -> String {
 
 /// Whether the host's glibc can load a program that runs on the host userland.
 #[derive(Debug, PartialEq, Eq)]
-pub enum HostGlibc {
+pub(crate) enum HostGlibc {
     Satisfied,
     /// `library GLIBC_x.y` requirements the host's libraries do not define.
     Missing(Vec<String>),
@@ -174,7 +174,7 @@ pub enum HostGlibc {
 
 /// Compare every non-weak GLIBC_* requirement with the versions `defined`
 /// reports for that library (the loader rejects any missing one).
-pub fn host_glibc(
+pub(crate) fn host_glibc(
     info: &ElfInfo,
     mut defined: impl FnMut(&str) -> Result<Vec<String>, String>,
 ) -> HostGlibc {
@@ -309,7 +309,17 @@ fn check_host(program: &str, info: &ElfInfo) -> Option<i32> {
     }
 }
 
-/// The `libc-runner` entry point: `libc-runner PROGRAM [ARGS...]`.
+/// The `libc-runner` entry point: `libc-runner PROGRAM [ARGS...]`, Cargo's target
+/// runner. Refuses a program that needs a newer glibc than the target, or one the
+/// host's libraries cannot load when it runs on the host, then runs it under the
+/// selected kernel simulation, if any. Returns the program's exit code, or 2 when
+/// it was refused.
+///
+/// # Errors
+///
+/// Returns a message when the program is not given, its path or arguments are not
+/// UTF-8, the selection in the environment is invalid, the program cannot be read
+/// as ELF, or the runner cannot start it.
 pub fn run_program(mut args: impl Iterator<Item = OsString>) -> Result<i32, String> {
     let program = args
         .next()
@@ -369,7 +379,7 @@ pub fn run_program(mut args: impl Iterator<Item = OsString>) -> Result<i32, Stri
 
 /// The OCI runtime named in the engine options (`--runtime X` or
 /// `--runtime=X`), if any.
-pub fn runtime_from_engine_args(args: &[String]) -> Option<String> {
+pub(crate) fn runtime_from_engine_args(args: &[String]) -> Option<String> {
     let mut it = args.iter();
     while let Some(arg) = it.next() {
         if arg == "--runtime" {
@@ -449,7 +459,7 @@ fn check_container(target: &Target, image: Option<&str>) -> Result<String, Strin
 
 /// `cargo libc doctor` runner checks: reports both runners and returns whether
 /// the one `test`/`run` would choose is usable.
-pub fn doctor(simulation: &Simulation) -> Result<bool, String> {
+pub(crate) fn doctor(simulation: &Simulation) -> Result<bool, String> {
     let (plan, target) = simulation.plan()?;
     println!("Kernel simulation for test/run: {}", describe(&plan));
     let Some(target) = target else {

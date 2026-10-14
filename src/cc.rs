@@ -15,13 +15,16 @@ use std::{
 };
 
 /// Set in the build script environment of target units only.
-pub const TARGET_MARKER: &str = "CARGO_CFG_CARGO_LIBC_PROFILE";
-pub const HOST_CC_ENV: &str = "CARGO_LIBC_HOST_CC";
-pub const HOST_CXX_ENV: &str = "CARGO_LIBC_HOST_CXX";
+pub(crate) const TARGET_MARKER: &str = "CARGO_CFG_CARGO_LIBC_PROFILE";
+pub(crate) const HOST_CC_ENV: &str = "CARGO_LIBC_HOST_CC";
+pub(crate) const HOST_CXX_ENV: &str = "CARGO_LIBC_HOST_CXX";
 
+/// The language a wrapper compiles: which executable is running.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Language {
+    /// C, as `libc-cc`.
     C,
+    /// C++, as `libc-cxx`: host units only; target units are refused.
     Cxx,
 }
 
@@ -41,7 +44,7 @@ fn compiler_variables(base: &str) -> [String; 4] {
 /// The host's own choice (`HOST_CC`, `CC`, or the `cc` crate's default) is kept
 /// for host units. `shell_names` uses `CC_x86_64_unknown_linux_gnu`, which a
 /// shell can export, instead of the spelling the `cc` crate reads first.
-pub fn variables(
+pub(crate) fn variables(
     cc: &Path,
     cxx: &Path,
     shell_names: bool,
@@ -68,14 +71,14 @@ pub fn variables(
     Ok(variables)
 }
 
-pub fn set_environment(cmd: &mut Command, cc: &Path, cxx: &Path) -> Result<(), String> {
+pub(crate) fn set_environment(cmd: &mut Command, cc: &Path, cxx: &Path) -> Result<(), String> {
     cmd.envs(variables(cc, cxx, false)?);
     Ok(())
 }
 
 /// What a driver invocation does with these arguments.
 #[derive(Debug, PartialEq, Eq)]
-pub enum Action {
+pub(crate) enum Action {
     /// Preprocess or query (`-E`, `--version`, `-print-*`, no inputs).
     Query,
     /// Compile only (`-c`, `-S`, `-fsyntax-only`): no target link inputs are added.
@@ -117,7 +120,7 @@ const SEPARATE_VALUE: &[&str] = &[
     "-arch",
 ];
 
-pub fn classify(args: &[OsString]) -> Result<Action, String> {
+pub(crate) fn classify(args: &[OsString]) -> Result<Action, String> {
     let mut inputs = 0;
     let mut shared = false;
     let mut relocatable = false;
@@ -200,7 +203,7 @@ fn is_cxx(args: &[OsString]) -> bool {
 }
 
 /// Builds the compiler command for one wrapper invocation.
-pub fn command(language: Language, args: Vec<OsString>) -> Result<Command, String> {
+pub(crate) fn command(language: Language, args: Vec<OsString>) -> Result<Command, String> {
     if env::var_os(TARGET_MARKER).is_none() {
         let key = match language {
             Language::C => HOST_CC_ENV,
@@ -224,6 +227,11 @@ pub fn command(language: Language, args: Vec<OsString>) -> Result<Command, Strin
     toolchain::target_compiler(action, args)
 }
 
+/// The `libc-cc` and `libc-cxx` entry point. Compiles with the arguments the
+/// process was started with: target units with Clang and the selected sysroot or
+/// provider, host units with the host compiler unchanged. Returns the compiler's
+/// exit code, or 1 after printing why the compile could not run (for example C++
+/// for the target).
 pub fn run(language: Language) -> i32 {
     let name = match language {
         Language::C => "libc-cc",
@@ -243,7 +251,7 @@ pub fn run(language: Language) -> i32 {
 }
 
 /// The wrapper paths next to the running executable.
-pub fn wrappers() -> Result<(PathBuf, PathBuf), String> {
+pub(crate) fn wrappers() -> Result<(PathBuf, PathBuf), String> {
     Ok((
         toolchain::sibling("libc-cc")?,
         toolchain::sibling("libc-cxx")?,

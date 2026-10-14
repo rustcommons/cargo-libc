@@ -479,7 +479,7 @@ startup files are being used.
   shared libraries it loads, `dlopen`, C++ runtime versions, or CPU instructions.
 - **Dependencies.** C dependencies are supported, but C++, pkg-config and host
   system libraries are not.
-- **Release status.** This is an early release (0.1). It does not replace testing on a
+- **Release status.** This is an early release (0.2). It does not replace testing on a
   real target (tier 3).
 
 ## Reference

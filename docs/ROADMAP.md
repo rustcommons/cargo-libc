@@ -9,8 +9,9 @@ approval.
 
 In this order; each item says what it waits on.
 
-1. [ ] **Rust API documentation of cargo-libc's library.** See the
-   [plan](#rust-api-documentation). Its first step needs a maintainer decision.
+1. [ ] **Release 0.2.0** (approved 2026-10-13): the library's public items are now
+   only the five executables' entry points, all documented. Publish it, then confirm
+   the docs.rs build succeeded and the pages read correctly.
 2. [ ] **Plain-Cargo refusal test.** CI shows that `cargo libc build` refuses a symbol
    newer than the target (`examples/too-new` calls `memfd_create`, glibc 2.27, and
    must fail to link for every release before 2.27). Add the same case for plain
@@ -33,36 +34,6 @@ In this order; each item says what it waits on.
 
    Revisit the name before adopting general toolchain/SDK management or platform
    packaging as a primary role.
-
-## Rust API documentation
-
-cargo-libc's library is published and has a docs.rs page with a crate overview, but
-92 public items are undocumented (`-W missing_docs`, 2026-10-13): 28 in `toolchain`,
-15 in `report`, 13 in `provider`, 10 in `cc`, 9 in `elf`, 8 in `simulate`, 4 in
-`version`, 1 in `cli`, and 4 of the 9 modules themselves. 37 of the 92 are struct
-fields. The library exists for cargo-libc's own executables, which use five entry
-points: `cli::run`, `cc::run`, `cc::Language`, `toolchain::run_linker` and
-`simulate::run_program`. Everything else is public only so the executables could reach
-it, yet under semver it is API all the same.
-
-1. [ ] **Decide the library's public surface** (maintainer). Recommended: keep the
-   five entry points public and make the rest `pub(crate)`. That leaves a handful of
-   items to document and frees the internals to change. Removing public items is a
-   breaking change, so it ships as 0.2.0. The alternative is to document all 92 as
-   they are and release 0.1.2, committing to them as API.
-2. [ ] Apply that decision; unit tests inside the modules keep working.
-3. [ ] Document every remaining public item: for each entry point, which executable
-   calls it, what it reads (arguments and environment), what it runs, and its exit
-   status or errors; a doc comment on each public module. Then add
-   `#![warn(missing_docs)]` (CI denies warnings).
-4. [ ] Extend the crate overview: the five executables and what each is for, that the
-   library is not meant to be used directly (if the recommendation is taken), and
-   links to the user guide and README.
-5. [ ] Add `cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"` to CI, so broken
-   intra-doc links and malformed docs fail the build; keep doc tests running.
-6. [ ] Add a docs.rs badge to the README.
-7. [ ] Release (with the maintainer's go-ahead), then confirm the docs.rs build
-   succeeded and the pages read correctly.
 
 ## Providers and artifact checks
 
