@@ -171,3 +171,12 @@ CMake's `check_function_exists(memfd_create)` failed before 2.27 and succeeded f
 with plain Cargo needed `__isoc23_strtol@GLIBC_2.38`. C++ for the target was refused.
 The Linux smoke test ran the example with `--sysroot /` too. C++, pkg-config and
 system-library dependencies remain unqualified.
+
+## Plain Cargo refuses a too-new symbol (2026-10-14)
+
+cargo-libc `cc94dc3a8432f9e2a261ef70dfd020c67485195a`'s [CI run](https://github.com/rustcommons/cargo-libc/actions/runs/38555909208)
+built `examples/too-new`, which calls `memfd_create` (`GLIBC_2.27`), with plain
+`cargo build` configured by `cargo libc env`, in both the `sh` and `cargo` formats, for
+every release 2.17–2.44 (Rust 1.99, Clang 21). For each release before 2.27 the link
+failed with an undefined reference to `memfd_create`, as it does with `cargo libc
+build`; from 2.27 on it linked and needed no glibc version above the release.
