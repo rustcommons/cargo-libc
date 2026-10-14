@@ -109,9 +109,11 @@ In this order; each item says who it waits on.
    - release the result as 0.3.1.
 
    Needs no decisions.
-3. [ ] **Tidy this roadmap.** Several items under "Ordinary Cargo remains a supported
-   design objective" look covered by `cargo libc env` and its CI (step 10). Check each
-   against the evidence and mark it, or say what remains.
+3. [x] **Tidy this roadmap** (2026-10-13). The "Ordinary Cargo" items were checked
+   against `scripts/smoke-commands.sh` and the user guide and marked. Two gaps remain,
+   recorded there and under [Rust API documentation](#rust-api-documentation): plain
+   Cargo's refusal of a too-new symbol is not tested, and cargo-libc's own library API
+   is undocumented. Statements that predated the releases were updated.
 4. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
    and SLES 12 SP5 (glibc 2.22, Linux 4.12), for executables and Python extensions.
    This is the main missing evidence behind 0.1.0, and waits on the maintainer
@@ -167,7 +169,9 @@ on 2026-10-11, and libc-abi-tools 0.2.0 ships the matching descriptor parser.
 Provider download/authentication/release SDKs, plain-Cargo qualification, native
 dependency adapters, dependency closure, workspace-wide inspection, additional
 platforms and old-kernel/distribution qualification remain open. No user release
-has been published.
+has been published. (State on 2026-10-10. Automatic providers, plain Cargo and C
+dependencies have since been delivered, and 0.1.0 and 0.1.1 released; see
+[Next work](#next-work-after-010-2026-10-13).)
 
 Latest qualified code (2026-10-11): producer
 c8ecf2ec36f808766c31fba31bbfe43463128aec and consumer
@@ -204,18 +208,18 @@ claim general cargo-zigbuild parity.
 
 ### Ordinary Cargo remains a supported design objective
 
-- [ ] Document and test an ordinary `cargo build` recipe using the same qualified provider inputs and a reusable linker configuration/helper.
-- [ ] Check host build scripts/proc macros and version switches in that recipe, including builds where host and target triples are identical.
-- [ ] Compare wrapper and plain-Cargo results for accepted/rejected interfaces, imported versions, and matching real-runtime execution.
-- [ ] Document the checks users must invoke separately when bypassing the coordinator.
-- [ ] Keep provider selection/link configuration and ELF inspection reusable independently of the Cargo subcommand; direct `cargo-libc inspect` / `doctor` invocation already exists.
+- [x] Document and test an ordinary `cargo build` recipe using the same qualified provider inputs and a reusable linker configuration/helper (2026-10-12): `cargo libc env` in `sh` and `cargo` formats, with `libc-linker`, `libc-runner` and `libc-cc` as the helpers ([Plain Cargo and CI](USER-GUIDE.md#plain-cargo-and-ci)). CI builds with both formats for every release 2.17–2.44.
+- [x] Check host build scripts/proc macros and version switches in that recipe, including builds where host and target triples are identical (2026-10-12): on the x86_64 runner (the same triple for host and target), the plain-Cargo C dependency example reports the release's headers for target C and the host's for its proc macro, and each release in turn is configured from a fresh `cargo libc env`.
+- [ ] Compare wrapper and plain-Cargo results for accepted/rejected interfaces, imported versions, and matching real-runtime execution. Done for accepted interfaces, imported versions (`cargo libc inspect --max-glibc` on every plain build) and real-runtime execution (when the runner's glibc allows it). Not done: plain Cargo is not tested to refuse a too-new symbol; only the wrapper is (`examples/too-new`, every release before 2.27). Both link through `libc-linker`, so a plain-Cargo case in `smoke-commands.sh` would close this.
+- [x] Document the checks users must invoke separately when bypassing the coordinator (2026-10-12): "Plain Cargo checks nothing. Run `cargo libc inspect`", with `--max-glibc` and the tier 1 scan options in the guide's examples.
+- [x] Keep provider selection/link configuration and ELF inspection reusable independently of the Cargo subcommand (2026-10-13): providers in `libc-abi-tools` (the `provider` module and `libc-abi provider`) and the scan in `linux-abi-scan`, both on crates.io; `cargo libc inspect`, `doctor` and `env` work without a Cargo build.
 - [x] Tier 1 kernel scan in `inspect` (`--distro`, `--kernel`, `--scan`, `--strict`, `--verbose`) through `linux-abi-scan` (2026-10-10).
 - [x] Optionally run the same scan on the built artifact after `cargo libc build` (`--distro`/`--kernel`/`--strict`, 2026-10-11).
 - [x] Tier 2: `cargo libc test`/`run` with `--runner local|container` through the `libc-runner` target runner, including doctests (2026-10-11).
 - [x] `cargo libc doctor --distro|--kernel [--runner] [--image]` checks both runners by running under them, with or without toolchain inputs (2026-10-11).
 - [x] Host glibc check for `test`/`run` on the host userland: refuse a binary whose `GLIBC_*` requirements the host's libraries (resolved in loader order) do not define, warn when that cannot be determined (2026-10-11; refusal qualified in producer [run](https://github.com/rustcommons/linux-abi-tools/actions/runs/38166901453)).
 - [x] Use the crates.io releases of linux-abi-scan and linux-targets (0.1.0, 2026-10-11).
-- [ ] Publish portable provider and tool interfaces without requiring consumers to adopt the wrapper command.
+- [x] Publish portable provider and tool interfaces without requiring consumers to adopt the wrapper command (2026-10-13): `libc-abi-tools` 0.3 (provider descriptors, preparation and the `libc-abi provider` command), `glibc-provider-sources` 0.1.0, `linux-abi-scan`, `kernel-abi-tools` and `linux-targets` on crates.io, with API documentation since 0.3.1. Authenticated relocatable SDKs remain open (below).
 
 Native pkg-config and C++ configuration, dependency
 closure checks, and authenticated SDK publication remain unfinished. Existing
@@ -240,13 +244,12 @@ release against the actual approved scope. No rename is planned by this review.
 - [ ] Review the product mission and each proposed feature: approve, defer, reject, or request evidence.
 - [ ] Record ownership, prerequisites, maintenance cost, and acceptance evidence for approved items.
 - [ ] Review core delivery/plain Cargo first, then native dependencies, Cargo conveniences/link modes, and platform expansion.
-- [ ] Recheck the product name against approved scope before public release.
+- [x] Recheck the product name against approved scope before public release: keep `cargo-libc` (decided 2026-10-12).
 
-Provider delivery is the next major work: `cargo libc build --target x86_64-unknown-linux-gnu.2.28`
-without provider flags, preparing a provider by compiling shipped glibc source (default), from
-CI-built binaries, or with a local container build, plus `cargo libc provider` management
-commands. Design: [PROVIDER-DELIVERY.md](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDER-DELIVERY.md);
-this precedes a first cargo-libc release.
+Provider delivery (`cargo libc build --target x86_64-unknown-linux-gnu.2.28` without
+provider flags, plus `cargo libc provider`) shipped in 0.1.0 with the `source` and
+`container` modes; `prebuilt` (CI-built binaries) waits on the legal review. Design:
+[PROVIDER-DELIVERY.md](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDER-DELIVERY.md).
 Distribution-specific providers are planned for a later release (see the producer's
 [roadmap](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/ROADMAP.md#future-release-distribution-specific-providers)
 and [measured differences](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/DISTRIBUTION-DIFFERENCES.md)).
@@ -287,22 +290,21 @@ of whether we adopt every upstream convenience.
 
 Added 2026-10-11. cargo-libc is used as a Cargo subcommand, but its library is
 published too and gets a docs.rs page. That page must explain installation and use
-and link to the user documentation, and the library API must be documented. Today
-`cargo doc` builds without warnings; the library has no crate-level documentation and
-80 undocumented public items (measured with `-W missing_docs` on 2026-10-11).
+and link to the user documentation, and the library API must be documented. The
+workspace crates' part was released in linux-abi-tools 0.3.1. cargo-libc's own
+library is not done: it has 92 undocumented public items (measured with
+`-W missing_docs` on 2026-10-13, up from 80 on 2026-10-11).
 
-- [ ] Add a crate-level overview: what cargo-libc does, installation, the main
-  commands, and links to the user documentation.
+- [x] Add a crate-level overview: what cargo-libc does, the main command, and a link
+  to the user guide (2026-10-12).
 - [ ] Document every public item, or make items that are not meant as API private
   (`pub(crate)`). Then add `#![warn(missing_docs)]` (CI denies warnings).
-- [ ] Add `cargo doc --workspace --no-deps` with `RUSTDOCFLAGS="-D warnings"` to CI, so
-  broken intra-doc links and malformed docs fail the build.
-- [ ] Add `documentation` (the docs.rs URL) and `[package.metadata.docs.rs]` (target
-  `x86_64-unknown-linux-gnu`, all features documented) to each published Cargo.toml,
-  and a docs.rs badge to each README. (cargo-libc has both entries since 2026-10-12;
-  the badge waits for the first release.)
-- [ ] After each release, confirm the docs.rs build succeeded and the pages read
-  correctly.
+- [ ] Add `cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"` to CI, so broken
+  intra-doc links and malformed docs fail the build.
+- [ ] Add a docs.rs badge to the README. `documentation` and
+  `[package.metadata.docs.rs]` are in Cargo.toml since 2026-10-12.
+- [x] After each release, confirm the docs.rs build succeeded: 0.1.1 built
+  (checked 2026-10-13).
 
 ## Repository presentation and release work
 
