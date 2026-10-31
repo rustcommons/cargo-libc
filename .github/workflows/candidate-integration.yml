@@ -1,0 +1,138 @@
+name: Candidate integration
+run-name: cargo-libc against linux-abi-tools ${{ inputs.candidate_ref }}
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_ref:
+        description: Exact 40-character commit SHA in rustcommons/linux-abi-tools
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: 2
+      RUST_TEST_THREADS: 2
+      CANDIDATE_REF: ${{ inputs.candidate_ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require an exact commit
+        run: |
+          [[ "$CANDIDATE_REF" =~ ^[0-9a-f]{40}$ ]] || exit 1
+      - uses: actions/checkout@v4
+        with:
+          repository: rustcommons/linux-abi-tools
+          ref: ${{ inputs.candidate_ref }}
+          path: candidate
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          components: rustfmt, clippy
+      - name: Prepare disposable consumer and source overrides
+        run: |
+          set -euo pipefail
+          test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_REF"
+          git -C candidate cat-file -e "$CANDIDATE_REF^{commit}"
+          mkdir -p "$RUNNER_TEMP/consumer" "$RUNNER_TEMP/evidence"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/consumer"
+          printf 'CONSUMER=%s/consumer\nEVIDENCE=%s/evidence\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          {
+            printf 'consumer=%s\n' "$(git rev-parse HEAD)"
+            printf 'producer=%s\n' "$(git -C candidate rev-parse HEAD)"
+            uname -m
+            rustc --version
+            cargo --version
+          } | tee "$RUNNER_TEMP/evidence/commits.txt"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          producer = Path('candidate').resolve()
+          paths = {'libc-abi-tools': producer}
+          paths.update({name: producer / 'crates' / name for name in
+                        ['kernel-abi-tools', 'linux-abi-scan', 'linux-targets']})
+          manifest = Path(os.environ['RUNNER_TEMP']) / 'consumer/Cargo.toml'
+          with manifest.open('a') as f:
+              f.write('\n[patch.crates-io]\n')
+              for name, path in paths.items():
+                  f.write(f'{name} = {{ path = {json.dumps(str(path))} }}\n')
+          PY
+      - name: Resolve candidate and prove sources
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          cargo update -p libc-abi-tools -p kernel-abi-tools -p linux-abi-scan -p linux-targets
+          cargo fetch --locked
+          cargo metadata --format-version 1 --locked --offline > "$EVIDENCE/metadata.json"
+          cp Cargo.toml Cargo.lock "$EVIDENCE/"
+          python3 - <<'PY' | tee "$EVIDENCE/resolved-sources.txt"
+          import json, os, tomllib
+          from pathlib import Path
+          producer = Path(os.environ['GITHUB_WORKSPACE']) / 'candidate'
+          data = json.loads((Path(os.environ['EVIDENCE']) / 'metadata.json').read_text())
+          for name in ['libc-abi-tools', 'kernel-abi-tools', 'linux-abi-scan', 'linux-targets']:
+              manifest = producer / ('Cargo.toml' if name == 'libc-abi-tools' else f'crates/{name}/Cargo.toml')
+              expected = tomllib.loads(manifest.read_text())['package']['version']
+              matches = [p for p in data['packages'] if p['name'] == name]
+              assert len(matches) == 1, (name, matches)
+              p = matches[0]
+              assert p['source'] is None and Path(p['manifest_path']).resolve() == manifest.resolve(), p
+              assert p['version'] == expected, p
+              print(f"{name} {p['version']} {p['manifest_path']}")
+          PY
+      - name: Portable consumer checks
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          {
+            cargo fmt --all -- --check
+            cargo test --locked --offline
+            cargo clippy --all-targets --locked --offline -- -D warnings
+          } 2>&1 | tee "$EVIDENCE/portable.log"
+      - name: Native tools and fixture dependencies
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = x86_64
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang-18 gcc g++ binutils cmake
+          { /usr/bin/clang-18 --version; gcc --version; ld.bfd --version; cmake --version; getconf GNU_LIBC_VERSION; } > "$EVIDENCE/native-tools.txt"
+          cd "$CONSUMER"
+          cargo fetch --manifest-path examples/hello/Cargo.toml --locked
+          cargo fetch --manifest-path examples/too-new/Cargo.toml --locked
+          cargo fetch --manifest-path examples/c-deps/Cargo.toml --locked
+      - name: Automatic providers, reuse, inspect, run and symbol refusal
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          bash scripts/smoke-providers.sh /usr/bin/clang-18 2.17 2.28 2>&1 | tee "$EVIDENCE/providers.log"
+      - name: C dependencies and target C++ refusal
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          bash scripts/smoke-c-deps.sh /usr/bin/clang-18 2.17 2.28 2>&1 | tee "$EVIDENCE/c-deps.log"
+      - name: Cargo commands and both plain-Cargo configuration formats
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          bash scripts/smoke-commands.sh /usr/bin/clang-18 2.17 2.28 2>&1 | tee "$EVIDENCE/commands.log"
+      - name: Existing sysroot and host-target separation
+        env:
+          CARGO_LIBC_SMOKE_CC: /usr/bin/clang-18
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          bash scripts/smoke-linux.sh 2>&1 | tee "$EVIDENCE/sysroot.log"
+      - name: Verify production files are unchanged
+        if: always()
+        run: git diff --exit-code HEAD -- Cargo.toml Cargo.lock .github/workflows/ci.yml
+      - name: Upload source integration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-integration-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence
+          if-no-files-found: error
