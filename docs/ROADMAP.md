@@ -5,20 +5,14 @@ what was tested is in [VALIDATION.md](../VALIDATION.md). Candidate features are
 inventoried in the [feature review](FEATURE-REVIEW.md); listing one there is not
 approval.
 
+[cargo-libc 0.2.1](RELEASE-0.2.1.md) is published and its registry installation,
+release tag and docs.rs documentation are verified.
+
 ## Next
 
 In this order; each item says what it waits on.
 
-1. [ ] **Complete 0.2.1 preparation.** Cargo-libc-owned stdout now discards only
-   `BrokenPipe`, including flush failures, while preserving command errors and
-   failed checks. Shared provider output uses the published
-   `libc-abi-tools` 0.3.2 fix; 0.3.0 is not sufficient. [Revised source integration](COMBINED-STDOUT-INTEGRATION-0.3.2.md) passed;
-   registry dependencies are adopted. [Registry-only package and locked-install validation](REGISTRY-VALIDATION-0.2.1.md)
-   passed. Complete the release handoff and post-publication verification.
-   Include the `test`/`run` second-`--` argument fix already on `main` but absent
-   from 0.2.0. Follow the [0.2.1 release checklist](RELEASE-0.2.1.md); publication
-   requires explicit maintainer authorization.
-2. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
+1. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
    and SLES 12 SP5 (glibc 2.22, Linux 4.12), for executables and Python extensions,
    including native C dependencies; and a real Rocky Linux 9 build host. This is the
    main missing evidence behind the releases. There are no hosts; a possible route is
@@ -26,7 +20,7 @@ In this order; each item says what it waits on.
    cloud image from its archive, and openSUSE Leap 42.x (also glibc 2.22) as a free
    stand-in for SLES 12 SP5, which needs a SUSE subscription. Check first that the
    runners allow it.
-3. [ ] **Maintainer decisions:**
+2. [ ] **Maintainer decisions:**
    - a release and versioning policy;
    - the [feature review](FEATURE-REVIEW.md): approve, defer, reject or ask for
      evidence on each item, starting with core delivery and plain Cargo, then native

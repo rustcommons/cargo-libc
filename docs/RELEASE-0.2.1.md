@@ -1,10 +1,43 @@
-# 0.2.1 release preparation (unreleased)
+# cargo-libc 0.2.1
 
-This is the release scope and checklist, not a publication announcement. The
-manifest is prepared as 0.2.1 with registry-only producer dependencies. Publication
-is gated on the checks below and the exact merged release revision.
+Published on 2026-10-31. [crates.io](https://crates.io/crates/cargo-libc/0.2.1) and
+[docs.rs](https://docs.rs/cargo-libc/0.2.1/cargo_libc/) serve the released version.
+Tag [`v0.2.1`](https://github.com/rustcommons/cargo-libc/tree/v0.2.1) points
+to released commit `767c16aef0e49c37018b3907be480363dfdb9175`, the normal merge of
+[PR #1](https://github.com/rustcommons/cargo-libc/pull/1).
 
-## Intended release notes
+The official crate archive SHA-256 is
+`715e9c7eee7896a0e5055df1d67cdc4df7d4a57670f1d769562bcc19f2916398`.
+It matches the registry API. Its clean `.cargo_vcs_info.json` identifies the
+released commit; packaged Rust source and lock match that commit. The normalized
+manifest has version 0.2.1 and `libc-abi-tools` minimum 0.3.2. All four consumed
+tools crates are locked to registry 0.3.2; both glibc inputs remain 0.1.0.
+
+## Published installation verification
+
+[Run 41245509023](https://github.com/rustcommons/cargo-libc/actions/runs/41245509023)
+passed on Ubuntu 24.04 x86_64 / Rust 1.90.0, using a new Cargo home and isolated
+install root:
+
+```sh
+cargo install cargo-libc --version 0.2.1 --locked --root "$INSTALL_ROOT"
+bash scripts/smoke-installed.sh "$INSTALL_ROOT" /usr/bin/clang-18 0.2.1
+```
+
+The downloaded log confirms registry installation of 0.2.1 and the four 0.3.2
+producer packages. All five executables were present. Installed help/version,
+host ELF inspection and provider stdout regressions passed. The installed linker,
+runner and C wrappers built and ran the glibc 2.17 C/CMake fixture, inspected its
+requirements, verified the provider and refused target C++ as expected.
+
+[Artifact `published-install-41245509023`](https://github.com/rustcommons/cargo-libc/actions/runs/41245509023/artifacts/13059327372)
+contains the saved log; digest
+`sha256:366d24c67718286e7b15932035e94aec041872f442ce187422bc727113453b61`.
+Docs.rs [status](https://docs.rs/crate/cargo-libc/0.2.1/status.json) reported
+`doc_status: true`, its versioned API page returned HTTP 200, and
+[build 5100697](https://docs.rs/crate/cargo-libc/0.2.1/builds/5100697) succeeded.
+
+## Release notes
 
 - Cargo-libc-owned stdout no longer panics when a downstream reader closes early.
   Only `ErrorKind::BrokenPipe` is discarded at the write/flush boundary. The
@@ -57,15 +90,14 @@ passing native run and clean unpacked-package installation.
   native integration checks with no patches or git/path dependency overrides.
 - [x] Install the unpacked proposed package with `cargo install --path ... --locked`
   into an isolated root using a clean Cargo home; exercise the installed command
-  and all five executables. This is not yet a published registry installation.
-- [ ] Merge the reviewed release after these gates pass. Verify the merged source,
-  manifest and lock match the validated revision. Publish that exact revision.
-- [ ] Verify the published 0.2.1 archive checksum and source identity, then create
-  `v0.2.1` at the released commit without moving an existing tag. Verify docs.rs.
-- [ ] In a clean x86_64 environment, run
-  `cargo install cargo-libc --version 0.2.1 --locked` and exercise the installed
-  helpers, provider output and C/CMake build/run/inspect paths. Record results
-  before marking the release complete.
+  and all five executables. Published registry installation is separately verified above.
+- [x] Merged PR #1 normally. The merged source, manifest, lock and scripts match
+  the validated revision. Published exact merge commit `767c16a`.
+- [x] Verified the published archive checksum/source identity and docs.rs. Created
+  and remotely verified `v0.2.1` at the released commit; no tag was moved.
+- [x] Clean x86_64 registry installation and installed-helper/provider/C-CMake
+  checks passed in run 41245509023, as recorded above. Release verification is
+  complete for this scope.
 
 The prior source-path runs are not substitutes for registry-package or installed
 release verification. Real-old-system qualification remains outside these gates.

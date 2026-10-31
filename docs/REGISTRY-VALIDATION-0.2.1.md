@@ -54,14 +54,12 @@ tool versions and the proposed package. Its digest is
 `sha256:f0fd056fd67de4d87769f98286b5041e898b43454bf8dc1eace5b2aa58ff5b48`.
 The saved package's Rust sources were compared with the reviewed tree.
 
-## Release handoff and limits
+## Publication and limits
 
-These gates qualify the proposed registry-dependent package for the authorized
-release handoff. They do not claim that cargo-libc 0.2.1 has been published yet.
-Merge the reviewed tree, verify source equivalence, and publish the exact merged
-revision. Then verify the official archive/checksum/VCS identity, tag `v0.2.1`
-at that release commit, verify docs.rs, and run the prepared clean published
-registry-install workflow. Record those results before marking release complete.
+These prepublication gates passed before normal merge and publication of exact
+release commit `767c16aef0e49c37018b3907be480363dfdb9175`. The
+[release record](RELEASE-0.2.1.md) now verifies the official archive/checksum/VCS
+identity, exact `v0.2.1` tag, docs.rs and clean published registry installation.
 
 The earlier [combined source report](COMBINED-STDOUT-INTEGRATION-0.3.2.md) remains
 historical evidence, including the corrected fixture-only failure. This run adds
