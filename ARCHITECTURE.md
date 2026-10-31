@@ -1,205 +1,151 @@
-# Architecture and the path to generated glibc ABI support
+# Architecture
 
-The original coordinator is now named `cargo-libc`. Its companion
-[libc-abi-tools](https://github.com/rustcommons/linux-abi-tools) has begun the
-metadata collection/parsing phase; the local 2.17 provider now integrates via
---provider. Authenticated SDKs and additional versions
-remain future work. See [ROADMAP.md](docs/ROADMAP.md).
+`cargo-libc` coordinates Cargo builds for a selected upstream glibc release on
+x86_64 Linux. It supports dynamically linked executables and shared libraries
+(`cdylib`), including Python extensions. Other architectures and C libraries,
+static linking and provider-backed PIE executables are not supported.
 
-## The decision
+The original `cargo-glibc` prototype used a complete target sysroot. That path
+remains available, but generated providers are now implemented and selected by
+default. Historical validation is retained in
+[PROTOTYPE-VALIDATION.md](docs/PROTOTYPE-VALIDATION.md); current workflows and
+limits belong in the [user guide](docs/USER-GUIDE.md), and open work in the
+[roadmap](docs/ROADMAP.md).
 
-Use a real target sysroot for version 0.1. The first deliverable removes Zig
-from one practical build path without also implementing an assembler, linker,
-C standard library, SDK distributor, and multi-architecture ABI generator.
+## Coordinator and dependencies
 
-This is a deliberately inspectable starting point. `cargo-zigbuild` itself is
-already a Rust application; the capability to replace is the underlying Zig
-toolchain's glibc targeting, not the language used for its Cargo wrapper.
+`src/cli.rs` parses the target selection. `src/toolchain.rs` probes build inputs,
+sets target-only Rust flags and invokes Cargo with an explicit unsuffixed
+`x86_64-unknown-linux-gnu` target. Host build scripts and procedural macros stay
+native. A version suffix such as `.2.17` is cargo-libc syntax, not a Cargo target.
 
-## Components that are implemented
+The Rust implementation uses std and first-party rustcommons crates from
+crates.io. The companion repository
+[linux-abi-tools](https://github.com/rustcommons/linux-abi-tools) publishes distinct
+crates with these responsibilities:
 
-### Coordinator
+- `libc-abi-tools`: provider preparation, cache management and ABI stub generation;
+- `linux-targets`: glibc/kernel selections and distribution presets;
+- `linux-abi-scan`: tier 1 static scanning;
+- `kernel-abi-tools`: kernel facts and tier 2 syscall simulation.
 
-`cargo-libc` parses a target profile and resolves paths before starting Cargo.
-It rejects an obviously newer glibc header set, checks the startup and runtime
-inputs selected by Clang, then supplies target-only linker flags to rustc.
-It accepts an explicit executable selection and matches it against Cargo's
-reported executable artifacts, including fresh/cache-hit artifacts.
+cargo-libc delegates provider preparation to `libc-abi-tools`; it does not
+implement a second provider builder. It uses the host Clang driver, GNU `ld` and
+GCC inputs rather than implementing a compiler or linker.
 
-The tool prints its selected files and command. It has no automatic network
-access, package install step, or configuration file modification.
+## Provider and sysroot inputs
 
-### Native linker helper
+An automatic provider supplies the selected release's headers, startup and
+nonshared objects, link-only glibc DSOs, and a `libgcc_s` stub. Releases 2.17
+through 2.44 are supported. The provider cache has two available build modes:
 
-`libc-linker` is a second Rust binary. Cargo/rustc invokes it as a compiler
-driver. It forwards arguments without passing them through a shell and invokes
-the chosen Clang driver with the target profile selections.
+- **Source (default):** compile recorded glibc startup sources with the host GCC,
+  verify the objects against the qualified build, and cache the result. The
+  embedded inputs allow preparation offline. This mode does not build a real
+  glibc runtime.
+- **Container:** run the pinned container build using podman or docker. This can
+  download images and requires the container tooling. It supplies a real target
+  runtime as well as link inputs.
 
-Clang knows the startup object order, compiler runtime conventions, and native
-linker invocation details. The actual linker can run on a newer build host;
-the target glibc version comes from its inputs. The tested backend is GNU
-`ld.bfd`.
+A refused mode never silently falls back to another. `prebuilt` mode remains
+unavailable pending legal review. An explicit `--provider` consumes the existing
+[six-field descriptor](docs/PROVIDER-CONTRACT.md); `--sysroot` with
+`--gcc-runtime` instead uses a complete target development filesystem. In sysroot
+mode, the glibc selection is a checked ceiling, not a mechanism for downgrading
+that filesystem's interfaces.
 
-### Artifact and requirement readers
+Provider paths and selection enter Cargo's fingerprints, but this is not a hash
+of every input. Changing files in place requires a clean build or new target
+directory. Descriptors are trusted local inputs, not authenticated, relocatable
+SDK manifests. Full ABI validation and provider provenance belong to the producer;
+the consumer checks descriptor paths, required files and header versions.
 
-The Cargo message reader extracts top-level executable identities from bounded
-JSON without mistaking a similarly named nested field for an artifact.
-The ELF reader parses program headers and dynamic metadata rather than
-scraping `readelf` text or relying on section headers. It reads dependencies,
-interpreter/search paths, and version requirements. The assessment module
-compares numeric glibc requirements and makes no claim about unexamined runtime
-dependencies.
+### Data, source and licensing boundaries
 
-`inspect --distro`/`--kernel` adds the tier 1 scan from rustcommons
-`linux-abi-scan`. cargo-libc resolves the floors with `linux-targets`
-(`Selection::resolve`, the same rules as the linux-abi-tools CLIs), passes the
-bytes it already read to `linux_abi_scan::scan`, and renders the report inside
-its own text and JSON output. The scan reads section headers, dynamic
-symbols, and code; its kernel facts come from `kernel-abi-tools`, so it
-cannot disagree with the seccomp simulation about what a kernel provides.
-
-### Tier 2 runner
-
-`cargo libc test` and `run` start Cargo with the same managed flags as
-`build` (and, for `test`, the same flags for rustdoc), plus
-`--config target.x86_64-unknown-linux-gnu.runner=["<libc-runner>"]`. The
-selection reaches the helper in `CARGO_LIBC_RUN_*` variables. `libc-runner`
-applies the direct glibc check to each binary. For runs on the host userland
-(no runner, or the local runner) it then compares the binary's non-weak
-`GLIBC_*` requirements with the DT_VERDEF definitions of the libraries the
-loader would use, found through RPATH, `LD_LIBRARY_PATH`, RUNPATH and the
-directory of the libc.so.6 the helper itself loaded, and refuses a binary the
-loader would reject (a warning when it cannot tell). It then calls
-`kernel_abi_tools::local::run` (seccomp filter installed in the child before
-`exec`; no root) or `kernel_abi_tools::container::run` (OCI profile), choosing
-between them with `Runner::choose`, the same rules as `kernel-seccomp run`.
-Host build scripts and procedural macros are not target binaries, so Cargo
-never routes them through the runner.
-
-`cargo libc doctor` with a kernel floor calls the same `local::run` and
-`container::run` on trivial programs (`/bin/sh -c 'exit 0'`, `true`), so a
-runner it reports as usable has started a process under the target's filter
-or profile on this machine.
-
-## What a Zig-style ABI provider would add
-
-The next provider would supply a small, generated link environment instead of
-requiring the distribution's complete development sysroot. Its output would
-plug into the coordinator/linker path above. It is **not implemented in 0.1**.
-
-### 1. A versioned ABI database
-
-For the first supported target, collect and pin at least:
-
-- symbol names and the libraries exporting them;
-- symbol versions available in each supported glibc release;
-- default version choices and aliases;
-- function, data-object, and TLS kinds;
-- data sizes and other target-specific ABI details needed by the linker;
-- library identities/SONAMEs and changes in library membership across releases.
-
-Use upstream ABI lists and/or systematically collected metadata from trusted
-reference builds. Preserve data provenance and applicable licenses. A text list
-of function names and a single “introduced in” field is not enough.
-
-Zig's libc-abi-tools repository inspired this approach and is a useful
-format/design reference, but its format is not a stable protocol this project
-consumes, and no data is taken from it. The ABI lists come directly from
-glibc's own repository at its signed release tags, collected with
+The provider's ABI lists come from glibc's signed release tags, collected with
 per-release and per-file provenance by
-[glibc-abilists](https://github.com/rustcommons/glibc-abilists)
-(LGPL-2.1-or-later). `libc-abi-tools` normalizes them into its own database;
-it depends on glibc-abilists by default (`bundled-glibc-data` feature) and can
-read a data directory instead.
+[glibc-abilists](https://github.com/rustcommons/glibc-abilists). The
+`glibc-provider-sources` crate, published from
+[glibc-provider](https://github.com/rustcommons/glibc-provider), supplies recorded
+glibc startup sources and headers, together with the builders' Linux UAPI headers.
+These are embedded through `libc-abi-tools`' default features.
 
-### 2. Rust-generated link-only shared objects
+This repository's source is MIT licensed and contains no copied glibc data or Zig
+source. The built tool includes glibc material under LGPL-2.1-or-later and UAPI
+headers under their individual licenses. See [NOTICE.md](NOTICE.md) and the input
+crates' notices for attribution and provenance. Zig's contributors inspired the
+ABI-provider approach; its data format is not a protocol consumed by cargo-libc.
 
-Given a target and glibc ceiling, emit stub ELF shared objects that advertise
-the allowed ABI. Two implementation routes are available:
+Link-only stubs describe symbol names, versions, kinds and sizes. They are not
+runtime implementations and must never replace the destination's real libraries.
+Startup/nonshared objects contain real code, while GCC startup and compiler
+runtime inputs have separate responsibilities. Renaming version requirements in
+a finished binary cannot substitute for these inputs or supply missing APIs.
 
-| Route | Work and tradeoff |
-| --- | --- |
-| Emit assembly and version scripts, then invoke a host assembler/linker | Smaller first implementation; native tools handle ELF layout and hashing |
-| Write ELF shared objects directly in Rust | More control and fewer subprocesses; must correctly emit sections/segments, dynamic symbols, hashes, versions, and target-specific details |
+## Linker and C compiler helpers
 
-Either route can be driven entirely by Rust. The generated shared objects
-would contain link-time ABI information, not glibc's implementations. They
-must never be installed as application runtime libc libraries. On SLES, the
-real destination libraries must provide the functions referenced by the final
-executable.
+`libc-linker` forwards arguments to Clang without a shell. With a provider it
+supplies startup objects, stubs and nonshared archives explicitly. Executables
+use `crt1.o`, GCC's `crtbegin.o`/`crtend.o`, and the target loader path, with
+`-nostdlib -no-pie`. Shared libraries omit `crt1.o` and the loader and use
+`crtbeginS.o`/`crtendS.o`. The existing sysroot path lets Clang select inputs from
+the configured target filesystem. The [build-control reference](docs/USER-GUIDE.md#how-the-build-is-controlled)
+describes flags and input order.
 
-Changing version strings on a completed executable is not an alternative.
-Versioned names select ABI contracts; a rename cannot supply missing functions
-or make a different data layout compatible.
+`libc-cc` configures target C compilation through `cc` and CMake with matching
+headers and link inputs. It distinguishes host and target units through
+`CARGO_CFG_CARGO_LIBC_PROFILE`, not the triple: Cargo uses the same triple for
+both. Host C retains its native compiler. `libc-cxx` refuses target C++ until a
+target C++ runtime exists. pkg-config and host system-library dependencies are
+not configured for the target. Header selection matters because stubs cannot
+repair C code compiled against incompatible declarations or layouts.
 
-### 3. Real startup/nonshared objects and compiler runtimes
+## Artifact inspection and Cargo workflows
 
-Stub shared objects are only part of the environment. Startup files such as
-`Scrt1.o`, `crti.o`, and `crtn.o`, plus `libc_nonshared.a`, contain code that can
-be copied into the final executable. They need compatible implementations,
-obtained from a target SDK or built from carefully selected upstream sources.
-These glibc components include C and assembly; a Rust coordinator does not
-make that implementation code disappear.
+`build` matches the executable named by `--artifact` against Cargo's reported
+artifacts, including fresh cache hits. `install` checks every executable it built
+after Cargo installs them. `check`, `clippy` and `doc` do not validate final
+artifacts; `rustc` may link but also requires separate inspection.
 
-GCC runtime inputs such as `crtbeginS.o`, `crtendS.o`, and unwinding/compiler
-builtin libraries are another separate responsibility. We can initially retain
-known compatible runtime inputs instead of claiming that a libc stub generator
-also replaces them.
+`env` emits shell exports or a Cargo configuration file for plain Cargo and tools
+such as maturin. Generated paths are machine-specific. These workflows still
+need the unsuffixed Cargo target and separate `inspect` calls, including for
+`cdylib` outputs. See [Plain Cargo and CI](docs/USER-GUIDE.md#plain-cargo-and-ci)
+and [Python extensions](docs/USER-GUIDE.md#python-extensions-maturin).
 
-### 4. Version-aware native headers
+The bounded Cargo JSON reader extracts executable identities. The ELF reader
+uses program headers and dynamic metadata rather than scraping `readelf` or
+requiring section headers. It reports interpreter/search paths, dependencies and
+version requirements. It checks direct requirements only, not the transitive
+shared-library closure, `dlopen` plugins, C++ runtime compatibility or CPU needs.
 
-Pure Rust often consumes precompiled Rust libraries and calls C symbols via
-FFI. A project with native C/C++ compilation also needs matching headers and
-build settings. Headers may redirect functions, encode structure layouts, or
-select APIs according to feature macros. Link-only stubs cannot correct a C
-object already compiled against the wrong layout or declaration.
+With a kernel floor, `build`, `install` and `inspect` add the tier 1 scan from
+`linux-abi-scan`. The scan uses section headers, dynamic symbols and code as well
+as kernel facts shared with `kernel-abi-tools`. Imported syscall wrappers and
+`DT_RELR` are exact findings; constant syscall and `madvise` call sites are
+heuristic. Tier 1 is the least reliable tier and cannot prove runtime behavior.
 
-Add explicit adapters for `cc`, CMake, and `pkg-config` only with separate host
-and target configurations. The compiler used for host build tools must remain
-able to run on the build machine. A global `CC` or library-path override is
-not a sufficient design for this distinction.
+## Execution and qualification limits
 
-Status (2026-10-12): `cc` and CMake are configured for C through the `libc-cc`
-wrapper ([user guide](docs/USER-GUIDE.md#c-dependencies)). It separates host and target units by the
-target-only `cargo_libc_profile` cfg in the build script environment, not by a
-global override. C++ and `pkg-config` remain open.
+`test` and `run` configure `libc-runner` as Cargo's target runner, leaving host
+build scripts and procedural macros native. Each target binary is checked
+against the selected glibc ceiling. For host execution, the helper also compares
+non-weak version requirements with the definitions in the host libraries the
+loader would use, refusing known missing versions and warning when it cannot tell.
 
-### 5. Runtime validation and dependency closure
+Without a kernel floor, execution stays on the host. With `--distro` or
+`--kernel`, tier 2 uses either a local seccomp filter (host userland, no root) or
+a container (the image's userland, the host's kernel). Unsupported syscalls return
+`ENOSYS`; unknown `madvise` advice returns `EINVAL`. This simulates availability,
+not every old-kernel behavior. `doctor` probes runners by starting processes under
+these filters/profiles and can also probe build inputs; see its
+[selection rules](docs/USER-GUIDE.md#provider-doctor).
 
-Before calling a generated provider supported, compare it against known
-reference glibc exports, link a representative test matrix, and run programs
-on the oldest supported target. Include threads/TLS, unwinding, C FFI, common
-native dependencies, startup behavior, library membership/version changes,
-and negative tests for APIs newer than the selected ceiling.
-
-Resolve and inspect deployed shared libraries as a separate operation. A main
-executable can have old direct glibc requirements while a dependency still
-requires a newer libc. Plugins and libraries discovered dynamically require
-application-specific runtime coverage as well.
-
-## Why a Rust-written linker alone is not sufficient
-
-The linker consumes the ABI and runtime inputs; it does not create the complete
-old-glibc environment from a version number. A Rust linker could be evaluated
-as a future backend, but replacing GNU ld does not replace any of the ABI-data,
-headers, startup, or runtime responsibilities above. Keep these components
-separate so one can change without rewriting the others.
-
-## Incremental delivery gates
-
-1. **Current:** sysroot-backed coordinator, native helper, Cargo artifact
-   matching, and direct ELF requirement inspection; host validation only.
-2. **Target qualification:** exercise this path with the actual SLES 12 SP5
-   SDK and run the built application on SLES. Add native dependency adapters
-   needed by the application.
-3. **Generated provider:** pin one architecture/version range, emit correct
-   stub libraries, and supply matching startup/nonshared/runtime files.
-4. **Broader support:** additional targets and glibc releases, dependency
-   closure inspection, packaging, and a runtime test matrix.
-
-The generated provider is a realistic Rust project, but it is toolchain work
-with an ongoing ABI maintenance burden. This package provides working parts
-that remain useful while that provider is developed.
+Neither tier 1 nor tier 2 qualifies an application for a real old system. Tier 3
+requires execution on the actual target, including its dependencies and exercised
+code paths. [VALIDATION.md](VALIDATION.md) records evidence and its limits;
+[the roadmap](docs/ROADMAP.md) separates remaining qualification, dependency
+closure, provider distribution and platform expansion from implemented behavior.
 
 ## Primary references
 

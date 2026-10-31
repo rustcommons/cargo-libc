@@ -31,7 +31,7 @@ USAGE
   cargo libc provider prepare|list|path|verify|export|import|remove ...
 
 PROVIDERS
-Without --provider or --sysroot, build/check/test/run/doctor use a glibc link
+Without --provider or --sysroot, Cargo commands and env use a glibc link
 provider for the selected release (2.17 through 2.44), prepared on first use and
 cached (see `cargo libc provider`). The default mode, source, compiles glibc's
 startup objects from the recorded sources with the host's GCC (or
@@ -53,15 +53,17 @@ BUILD / DOCTOR OPTIONS
   --distro ID        Target preset (e.g. sles-12-sp5): supplies --glibc and the
                      kernel floor (build: tier 1 scan; test/run: simulation)
   --kernel VERSION   Kernel floor without a preset
-  --strict           Scan warnings also fail (build only)
-  --runner R         local or container (test/run/doctor; default: container
+  --strict           Scan warnings also fail (build/install; needs a kernel floor)
+  --runner R         local or container (test/run/env/doctor; default: container
                      when an image is known, else local)
-  --image IMAGE      Container image (test/run/doctor; default: the preset's)
+  --image IMAGE      Container image (test/run/env/doctor; default: the preset's)
   --dry-run          Probe target inputs and print the command without building
 
 test/run use the libc-runner helper as Cargo's target runner. It refuses a
 binary that needs a newer glibc than --glibc, then runs it under the kernel
-simulation (tier 2): the local seccomp filter keeps the host userland and needs
+simulation (tier 2) when --distro or --kernel is given. Without a kernel floor
+it runs on the host after the glibc checks. --runner/--image need a kernel floor.
+The local seccomp filter keeps the host userland and needs
 no root; the container uses the image's userland (podman or docker, chosen by
 CONTAINER_ENGINE). Neither replaces testing on a real target host (tier 3).
 
@@ -80,12 +82,17 @@ env prints the configuration build/test apply, for plain Cargo with
 `--target x86_64-unknown-linux-gnu`: shell exports (--format sh, default) or a
 Cargo configuration file (--format cargo, for --config FILE). It includes the
 libc-runner target runner (with --distro/--kernel/--runner/--image) and the C
-compiler wrappers. Plain Cargo does not check the output; use inspect.
+compiler wrappers. The versioned target suffix is cargo-libc syntax, not a
+stock Cargo target. Generated paths are machine-specific; regenerate on each
+machine. Plain Cargo does not inspect build outputs; use inspect separately.
 
 doctor with --distro or --kernel also checks both runners: it installs the
 filter and runs /bin/sh under it, and starts `true` in the image under the
 profile (which may pull the image). It exits with 2 when the runner test/run
-would choose is not usable. Without --sysroot/--provider it checks runners only.
+would choose is not usable. With a kernel floor but no explicit --provider-mode,
+--provider or --sysroot/--gcc-runtime, it checks runners only. Otherwise doctor
+checks build inputs too, preparing the automatic provider when selected.
+For build inputs, select glibc with --glibc, a versioned --target or --distro.
 
 INSPECT OPTIONS
   --max-glibc VERSION  Fail when a mandatory GLIBC_* requirement is newer
@@ -101,19 +108,28 @@ GENERAL
   -h, --help         Show this help
   -V, --version      Show the tool version
 
-This prototype supports x86-64 Linux dynamically linked Rust executables.
+cargo-libc targets x86-64 Linux dynamically linked Rust executables and shared
+libraries (cdylib). build checks one selected executable; install checks all
+executables it built. For cdylib outputs, use rustc or env with plain Cargo or
+maturin, then inspect the shared library separately. Provider executables are
+non-PIE; static linking, other architectures and other C libraries are not supported.
 With --sysroot it uses that existing target sysroot; --glibc does not create or
-downgrade one. It uses a Rust linker helper, a host Clang driver, and the selected
-native linker. It does not use Zig, Python, or third-party Rust crates.
+downgrade one. It uses a Rust linker helper, a host Clang driver and GNU ld.
+The Rust implementation uses std and first-party rustcommons crates. Provider
+preparation belongs to libc-abi-tools; its default features embed glibc ABI lists,
+startup sources and headers with their upstream licenses (see NOTICE.md).
+Zig and Python are not required by cargo-libc; Python extension workflows need
+Python tooling. See docs/USER-GUIDE.md for workflows and limits.
 
 The ELF check covers direct version requirements in the selected file.
 The tier 1 scan (linux-abi-scan) adds kernel checks: imported syscall
 wrappers and DT_RELR exactly, constant syscall()/madvise() call sites
-heuristically. Neither resolves dependent libraries or replaces running the
+heuristically. Tier 1 is the least reliable tier. Neither the ELF check nor
+the scan resolves dependent libraries or replaces running the
 program under a kernel simulation or on the target OS.
 
 C DEPENDENCIES
-build/check/test/run point the cc crate (and CMake through it) at libc-cc for
+Cargo commands and env point the cc crate (and CMake through it) at libc-cc for
 the target: Clang with the selected provider's or sysroot's glibc headers, and
 for links its startup objects and stubs. Build scripts and procedural macros
 keep the host compiler (HOST_CC, CC, else cc). C++ for the target is refused
