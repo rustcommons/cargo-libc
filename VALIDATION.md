@@ -209,3 +209,11 @@ smokes at producer `53d3c6f` and consumer `b8ff22a`. It supersedes the earlier
 source-candidate evidence for the stdout fixes and documents the corrected
 fixture-only failure. Production dependencies remain unchanged; registry adoption
 and publication are still gated.
+
+## cargo-libc 0.2.1 registry-dependent package (2026-10-31)
+
+The [registry release validation](docs/REGISTRY-VALIDATION-0.2.1.md) records passing
+portable and bounded x86_64 checks at `c7fcd04`, with all four consumed producer
+packages resolved from crates.io at 0.3.2. The proposed package also passed a clean
+unpacked locked installation and installed-helper smoke checks. Published
+cargo-libc installation and release identity verification follow publication.

@@ -19,7 +19,7 @@ is gated on the checks below and the exact merged release revision.
 
 ## Evidence and source integration gates
 
-- [ ] Complete review of [fix PR #1](https://github.com/rustcommons/cargo-libc/pull/1).
+- [x] Release changes prepared in [fix PR #1](https://github.com/rustcommons/cargo-libc/pull/1).
 - [x] Formatting, 71 unit tests, four process regressions, Clippy with warnings
   denied, help/output checks and source-package checks passed on the fixed source.
 - [x] Record exact producer `53d3c6f0fa0fee5739e4021eb335017533396f06` and consumer
@@ -41,6 +41,9 @@ qualification remain outside that run; do not claim them from it.
 
 ## Registry adoption and publication gates
 
+[Registry-only validation evidence](REGISTRY-VALIDATION-0.2.1.md) records the
+passing native run and clean unpacked-package installation.
+
 - [x] Independently verified all five producer 0.3.2 registry archives as non-yanked,
   with API/archive checksums and `.cargo_vcs_info.json` identifying merged producer
   `d404073e2329405e9e6f2dd1005fd8671e0d0f41`. Their packaged Rust sources match
@@ -50,9 +53,9 @@ qualification remain outside that run; do not claim them from it.
   minimums remain 0.3.0 because their consumed library behavior does not require
   the standalone CLI stdout fixes. The real lock selects all four consumed tools
   crates at 0.3.2; both glibc 0.1.0 registry entries/checksums are unchanged.
-- [ ] Pass registry-only formatting, tests, Clippy, MSRV, source-package and bounded
+- [x] Pass registry-only formatting, tests, Clippy, MSRV, source-package and bounded
   native integration checks with no patches or git/path dependency overrides.
-- [ ] Install the unpacked proposed package with `cargo install --path ... --locked`
+- [x] Install the unpacked proposed package with `cargo install --path ... --locked`
   into an isolated root using a clean Cargo home; exercise the installed command
   and all five executables. This is not yet a published registry installation.
 - [ ] Merge the reviewed release after these gates pass. Verify the merged source,

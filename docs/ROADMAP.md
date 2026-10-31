@@ -13,8 +13,8 @@ In this order; each item says what it waits on.
    `BrokenPipe`, including flush failures, while preserving command errors and
    failed checks. Shared provider output uses the published
    `libc-abi-tools` 0.3.2 fix; 0.3.0 is not sufficient. [Revised source integration](COMBINED-STDOUT-INTEGRATION-0.3.2.md) passed;
-   registry dependencies are adopted. Complete the unpatched package and
-   locked-install validation before publication.
+   registry dependencies are adopted. [Registry-only package and locked-install validation](REGISTRY-VALIDATION-0.2.1.md)
+   passed. Complete the release handoff and post-publication verification.
    Include the `test`/`run` second-`--` argument fix already on `main` but absent
    from 0.2.0. Follow the [0.2.1 release checklist](RELEASE-0.2.1.md); publication
    requires explicit maintainer authorization.
