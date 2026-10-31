@@ -1,8 +1,8 @@
 # 0.2.1 release preparation (unreleased)
 
-This is a draft scope and checklist, not a release announcement. The manifest
-version and production lock are unchanged. No package, tag or release is approved
-by this document.
+This is the release scope and checklist, not a publication announcement. The
+manifest is prepared as 0.2.1 with registry-only producer dependencies. Publication
+is gated on the checks below and the exact merged release revision.
 
 ## Intended release notes
 
@@ -13,9 +13,9 @@ by this document.
 - `test` and `run` forward arguments after Cargo's second `--` to the test harness
   or program. This fix is already on `main`; published 0.2.0 rejected those args.
 - Help and documentation describe current provider and `cdylib` workflows.
-- Complete provider-output handling requires the shared `libc-abi-tools` fix.
-  Published 0.3.0 still uses panicking writes inside delegated provider commands;
-  cargo-libc's own output fix does not repair those dependency writes.
+- Shared provider stdout handling comes from the required `libc-abi-tools` 0.3.2
+  fix. The manifest now requires at least 0.3.2; 0.3.0 is not sufficient for the
+  complete provider-output behavior.
 
 ## Evidence and source integration gates
 
@@ -41,25 +41,28 @@ qualification remain outside that run; do not claim them from it.
 
 ## Registry adoption and publication gates
 
-1. Verify all four required 0.3.2 packages are actually published on crates.io:
-   `libc-abi-tools`, `kernel-abi-tools`, `linux-abi-scan`, and `linux-targets`.
-   Confirm their intended source/release identity. Source-path tests are not
-   registry-package or packaging evidence.
-2. Raise the `libc-abi-tools` minimum to **0.3.2** once published: complete provider
-   broken-pipe behavior depends on its fix, so allowing 0.3.0 would be incorrect.
-   Raise other minimums only where consumer behavior requires their fixes, with
-   a recorded reason. Deliberately refresh the production lock from the registry;
-   inspect every version, source and checksum change. Preserve the glibc data
-   inputs unless an independent change is authorized.
-3. Remove all candidate overrides and verify the registry-only dependency graph.
-   Run required checks, the bounded consumer integration, and source-package
-   verification. Validate `cargo install --path ... --locked` from the unpacked
-   proposed package in a clean environment with an isolated install root; this
-   is a local package-install check, not proof of an unpublished registry install.
-4. Review the final 0.2.1 version/lock and release notes as a separate release
-   preparation change. Obtain explicit publication authorization before merging
-   release changes, creating tags/releases or publishing packages.
-5. Only after authorized publication, verify
-   `cargo install cargo-libc --version 0.2.1 --locked` in a clean environment and
-   exercise the installed command/helpers. Confirm it resolves the released
-   producer packages and includes the second-`--` and broken-pipe fixes.
+- [x] Independently verified all five producer 0.3.2 registry archives as non-yanked,
+  with API/archive checksums and `.cargo_vcs_info.json` identifying merged producer
+  `d404073e2329405e9e6f2dd1005fd8671e0d0f41`. Their packaged Rust sources match
+  that commit, which has the same tested source as `53d3c6f`.
+- [x] Set cargo-libc to 0.2.1 and raise the `libc-abi-tools` caret minimum to 0.3.2:
+  complete delegated provider stdout handling requires that fix. Other direct
+  minimums remain 0.3.0 because their consumed library behavior does not require
+  the standalone CLI stdout fixes. The real lock selects all four consumed tools
+  crates at 0.3.2; both glibc 0.1.0 registry entries/checksums are unchanged.
+- [ ] Pass registry-only formatting, tests, Clippy, MSRV, source-package and bounded
+  native integration checks with no patches or git/path dependency overrides.
+- [ ] Install the unpacked proposed package with `cargo install --path ... --locked`
+  into an isolated root using a clean Cargo home; exercise the installed command
+  and all five executables. This is not yet a published registry installation.
+- [ ] Merge the reviewed release after these gates pass. Verify the merged source,
+  manifest and lock match the validated revision. Publish that exact revision.
+- [ ] Verify the published 0.2.1 archive checksum and source identity, then create
+  `v0.2.1` at the released commit without moving an existing tag. Verify docs.rs.
+- [ ] In a clean x86_64 environment, run
+  `cargo install cargo-libc --version 0.2.1 --locked` and exercise the installed
+  helpers, provider output and C/CMake build/run/inspect paths. Record results
+  before marking the release complete.
+
+The prior source-path runs are not substitutes for registry-package or installed
+release verification. Real-old-system qualification remains outside these gates.
