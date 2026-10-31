@@ -27,8 +27,8 @@ by this document.
 - [ ] Dispatch the candidate workflow on the fixed consumer branch. Record both
   full commits, resolution metadata and a fresh artifact. It includes a shared
   provider stdout regression: a closed output must not hide an error discovered
-  after the list heading. Keep temporary source overrides and refreshed locks in
-  the disposable workspace only.
+  after the first export succeeds. Keep temporary source overrides and refreshed
+  locks in the disposable workspace only.
 - [ ] Confirm the producer's own provider/scanner regressions, including side
   effects and later failures with closed stdout. Consumer tests cover owned
   help/version/provider-help output, inspect text/JSON, direct/scan failures,

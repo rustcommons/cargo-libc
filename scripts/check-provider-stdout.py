@@ -9,8 +9,8 @@ import tempfile
 binary = str(Path(sys.argv[1]).resolve())
 
 
-def run(cache, closed=False, sink=None):
-    args = [binary, "provider", "list", "--cache", str(cache)]
+def run(args, closed=False, sink=None):
+    args = [binary, "provider", *map(str, args)]
     if closed:
         reader, writer = os.pipe()
         os.close(reader)
@@ -24,22 +24,38 @@ def run(cache, closed=False, sink=None):
 with tempfile.TemporaryDirectory(prefix="cargo-libc-provider-stdout-") as temp:
     cache = Path(temp) / "cache"
     cache.mkdir()
-    normal = run(cache)
+    listing = ["list", "--cache", cache]
+    normal = run(listing)
     assert normal.returncode == 0 and normal.stdout.startswith(b"glibc\t"), normal
     assert not normal.stderr, normal.stderr
-    closed = run(cache, closed=True)
+    closed = run(listing, closed=True)
     assert closed.returncode == 0 and not closed.stderr, closed
 
-    # list writes its heading before discovering this invalid cache. Closing
-    # stdout must not skip that later error or turn the command into success.
-    bad_cache = Path(temp) / "not-a-directory"
-    bad_cache.write_text("not a cache")
-    normal = run(bad_cache)
-    closed = run(bad_cache, closed=True)
-    assert normal.returncode == closed.returncode == 1, (normal, closed)
-    assert normal.stderr == closed.stderr and b"panicked" not in closed.stderr
+    # Mirror the producer's export regression. Entry a exports and emits its
+    # path; entry b copies its manifest, then fails on its missing descriptor.
+    # No compiler or real provider build is involved.
+    for name in ["a", "b"]:
+        entry = cache / "x86_64-unknown-linux-gnu/glibc-2.22" / f"source-{name}"
+        entry.mkdir(parents=True)
+        (entry / "manifest.json").write_text("{}\n")
+        if name == "a":
+            (entry / "provider.txt").write_text("fixture\n")
+    for closed in [False, True]:
+        destination = Path(temp) / ("closed-export" if closed else "normal-export")
+        result = run(["export", "--glibc", "2.22", "--cache", cache,
+                      "--to", destination], closed=closed)
+        assert result.returncode == 1, result
+        assert result.stderr.startswith(b"cargo-libc:") and b"panicked" not in result.stderr
+        for name in ["a", "b"]:
+            assert (destination / f"glibc-2.22/source-{name}/manifest.json").is_file()
+        if not closed:
+            # Establish the ordinary failure baseline *and* earlier stdout.
+            assert str(destination / "glibc-2.22/source-a").encode() in result.stdout, result
+            print("Baseline: export emitted the first path, then failed on the second entry.")
+        else:
+            print("Closed stdout: both exports reached their side effects; later failure retained exit 1.")
     with open("/dev/full", "wb", buffering=0) as full:
-        failed = run(cache, sink=full)
+        failed = run(listing, sink=full)
     assert failed.returncode == 1 and failed.stderr, failed
     assert b"panicked" not in failed.stderr, failed.stderr
 print("Provider stdout: normal output, closed reader, later failure and non-pipe error passed.")
