@@ -19,20 +19,20 @@ by this document.
 
 ## Evidence and source integration gates
 
-- [ ] Review the fix PR; run formatting, tests, Clippy with warnings denied,
-  help/output checks and source-package checks on its final revision.
-- [ ] Obtain the revised exact `linux-abi-tools` 0.3.2 candidate SHA from the
-  coordinator. The previous [d2f9abb integration](CANDIDATE-INTEGRATION-0.3.2.md)
-  does not qualify the new producer or this fixed consumer.
-- [ ] Dispatch the candidate workflow on the fixed consumer branch. Record both
-  full commits, resolution metadata and a fresh artifact. It includes a shared
-  provider stdout regression: a closed output must not hide an error discovered
-  after the first export succeeds. Keep temporary source overrides and refreshed
-  locks in the disposable workspace only.
-- [ ] Confirm the producer's own provider/scanner regressions, including side
-  effects and later failures with closed stdout. Consumer tests cover owned
-  help/version/provider-help output, inspect text/JSON, direct/scan failures,
-  invalid commands and non-pipe write/flush errors.
+- [ ] Complete review of [fix PR #1](https://github.com/rustcommons/cargo-libc/pull/1).
+- [x] Formatting, 71 unit tests, four process regressions, Clippy with warnings
+  denied, help/output checks and source-package checks passed on the fixed source.
+- [x] Record exact producer `53d3c6f0fa0fee5739e4021eb335017533396f06` and consumer
+  `b8ff22a5b1cbb71f123b58c4efdd9be7614bfce4`. The consumer Rust source is unchanged
+  from `5d5184c`; only the later-error test fixture and documentation changed.
+- [x] Fresh [combined integration](COMBINED-STDOUT-INTEGRATION-0.3.2.md) passed,
+  with exact path resolutions and a saved artifact. It covers the provider export
+  failure after an earlier successful export, including continued side effects
+  with closed stdout. The original listing fixture was incorrect and is superseded.
+- [x] Producer Windows/Linux, MSRV and kernel checks passed at the recorded SHA,
+  including provider/scanner output regressions. Temporary patches and refreshed
+  locks stayed in the disposable workspace. Historical `d2f9abb` evidence does
+  not qualify these stdout fixes.
 
 The bounded native integration covers glibc 2.17/2.28, source providers, C
 libraries, plain Cargo and host sysroots. Unchanged inputs do not require a broad

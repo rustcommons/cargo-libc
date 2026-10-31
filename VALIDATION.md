@@ -200,3 +200,12 @@ records a passing x86_64 run against an exact producer commit, including glibc
 2.17/2.28 providers, C dependencies, plain Cargo and the host-sysroot path.
 Production dependency requirements and locks remain unchanged; registry adoption
 and release qualification are separate gates.
+
+## Combined stdout fixes with revised 0.3.2 candidate (2026-10-31)
+
+The [combined integration report](docs/COMBINED-STDOUT-INTEGRATION-0.3.2.md)
+records passing consumer/provider closed-stdout regressions and bounded x86_64
+smokes at producer `53d3c6f` and consumer `b8ff22a`. It supersedes the earlier
+source-candidate evidence for the stdout fixes and documents the corrected
+fixture-only failure. Production dependencies remain unchanged; registry adoption
+and publication are still gated.

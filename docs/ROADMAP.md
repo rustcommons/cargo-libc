@@ -12,9 +12,9 @@ In this order; each item says what it waits on.
 1. [ ] **Complete 0.2.1 preparation.** Cargo-libc-owned stdout now discards only
    `BrokenPipe`, including flush failures, while preserving command errors and
    failed checks. Shared provider output still depends on the forthcoming
-   `libc-abi-tools` 0.3.2 fix; published 0.3.0 is not fixed. Repeat isolated
-   integration against the revised exact producer commit, then adopt published
-   registry packages and validate the unpatched package/locked installation.
+   `libc-abi-tools` 0.3.2 fix; published 0.3.0 is not fixed. [Revised source integration](COMBINED-STDOUT-INTEGRATION-0.3.2.md) passed;
+   adopt published registry packages only after availability and validate the
+   unpatched package/locked installation.
    Include the `test`/`run` second-`--` argument fix already on `main` but absent
    from 0.2.0. Follow the [0.2.1 release checklist](RELEASE-0.2.1.md); publication
    requires explicit maintainer authorization.
