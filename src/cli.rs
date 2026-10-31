@@ -662,19 +662,25 @@ fn parse_inspect(args: &[OsString]) -> Result<ParsedCommand, String> {
 /// the command cannot be carried out. Failed checks are not errors: they return
 /// their exit code (2) after reporting.
 pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
+    let result = run_inner(args);
+    let flushed = crate::output::flush();
+    result.and_then(|code| flushed.map(|()| code))
+}
+
+fn run_inner(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
     match parse(args.into_iter().collect())? {
         ParsedCommand::Help => {
-            print!("{HELP}");
+            crate::output::write(format_args!("{HELP}"))?;
             Ok(0)
         }
         ParsedCommand::Version => {
-            println!("cargo-libc {}", env!("CARGO_PKG_VERSION"));
+            crate::output::line(format_args!("cargo-libc {}", env!("CARGO_PKG_VERSION")))?;
             Ok(0)
         }
         ParsedCommand::Doctor { config, simulation } => {
             if let Some(raw) = config {
                 let config = raw.resolve()?;
-                config.print_diagnostics(&config.diagnose()?);
+                config.print_diagnostics(&config.diagnose()?)?;
             }
             let runner_ok = simulate::doctor(&simulation)?;
             Ok(if runner_ok { 0 } else { 2 })
@@ -709,10 +715,10 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
             simulation,
             format,
         } => {
-            print!(
+            crate::output::write(format_args!(
                 "{}",
                 toolchain::plain_cargo(&config.resolve()?, &simulation, format)?
-            );
+            ))?;
             Ok(0)
         }
         ParsedCommand::Test {
@@ -736,7 +742,10 @@ pub fn run(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
         } => report::inspect_file(&file, ceiling, scan.as_ref(), json),
         ParsedCommand::Provider(args) => {
             if args.is_empty() || matches!(args[0].to_str(), Some("-h" | "--help" | "help")) {
-                print!("{}", libc_abi_tools::provider::cli::help("cargo libc"));
+                crate::output::write(format_args!(
+                    "{}",
+                    libc_abi_tools::provider::cli::help("cargo libc")
+                ))?;
                 return Ok(0);
             }
             libc_abi_tools::provider::cli::run(&args, "cargo libc")?;

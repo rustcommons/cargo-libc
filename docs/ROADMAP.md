@@ -9,15 +9,15 @@ approval.
 
 In this order; each item says what it waits on.
 
-1. [ ] **Broken pipe, then 0.2.1.** Piped into a reader that exits early
-   (`cargo libc inspect ... | head`), `cargo-libc` panics with "failed printing to
-   stdout: Broken pipe" and exits with status 101: Rust ignores SIGPIPE, so the write
-   fails, and `print!` panics on a failed write. Fix it as linux-abi-tools'
-   `kernel-seccomp` was (2026-10-14): write stdout through a helper that stops quietly
-   on `BrokenPipe`, tested against a pipe whose read end is closed. Then release
-   0.2.1 with that fix and the one already on `main` (`test` and `run` pass arguments
-   after a second `--` to the test harness or program, as the user guide always
-   said; 0.2.0 refused them). Releasing needs the maintainer's go-ahead.
+1. [ ] **Complete 0.2.1 preparation.** Cargo-libc-owned stdout now discards only
+   `BrokenPipe`, including flush failures, while preserving command errors and
+   failed checks. Shared provider output uses the published
+   `libc-abi-tools` 0.3.2 fix; 0.3.0 is not sufficient. [Revised source integration](COMBINED-STDOUT-INTEGRATION-0.3.2.md) passed;
+   registry dependencies are adopted. [Registry-only package and locked-install validation](REGISTRY-VALIDATION-0.2.1.md)
+   passed. Complete the release handoff and post-publication verification.
+   Include the `test`/`run` second-`--` argument fix already on `main` but absent
+   from 0.2.0. Follow the [0.2.1 release checklist](RELEASE-0.2.1.md); publication
+   requires explicit maintainer authorization.
 2. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
    and SLES 12 SP5 (glibc 2.22, Linux 4.12), for executables and Python extensions,
    including native C dependencies; and a real Rocky Linux 9 build host. This is the

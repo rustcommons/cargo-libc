@@ -335,10 +335,10 @@ pub fn inspect_file(
         None => (ceiling, None),
     };
     let assessment = assess(&info, ceiling);
-    println!(
+    crate::output::line(format_args!(
         "{}",
         render(path, &info, &assessment, ceiling, scan.as_ref(), json)
-    );
+    ))?;
     let passed = assessment.errors.is_empty() && scan.as_ref().is_none_or(Scan::passed);
     Ok(if passed { 0 } else { 2 })
 }

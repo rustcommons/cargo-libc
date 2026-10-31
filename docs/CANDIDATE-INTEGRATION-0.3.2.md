@@ -1,5 +1,8 @@
 # linux-abi-tools 0.3.2 source-candidate integration
 
+Historical evidence for the revisions below. For the revised stdout fixes, see
+the superseding [combined integration report](COMBINED-STDOUT-INTEGRATION-0.3.2.md).
+
 On 2026-10-31, [run 41238413717](https://github.com/rustcommons/cargo-libc/actions/runs/41238413717)
 passed every step of the manual [candidate integration workflow](../.github/workflows/candidate-integration.yml).
 This validates an isolated source candidate, not published registry adoption.

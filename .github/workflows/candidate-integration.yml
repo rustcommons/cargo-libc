@@ -1,30 +1,39 @@
 name: Candidate integration
-run-name: cargo-libc against linux-abi-tools ${{ inputs.candidate_ref }}
+run-name: cargo-libc ${{ inputs.integration_mode }} integration ${{ inputs.candidate_ref }}
 on:
   workflow_dispatch:
     inputs:
+      integration_mode:
+        description: Source candidate, registry-only release validation, or published installation
+        type: choice
+        options: [source, registry, installed]
+        default: source
       candidate_ref:
         description: Exact 40-character commit SHA in rustcommons/linux-abi-tools
-        required: true
+        required: false
         type: string
 permissions:
   contents: read
 jobs:
   integration:
+    if: inputs.integration_mode != 'installed'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CARGO_BUILD_JOBS: 2
       RUST_TEST_THREADS: 2
       CANDIDATE_REF: ${{ inputs.candidate_ref }}
+      INTEGRATION_MODE: ${{ inputs.integration_mode }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
       - name: Require an exact commit
+        if: inputs.integration_mode == 'source'
         run: |
           [[ "$CANDIDATE_REF" =~ ^[0-9a-f]{40}$ ]] || exit 1
       - uses: actions/checkout@v4
+        if: inputs.integration_mode == 'source'
         with:
           repository: rustcommons/linux-abi-tools
           ref: ${{ inputs.candidate_ref }}
@@ -36,14 +45,19 @@ jobs:
       - name: Prepare disposable consumer and source overrides
         run: |
           set -euo pipefail
-          test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_REF"
-          git -C candidate cat-file -e "$CANDIDATE_REF^{commit}"
+          if [ "$INTEGRATION_MODE" = source ]; then
+            test "$(git -C candidate rev-parse HEAD)" = "$CANDIDATE_REF"
+            git -C candidate cat-file -e "$CANDIDATE_REF^{commit}"
+          fi
           mkdir -p "$RUNNER_TEMP/consumer" "$RUNNER_TEMP/evidence"
           git archive HEAD | tar -x -C "$RUNNER_TEMP/consumer"
           printf 'CONSUMER=%s/consumer\nEVIDENCE=%s/evidence\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
           {
             printf 'consumer=%s\n' "$(git rev-parse HEAD)"
-            printf 'producer=%s\n' "$(git -C candidate rev-parse HEAD)"
+            printf 'mode=%s\n' "$INTEGRATION_MODE"
+            if [ "$INTEGRATION_MODE" = source ]; then
+              printf 'producer=%s\n' "$(git -C candidate rev-parse HEAD)"
+            fi
             uname -m
             rustc --version
             cargo --version
@@ -51,6 +65,8 @@ jobs:
           python3 - <<'PY'
           import json, os
           from pathlib import Path
+          if os.environ['INTEGRATION_MODE'] != 'source':
+              raise SystemExit(0)
           producer = Path('candidate').resolve()
           paths = {'libc-abi-tools': producer}
           paths.update({name: producer / 'crates' / name for name in
@@ -65,7 +81,9 @@ jobs:
         run: |
           set -euo pipefail
           cd "$CONSUMER"
-          cargo update -p libc-abi-tools -p kernel-abi-tools -p linux-abi-scan -p linux-targets
+          if [ "$INTEGRATION_MODE" = source ]; then
+            cargo update -p libc-abi-tools -p kernel-abi-tools -p linux-abi-scan -p linux-targets
+          fi
           cargo fetch --locked
           cargo metadata --format-version 1 --locked --offline > "$EVIDENCE/metadata.json"
           cp Cargo.toml Cargo.lock "$EVIDENCE/"
@@ -74,15 +92,22 @@ jobs:
           from pathlib import Path
           producer = Path(os.environ['GITHUB_WORKSPACE']) / 'candidate'
           data = json.loads((Path(os.environ['EVIDENCE']) / 'metadata.json').read_text())
+          source_mode = os.environ['INTEGRATION_MODE'] == 'source'
+          manifest_data = tomllib.loads(Path('Cargo.toml').read_text())
+          if not source_mode:
+              assert not manifest_data.get('patch') and not manifest_data.get('replace')
+              assert all(p['source'] == 'registry+https://github.com/rust-lang/crates.io-index'
+                         for p in data['packages'] if p['name'] != 'cargo-libc')
           for name in ['libc-abi-tools', 'kernel-abi-tools', 'linux-abi-scan', 'linux-targets']:
               manifest = producer / ('Cargo.toml' if name == 'libc-abi-tools' else f'crates/{name}/Cargo.toml')
-              expected = tomllib.loads(manifest.read_text())['package']['version']
+              expected = tomllib.loads(manifest.read_text())['package']['version'] if source_mode else '0.3.2'
               matches = [p for p in data['packages'] if p['name'] == name]
               assert len(matches) == 1, (name, matches)
               p = matches[0]
-              assert p['source'] is None and Path(p['manifest_path']).resolve() == manifest.resolve(), p
+              if source_mode:
+                  assert p['source'] is None and Path(p['manifest_path']).resolve() == manifest.resolve(), p
               assert p['version'] == expected, p
-              print(f"{name} {p['version']} {p['manifest_path']}")
+              print(f"{name} {p['version']} {p['source']} {p['manifest_path']}")
           PY
       - name: Portable consumer checks
         run: |
@@ -90,9 +115,15 @@ jobs:
           cd "$CONSUMER"
           {
             cargo fmt --all -- --check
+            cargo check --all-targets --locked --offline
             cargo test --locked --offline
             cargo clippy --all-targets --locked --offline -- -D warnings
           } 2>&1 | tee "$EVIDENCE/portable.log"
+      - name: Shared provider stdout regression
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          python3 scripts/check-provider-stdout.py target/debug/cargo-libc 2>&1 | tee "$EVIDENCE/provider-stdout.log"
       - name: Native tools and fixture dependencies
         run: |
           set -euo pipefail
@@ -126,13 +157,60 @@ jobs:
           set -euo pipefail
           cd "$CONSUMER"
           bash scripts/smoke-linux.sh 2>&1 | tee "$EVIDENCE/sysroot.log"
+      - name: Registry package and clean unpacked installation
+        if: inputs.integration_mode == 'registry'
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          {
+            cargo package --locked --offline
+            version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
+            package="target/package/cargo-libc-$version"
+            cp "target/package/cargo-libc-$version.crate" "$EVIDENCE/"
+            sha256sum "target/package/cargo-libc-$version.crate"
+            export CARGO_HOME="$RUNNER_TEMP/package-cargo-home"
+            cargo fetch --manifest-path "$package/Cargo.toml" --locked
+            cargo install --path "$package" --locked --offline --root "$RUNNER_TEMP/package-install"
+            bash scripts/smoke-installed.sh "$RUNNER_TEMP/package-install" /usr/bin/clang-18 "$version"
+          } 2>&1 | tee "$EVIDENCE/package-install.log"
       - name: Verify production files are unchanged
         if: always()
         run: git diff --exit-code HEAD -- Cargo.toml Cargo.lock .github/workflows/ci.yml
-      - name: Upload source integration evidence
+      - name: Upload integration evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: candidate-integration-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence
+          if-no-files-found: error
+
+  installed:
+    if: inputs.integration_mode == 'installed'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - name: Install published 0.2.1 into a clean root and exercise helpers
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = x86_64
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang-18 gcc g++ binutils cmake
+          mkdir -p "$RUNNER_TEMP/evidence"
+          {
+            git rev-parse HEAD
+            export CARGO_HOME="$RUNNER_TEMP/published-cargo-home"
+            cargo install cargo-libc --version 0.2.1 --locked --root "$RUNNER_TEMP/published-install"
+            bash scripts/smoke-installed.sh "$RUNNER_TEMP/published-install" /usr/bin/clang-18 0.2.1
+          } 2>&1 | tee "$RUNNER_TEMP/evidence/published-install.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: published-install-${{ github.run_id }}
           path: ${{ runner.temp }}/evidence
           if-no-files-found: error

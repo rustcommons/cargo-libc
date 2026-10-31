@@ -265,22 +265,23 @@ impl Toolchain {
         })
     }
 
-    pub(crate) fn print_diagnostics(&self, info: &Diagnostics) {
-        println!(
+    pub(crate) fn print_diagnostics(&self, info: &Diagnostics) -> Result<(), String> {
+        crate::output::line(format_args!(
             "Target: {TARGET}; requested glibc ceiling: {}",
             self.ceiling
-        );
-        println!(
+        ))?;
+        crate::output::line(format_args!(
             "Sysroot: {}; headers: glibc {}",
             self.sysroot.display(),
             info.header_version
-        );
-        println!("Compiler: {}", info.compiler_version);
-        println!("Linker: {}", info.linker_version);
+        ))?;
+        crate::output::line(format_args!("Compiler: {}", info.compiler_version))?;
+        crate::output::line(format_args!("Linker: {}", info.linker_version))?;
         for (name, path) in &info.files {
-            println!("  {name}: {}", path.display());
+            crate::output::line(format_args!("  {name}: {}", path.display()))?;
         }
-        println!("Target input probes passed. Full dependency resolution and target runtime behavior remain separate checks.");
+        crate::output::line(format_args!("Target input probes passed. Full dependency resolution and target runtime behavior remain separate checks."))?;
+        Ok(())
     }
 
     pub(crate) fn rustflags(&self, driver: &Path) -> Result<OsString, String> {
@@ -462,7 +463,7 @@ fn cargo_command(
         }
     }
     let diagnostic = config.diagnose()?;
-    config.print_diagnostics(&diagnostic);
+    config.print_diagnostics(&diagnostic)?;
     let driver = sibling("libc-linker")?;
     let (cc, cxx) = crate::cc::wrappers()?;
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
@@ -475,10 +476,10 @@ fn cargo_command(
     // Target linker config also affects host build units on same-triple builds.
     // Explicit --target plus encoded rustflags keeps this linker target-only.
     let flags = config.rustflags(&driver)?;
-    println!(
+    crate::output::line(format_args!(
         "Target C compiler (cc crate, CMake): {} (C only; host units keep the host compiler)",
         cc.display()
-    );
+    ))?;
     if doctests {
         cmd.env("CARGO_ENCODED_RUSTDOCFLAGS", &flags);
     }
@@ -487,12 +488,13 @@ fn cargo_command(
     Ok((cmd, driver))
 }
 
-fn print_command(cmd: &Command) {
-    println!(
+fn print_command(cmd: &Command) -> Result<(), String> {
+    crate::output::line(format_args!(
         "Cargo command: {:?} {:?}",
         cmd.get_program(),
         cmd.get_args().collect::<Vec<_>>()
-    );
+    ))?;
+    Ok(())
 }
 
 pub(crate) fn build(
@@ -505,12 +507,12 @@ pub(crate) fn build(
     let (mut cmd, driver) = cargo_command(config, "build", cargo_args)?;
     cmd.arg("--message-format=json-render-diagnostics")
         .args(cargo_args);
-    print_command(&cmd);
-    println!("Rust linker driver: {}", driver.display());
-    println!(
+    print_command(&cmd)?;
+    crate::output::line(format_args!("Rust linker driver: {}", driver.display()))?;
+    crate::output::line(format_args!(
         "Artifact selected for direct ELF verification: {}",
         artifact.display()
-    );
+    ))?;
     if dry_run {
         return Ok(0);
     }
@@ -563,7 +565,7 @@ fn verify_executable(
             report::scan(&bytes, ceiling, options).map(|(_, scan)| scan)
         })
         .transpose()?;
-    println!(
+    crate::output::line(format_args!(
         "{}",
         report::render(
             artifact,
@@ -573,7 +575,7 @@ fn verify_executable(
             scan.as_ref(),
             false
         )
-    );
+    ))?;
     Ok(assessment.errors.is_empty() && scan.as_ref().is_none_or(report::Scan::passed))
 }
 
@@ -588,9 +590,9 @@ pub(crate) fn cargo_passthrough(
 ) -> Result<i32, String> {
     let (mut cmd, driver) = cargo_command(config, subcommand, cargo_args)?;
     cmd.args(cargo_args);
-    print_command(&cmd);
+    print_command(&cmd)?;
     let links = subcommand == "rustc";
-    println!(
+    crate::output::line(format_args!(
         "Rust linker driver: {}{}",
         driver.display(),
         if links {
@@ -598,22 +600,22 @@ pub(crate) fn cargo_passthrough(
         } else {
             " (configured; this command does not link)"
         }
-    );
+    ))?;
     if dry_run {
         return Ok(0);
     }
     let status = cmd.status().map_err(|e| format!("cannot run Cargo: {e}"))?;
     if status.success() {
         if subcommand == "check" {
-            println!(
+            crate::output::line(format_args!(
                 "Type check passed for glibc {} target flags. Nothing was linked: build and inspect the executable to check its requirements.",
                 config.ceiling
-            );
+            ))?;
         } else if links {
-            println!(
+            crate::output::line(format_args!(
                 "Built with glibc {} target flags. The output was not checked: run cargo libc inspect on it.",
                 config.ceiling
-            );
+            ))?;
         }
     }
     Ok(status.code().unwrap_or(1))
@@ -647,12 +649,12 @@ pub(crate) fn install(
         cmd.arg("--target-dir").arg(dir);
     }
     cmd.args(cargo_args);
-    print_command(&cmd);
-    println!("Rust linker driver: {}", driver.display());
-    println!(
+    print_command(&cmd)?;
+    crate::output::line(format_args!("Rust linker driver: {}", driver.display()))?;
+    crate::output::line(format_args!(
         "Every executable this install builds is checked against glibc {}.",
         config.ceiling
-    );
+    ))?;
     if dry_run {
         return Ok(0);
     }
@@ -662,7 +664,9 @@ pub(crate) fn install(
             return Ok(status.code().unwrap_or(1));
         }
         if artifacts.is_empty() {
-            println!("Cargo built no executable (already installed?); nothing was checked.");
+            crate::output::line(format_args!(
+                "Cargo built no executable (already installed?); nothing was checked."
+            ))?;
             return Ok(0);
         }
         let mut passed = true;
@@ -670,7 +674,7 @@ pub(crate) fn install(
             passed &= verify_executable(config, artifact, scan)?;
         }
         if !passed {
-            println!("An installed executable failed the check above; remove it or rebuild for a newer target.");
+            crate::output::line(format_args!("An installed executable failed the check above; remove it or rebuild for a newer target."))?;
         }
         Ok(if passed { 0 } else { 2 })
     })();
@@ -801,14 +805,17 @@ pub(crate) fn test_or_run(
     ));
     cmd.args(cargo_args);
     simulation.set_environment(&mut cmd, config.ceiling);
-    print_command(&cmd);
-    println!("Rust linker driver: {}", driver.display());
-    println!("Target runner: {}", runner.display());
-    println!("Kernel simulation: {}", simulate::describe(&plan));
-    println!(
+    print_command(&cmd)?;
+    crate::output::line(format_args!("Rust linker driver: {}", driver.display()))?;
+    crate::output::line(format_args!("Target runner: {}", runner.display()))?;
+    crate::output::line(format_args!(
+        "Kernel simulation: {}",
+        simulate::describe(&plan)
+    ))?;
+    crate::output::line(format_args!(
         "Each binary is checked against glibc {} before it runs.",
         config.ceiling
-    );
+    ))?;
     if dry_run {
         return Ok(0);
     }
@@ -846,7 +853,7 @@ fn run_cargo(cmd: &mut Command) -> Result<(ExitStatus, Vec<PathBuf>), String> {
                 }
                 artifacts.push(path);
             } else if !line.trim_start().starts_with('{') {
-                print!("{line}");
+                crate::output::write(format_args!("{line}"))?;
             }
         }
         Ok(artifacts)
