@@ -192,3 +192,11 @@ reported runtime glibc 2.22, and `examples/c-deps` reported glibc 2.22 headers f
 compiled by `cc` and CMake and ran on glibc 2.22. This is tier 2: SLES's real userland
 on the runner's modern kernel, with older kernels simulated by seccomp; it is not a
 SLES 12 SP5 host.
+
+## linux-abi-tools 0.3.2 source candidate (2026-10-31)
+
+The isolated [candidate integration report](docs/CANDIDATE-INTEGRATION-0.3.2.md)
+records a passing x86_64 run against an exact producer commit, including glibc
+2.17/2.28 providers, C dependencies, plain Cargo and the host-sysroot path.
+Production dependency requirements and locks remain unchanged; registry adoption
+and release qualification are separate gates.
