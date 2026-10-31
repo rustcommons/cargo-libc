@@ -13,16 +13,22 @@
 A Cargo subcommand that builds Rust programs on a current x86_64 Linux machine for
 an older glibc, 2.17 through 2.44. It links against exactly what the release you
 choose defines, checks what the result requires, and can run your tests under a
-simulation of the target's kernel. Other C libraries are planned.
+simulation of the target's kernel. It supports dynamically linked executables and
+shared libraries (`cdylib`); other architectures and C libraries are planned.
+
+## Installation
+
+Requirements are an x86_64 Linux host, Rust 1.90 or later, a Clang that supports
+`--gcc-install-dir`, GNU binutils, and GCC. See
+[Install](docs/USER-GUIDE.md#install). The five installed executables (`cargo-libc`,
+`libc-linker`, `libc-runner`, `libc-cc`, `libc-cxx`) must stay in one directory.
 
 ```sh
-cargo libc build --target x86_64-unknown-linux-gnu.2.17 \
-  --artifact target/x86_64-unknown-linux-gnu/release/myapp -- --release
-cargo libc test --distro rhel-7 --runner local
+cargo install cargo-libc --locked
 ```
 
-**Read the [user guide](docs/USER-GUIDE.md)** for installation, choosing a target,
-every command, C dependencies, the testing tiers, CI use and troubleshooting.
+**Continue with the [user guide](docs/USER-GUIDE.md)** for the quick start, target
+selection, every command, C dependencies, Python extensions, CI and troubleshooting.
 
 ## What it does
 
@@ -45,7 +51,7 @@ every command, C dependencies, the testing tiers, CI use and troubleshooting.
   `doc`, `rustc`, `test`, `run` and `install`, and `env` configures plain Cargo
   for CI or other tools.
 - **Builds Python extensions.** A PyO3 extension built by maturin with the
-  `cargo libc env` settings gives one wheel that installs on old Linux; see
+  `cargo libc env` settings can target an older glibc; see
   [Python extensions](docs/USER-GUIDE.md#python-extensions-maturin).
 - **Builds C dependencies for the target.** C built through the `cc` crate or
   CMake gets the target's headers and links against its stubs. Build scripts and
@@ -55,20 +61,10 @@ It is written in Rust with only the standard library and first-party rustcommons
 crates. It uses your `rustc`, a Clang driver and GNU `ld`, and needs no Zig,
 Python or downloaded SDK.
 
-## Install
-
-```sh
-cargo install cargo-libc --locked
-```
-
-Requirements are an x86_64 Linux host, Rust 1.90 or later, a Clang that supports
-`--gcc-install-dir`, GNU binutils, and GCC. See
-[Install](docs/USER-GUIDE.md#install). The five installed executables (`cargo-libc`,
-`libc-linker`, `libc-runner`, `libc-cc`, `libc-cxx`) must stay in one directory.
-
 ## Status
 
 This is an early release (0.2). Hosted CI, on every push:
+
 - builds, checks, runs and inspects with the automatic provider for every release
   2.17–2.44, including C dependencies and every command;
 - in [linux-abi-tools](https://github.com/rustcommons/linux-abi-tools), qualifies
@@ -78,54 +74,6 @@ This is an early release (0.2). Hosted CI, on every push:
 What CI does not do is run your program on a real old system: tier 3 is yours. See
 [VALIDATION.md](VALIDATION.md) for what was tested, [Limits](docs/USER-GUIDE.md#limits),
 and the [roadmap](docs/ROADMAP.md).
-
-## How the build is controlled
-
-cargo-libc always runs Cargo with an explicit `--target x86_64-unknown-linux-gnu`
-and the target's flags in `CARGO_ENCODED_RUSTFLAGS`. Those flags apply to target
-code only, so build scripts and procedural macros are built and linked natively.
-The target linker is set with `-C linker=libc-linker` in those flags rather than
-`CARGO_TARGET_*_LINKER`: on same-triple builds, Cargo can apply that setting to
-host artifacts too.
-
-The `libc-linker` helper runs the Clang driver with rustc's arguments.
-
-- **With a provider,** it links executables with `-nostdlib -no-pie` and supplies the
-  inputs explicitly:
-  - the provider's `crt1.o` and `crti.o`, and GCC's `crtbegin.o`;
-  - rustc's objects and libraries;
-  - the provider's stubs (`-L`) and `libgcc_s` stub;
-  - the nonshared archives, `crtend.o` and `crtn.o`;
-  - `--dynamic-linker=/lib64/ld-linux-x86-64.so.2`.
-
-  A shared library (a `cdylib`, such as a Python extension) gets the same inputs
-  without `crt1.o` and the loader, and with `crtbeginS.o`/`crtendS.o`.
-- **With `--sysroot`,** it adds:
-
-  ```text
-  --target=x86_64-unknown-linux-gnu
-  --sysroot=<target filesystem>
-  --gcc-install-dir=<target GCC runtime directory>
-  --rtlib=libgcc
-  -fuse-ld=<host linker executable>
-  ```
-
-The target flags also do four things:
-- select the GCC-style linker interface;
-- disable Rust's automatic LLD;
-- choose the baseline `x86-64` CPU;
-- carry a configuration cfg that changes Cargo's fingerprints when the selection
-  changes.
-
-That cfg is not an integrity check, so **changing a provider or sysroot in place
-needs a clean build or a new `--target-dir`.**
-
-cargo-libc refuses to run with these variables already set: `RUSTFLAGS`,
-`CARGO_ENCODED_RUSTFLAGS`, `RUSTDOCFLAGS` for `test`/`doc`, and the target's `CC`/`CXX`.
-It also refuses Cargo arguments that change the target, configuration or message
-format. Ambient C include and library search variables are removed from Clang's
-environment. That is hygiene, not a sandbox: build scripts and explicit link
-arguments can still add files.
 
 ## Source map
 
@@ -147,6 +95,7 @@ cargo-libc began as the MIT-licensed `cargo-glibc` prototype. Providers come fro
 That approach is inspired by the work of **Zig's contributors** on glibc support.
 
 The tool's glibc data comes from glibc itself, through two crates:
+
 - ABI lists from glibc's signed release tags, via
   [glibc-abilists](https://github.com/rustcommons/glibc-abilists);
 - startup sources and headers, via
@@ -157,6 +106,7 @@ package's source is MIT licensed and contains no glibc files. [NOTICE.md](NOTICE
 has the full attribution and what the built tool contains.
 
 Design references:
+
 - [Cargo configuration](https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags);
 - [same-triple host behavior](https://doc.rust-lang.org/cargo/reference/unstable.html#target-applies-to-host);
 - [JSON messages](https://doc.rust-lang.org/cargo/reference/external-tools.html#json-messages);

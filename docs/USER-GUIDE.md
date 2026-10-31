@@ -1,7 +1,7 @@
 # cargo-libc user guide
 
-cargo-libc builds Rust programs on a current x86_64 Linux machine that run on older
-ones. You choose the oldest glibc your users have, and cargo-libc links against
+cargo-libc builds Rust programs on a current x86_64 Linux machine for older glibc
+releases. You choose the oldest glibc your users have, and cargo-libc links against
 exactly what that glibc release defines. It then checks the result, and can run
 your tests under a simulation of the target's kernel.
 
@@ -16,6 +16,7 @@ your tests under a simulation of the target's kernel.
 - [Python extensions (maturin)](#python-extensions-maturin)
 - [Troubleshooting](#troubleshooting)
 - [Limits](#limits)
+- [How the build is controlled](#how-the-build-is-controlled)
 - [Reference](#reference)
 
 ## Install
@@ -46,8 +47,8 @@ helpers next to itself.
 
 ## Quick start
 
-Build your project for glibc 2.17, the oldest supported release. It covers RHEL and
-CentOS 7, and anything newer:
+Build your project for glibc 2.17, the oldest supported release and the upstream
+glibc version used by RHEL and CentOS 7. Replace `myapp` with your executable name:
 
 ```sh
 cargo libc build --target x86_64-unknown-linux-gnu.2.17 \
@@ -80,8 +81,9 @@ cargo libc test --distro rhel-7 --runner local
 
 Name the release with a suffix, `--target x86_64-unknown-linux-gnu.2.28`, or with
 `--glibc 2.28`. Releases 2.17 through 2.44 are supported. Choose the **oldest glibc
-your users run**: a program linked for 2.17 runs on every later glibc, never the
-other way round.
+your users run** to avoid requiring newer glibc symbols. This does not establish
+compatibility with every system using that release or a later one: dependencies,
+kernel behavior and CPU requirements still need [target testing](#testing-tiers).
 
 Or name a distribution. `--distro ID` sets the glibc release and the kernel floor
 together:
@@ -116,6 +118,7 @@ Things to know:
 ## Providers
 
 The **provider** for a release supplies everything needed to link for it:
+
 - that release's headers and startup objects;
 - link-only stubs of glibc's libraries;
 - a `libgcc_s` stub.
@@ -147,11 +150,18 @@ checked against, not something cargo-libc enforces at link time. Prefer provider
 
 ## Commands
 
-Every command below takes the target options: a versioned `--target` or `--glibc`,
-or `--distro`, plus optionally `--provider-mode`, `--provider`, `--sysroot`, `--cc`
-and `--ld`. Arguments after `--` go to the Cargo command unchanged. A few
-arguments are refused because cargo-libc controls them: `--target`, `--config`,
-`--message-format`, and `+toolchain`.
+The Cargo commands (`build`, `check`, `clippy`, `doc`, `rustc`, `test`, `run` and
+`install`) and `env` take a versioned `--target`, `--glibc`, or `--distro`.
+Optional build settings include `--provider-mode`, `--provider`, `--sysroot` with
+`--gcc-runtime`, `--cc` and `--ld`. `inspect`, `provider` and `doctor` have the
+selection rules described below.
+
+For Cargo commands, arguments after `--` go to Cargo. A few are refused because
+cargo-libc controls them: `--target`, `--config`, `--message-format`, and
+`+toolchain`. `--dry-run` probes the build inputs and prints the Cargo command
+without building; it can still prepare a provider. Use separate option values
+(`--glibc 2.17`, not `--glibc=2.17`). `cargo libc --help` lists the options, and
+`cargo libc --version` prints the installed version.
 
 ### build
 
@@ -162,12 +172,12 @@ cargo libc build --target x86_64-unknown-linux-gnu.2.28 --kernel 4.18 \
 
 `--artifact` names the executable to check. It must be one this Cargo invocation
 built or found fresh, so a stale file cannot pass. The check covers:
+
 - the executable's `GLIBC_*` requirements;
 - its loader;
 - that no runtime search path points into the build sysroot.
 
 `--distro` or `--kernel` adds the tier 1 scan. `--strict` makes scan warnings fail.
-`--dry-run` prints the Cargo command without building.
 
 ### check, clippy, doc, rustc
 
@@ -210,8 +220,9 @@ doctests, and `cargo run`'s program. For each binary it:
 | `local` | `--runner local`, or `--kernel` without an image | Your machine's | Linux; no root |
 | `container` | `--runner container`, `--image IMAGE`, or a `--distro` preset | The image's | podman or docker, with crun 1.28 or later (`KERNEL_ABI_ENGINE_ARGS="--runtime /path/to/crun"`) |
 
-`cargo libc doctor --distro ID` (or `--kernel V`) checks both runners by running
-something under them. Add the target options to also check the build inputs.
+`--runner` and `--image` require a kernel floor (`--distro` or `--kernel`).
+Without a floor, binaries run on the host after the glibc checks. See
+[doctor](#provider-doctor) to check runner availability and build inputs.
 
 ### install
 
@@ -232,33 +243,45 @@ cargo libc inspect ./myapp --distro sles-12-sp5 --strict --json
 ```
 
 `inspect` reads any x86_64 ELF file directly, without running tools. It reports:
+
 - the interpreter;
 - `DT_NEEDED`, RPATH and RUNPATH;
 - version requirements per library;
 - whether any `GLIBC_*` requirement exceeds `--max-glibc`.
 
 `--distro`/`--kernel`/`--scan` add the tier 1 scan, and `--json` produces
-machine-readable output.
+machine-readable output. `--strict` also fails on scan warnings; `--verbose`
+includes informational scan findings. `--scan` enables scanning without a kernel
+floor, using `--max-glibc` if supplied.
 
 `GLIBCXX_*`, `CXXABI_*` and `GCC_*` requirements are listed, but they are not glibc
 and are not checked against the ceiling.
 
 ### env
 
-```sh
-eval "$(cargo libc env --target x86_64-unknown-linux-gnu.2.17)"
-cargo libc env --target x86_64-unknown-linux-gnu.2.17 --format cargo > glibc-2.17.toml
-```
-
-`env` prints the configuration for using plain Cargo (see
-[Plain Cargo and CI](#plain-cargo-and-ci)).
+`env` prints shell exports (`--format sh`, the default) or Cargo configuration
+(`--format cargo`). See [Plain Cargo and CI](#plain-cargo-and-ci) for both workflows.
+It accepts `--kernel`, `--runner` and `--image` to configure `libc-runner` too.
 
 ### provider, doctor
 
 `cargo libc provider ...` manages the provider cache ([Providers](#providers)).
-`cargo libc doctor` probes the build inputs and prints what it found: the compiler,
-the linker, the header version, and the startup files. With `--distro` or
-`--kernel` it also checks the test runners.
+`cargo libc doctor` probes build inputs and reports the compiler, linker, header
+version and startup files:
+
+```sh
+cargo libc doctor --glibc 2.17
+cargo libc doctor --distro rhel-7 --runner local
+cargo libc doctor --distro rhel-7 --provider-mode source --runner local
+```
+
+The first command prepares or reuses the automatic provider and checks its build
+inputs. The second checks runners only. With `--distro` or `--kernel`, add an
+explicit `--provider-mode`, `--provider`, or `--sysroot` with `--gcc-runtime` to
+check build inputs as well, as in the third command. With `--kernel` rather than
+`--distro`, also select glibc with `--glibc` or a versioned `--target`. A runner
+check starts processes under the filters and may pull a container image; it exits
+with 2 if the selected runner is unusable.
 
 ## C dependencies
 
@@ -313,23 +336,34 @@ cargo-libc offers three levels of evidence. Each is stronger than the one before
 ## Plain Cargo and CI
 
 `cargo libc env` prints the settings so that plain Cargo builds the same way. This
-is useful in CI scripts or for tools that call Cargo themselves:
+is useful in CI scripts or for tools that call Cargo themselves. The versioned
+suffix in `x86_64-unknown-linux-gnu.2.17` is **cargo-libc syntax**, not a stock
+Cargo target. Plain Cargo uses the unsuffixed `x86_64-unknown-linux-gnu` target
+together with the exported settings or generated configuration.
+
+Choose one of the following methods. Shell exports can be scoped to a subshell
+so they do not affect later cargo-libc commands:
 
 ```sh
-eval "$(cargo libc env --target x86_64-unknown-linux-gnu.2.17 --kernel 3.10)"
-cargo build --target x86_64-unknown-linux-gnu --release
-cargo test  --target x86_64-unknown-linux-gnu        # through libc-runner
+(
+  eval "$(cargo libc env --target x86_64-unknown-linux-gnu.2.17 --kernel 3.10)"
+  cargo build --target x86_64-unknown-linux-gnu --release
+  cargo test  --target x86_64-unknown-linux-gnu        # through libc-runner
+)
 cargo libc inspect target/x86_64-unknown-linux-gnu/release/myapp --max-glibc 2.17
 ```
 
-Or write a Cargo configuration file:
+Alternatively, from a shell without those exports, write a Cargo configuration
+file:
 
 ```sh
 cargo libc env --target x86_64-unknown-linux-gnu.2.17 --format cargo > glibc-2.17.toml
 cargo build --target x86_64-unknown-linux-gnu --config glibc-2.17.toml --release
+cargo libc inspect target/x86_64-unknown-linux-gnu/release/myapp --max-glibc 2.17
 ```
 
 The settings are:
+
 - the target's rustflags: the linker helper, the provider's paths, and a
   configuration cfg;
 - rustdoc flags;
@@ -342,10 +376,13 @@ Things to keep in mind:
   and procedural macros would get the target settings too.
 - **`RUSTFLAGS` and `CARGO_ENCODED_RUSTFLAGS` replace these flags.** Cargo does
   not merge them.
-- **Plain Cargo checks nothing.** Run `cargo libc inspect` on what it built.
+- **Plain Cargo does not run cargo-libc's post-build inspection.** The provider
+  still constrains linking, but inspect each output separately. Add `--kernel` or
+  `--distro` to `inspect` for a tier 1 scan.
 - **The output is for this machine.** It holds absolute paths, so regenerate it
-  after updating cargo-libc or a provider. `--format sh` refuses paths that
-  contain whitespace.
+  on each machine or CI runner and after updating cargo-libc or a provider; do
+  not commit generated configuration as portable project settings. `--format sh`
+  refuses paths that contain whitespace; use `--format cargo` for those paths.
 
 A GitHub Actions job on `ubuntu-24.04`, which has GCC, Clang and binutils:
 
@@ -361,8 +398,8 @@ A GitHub Actions job on `ubuntu-24.04`, which has GCC, Clang and binutils:
 A Rust extension module for Python, such as one built with
 [PyO3](https://pyo3.rs) and [maturin](https://www.maturin.rs), is a shared library
 that Python loads. cargo-libc 0.1.1 or later links it for an older glibc the same way
-as an executable, so one wheel built on a current machine installs and imports on old
-Linux. maturin calls Cargo itself, so this uses [`cargo libc env`](#plain-cargo-and-ci).
+as an executable. Build and test the wheel for the target systems you support.
+maturin calls Cargo itself, so this uses [`cargo libc env`](#plain-cargo-and-ci).
 
 ### How it works
 
@@ -434,7 +471,8 @@ Linux. maturin calls Cargo itself, so this uses [`cargo libc env`](#plain-cargo-
 6. Optionally, simulate the target kernel too (tier 2). `kernel-seccomp` from
    [kernel-abi-tools](https://crates.io/crates/kernel-abi-tools) runs any command
    under the target kernel's syscall table. Build it for glibc 2.17 so it runs inside
-   the image, and run the tests under it there:
+   the image, and run the tests under it there. Run `cargo libc install` in a fresh
+   shell without the exports from step 2:
 
    ```sh
    cargo libc install --target x86_64-unknown-linux-gnu.2.17 -- kernel-abi-tools --locked --root ks
@@ -485,9 +523,60 @@ startup files are being used.
 - **Release status.** This is an early release (0.2). It does not replace testing on a
   real target (tier 3).
 
+## How the build is controlled
+
+cargo-libc always runs Cargo with an explicit `--target x86_64-unknown-linux-gnu`
+and the target's flags in `CARGO_ENCODED_RUSTFLAGS`. Those flags apply to target
+code only, so build scripts and procedural macros are built and linked natively.
+The target linker is set with `-C linker=libc-linker` in those flags rather than
+`CARGO_TARGET_*_LINKER`: on same-triple builds, Cargo can apply that setting to
+host artifacts too.
+
+The `libc-linker` helper runs the Clang driver with rustc's arguments.
+
+- **With a provider,** it links executables with `-nostdlib -no-pie` and supplies the
+  inputs explicitly:
+  - the provider's `crt1.o` and `crti.o`, and GCC's `crtbegin.o`;
+  - rustc's objects and libraries;
+  - the provider's stubs (`-L`) and `libgcc_s` stub;
+  - the nonshared archives, `crtend.o` and `crtn.o`;
+  - `--dynamic-linker=/lib64/ld-linux-x86-64.so.2`.
+
+  A shared library (a `cdylib`, such as a Python extension) gets the same inputs
+  without `crt1.o` and the loader, and with `crtbeginS.o`/`crtendS.o`.
+- **With `--sysroot`,** it adds:
+
+  ```text
+  --target=x86_64-unknown-linux-gnu
+  --sysroot=<target filesystem>
+  --gcc-install-dir=<target GCC runtime directory>
+  --rtlib=libgcc
+  -fuse-ld=<host linker executable>
+  ```
+
+The target flags also do four things:
+
+- select the GCC-style linker interface;
+- disable Rust's automatic LLD;
+- choose the baseline `x86-64` CPU;
+- carry a configuration cfg that changes Cargo's fingerprints when the selection
+  changes.
+
+That cfg is not an integrity check, so **changing a provider or sysroot in place
+needs a clean build or a new `--target-dir`.**
+
+cargo-libc refuses to run with these variables already set: `RUSTFLAGS`,
+`CARGO_ENCODED_RUSTFLAGS`, `RUSTDOCFLAGS`/`CARGO_ENCODED_RUSTDOCFLAGS` for
+`test`/`doc`, and the target's `CC`/`CXX`.
+It also refuses Cargo arguments that change the target, configuration or message
+format. Ambient C include and library search variables are removed from Clang's
+environment. That is hygiene, not a sandbox: build scripts and explicit link
+arguments can still add files.
+
 ## Reference
 
 **Exit codes.**
+
 - **`build`:** Cargo's exit code if Cargo fails, 2 if the check or scan fails,
   and 1 for configuration errors.
 - **`install`:** the same as `build`, for every executable it built.
@@ -511,7 +600,8 @@ startup files are being used.
 cargo-libc sets other `CARGO_LIBC_*` variables for its helpers; you do not set them.
 
 **More detail:**
-- [how builds are controlled](../README.md#how-the-build-is-controlled);
+
+- [how builds are controlled](#how-the-build-is-controlled);
 - [Cargo workflows](CARGO-WORKFLOWS.md);
 - [the provider contract](PROVIDER-CONTRACT.md);
 - [what was validated](../VALIDATION.md).
