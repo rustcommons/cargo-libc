@@ -93,6 +93,11 @@ jobs:
             cargo test --locked --offline
             cargo clippy --all-targets --locked --offline -- -D warnings
           } 2>&1 | tee "$EVIDENCE/portable.log"
+      - name: Shared provider stdout regression
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          python3 scripts/check-provider-stdout.py target/debug/cargo-libc 2>&1 | tee "$EVIDENCE/provider-stdout.log"
       - name: Native tools and fixture dependencies
         run: |
           set -euo pipefail

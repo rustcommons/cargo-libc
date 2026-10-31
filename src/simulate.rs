@@ -426,23 +426,37 @@ fn check_local(target: &Target) -> Result<String, String> {
 const UNTESTED: &str =
     "engine found; no container started (select an image with --image or --distro)";
 
+// A stdout failure is not a runner-availability result that doctor may ignore.
+enum ProbeError {
+    Probe(String),
+    Output(String),
+}
+
+impl From<String> for ProbeError {
+    fn from(message: String) -> Self {
+        Self::Probe(message)
+    }
+}
+
 /// The container runner: engine and runtime versions, then `true` in the
 /// image under the profile for `target`.
-fn check_container(target: &Target, image: Option<&str>) -> Result<String, String> {
+fn check_container(target: &Target, image: Option<&str>) -> Result<String, ProbeError> {
     let engine = Engine::from_env();
     let version = first_line(&engine.program, &["--version"])?;
     let runtime = match runtime_from_engine_args(&engine.engine_args) {
         Some(r) => format!("runtime {r} ({})", first_line(&r, &["--version"])?),
         None => "the engine's default runtime".into(),
     };
-    println!("  container: {version}; {runtime}");
+    crate::output::line(format_args!("  container: {version}; {runtime}"))
+        .map_err(ProbeError::Output)?;
     let Some(image) = image else {
         return Ok(UNTESTED.into());
     };
-    println!(
+    crate::output::line(format_args!(
         "  container: starting `true` in {image} under the {} profile (may pull the image)",
         target.label
-    );
+    ))
+    .map_err(ProbeError::Output)?;
     match container::run(&engine, target, image, "true", &[])? {
         0 => Ok(format!(
             "`true` ran in {image} under the {} profile",
@@ -453,7 +467,8 @@ fn check_container(target: &Target, image: Option<&str>) -> Result<String, Strin
              libseccomp may not know every syscall in the profile, or the runtime itself \
              (e.g. runc's statx) is caught by the older kernel's profile; crun 1.28 works: \
              KERNEL_ABI_ENGINE_ARGS=\"--runtime /path/to/crun\""
-        )),
+        )
+        .into()),
     }
 }
 
@@ -461,9 +476,14 @@ fn check_container(target: &Target, image: Option<&str>) -> Result<String, Strin
 /// the one `test`/`run` would choose is usable.
 pub(crate) fn doctor(simulation: &Simulation) -> Result<bool, String> {
     let (plan, target) = simulation.plan()?;
-    println!("Kernel simulation for test/run: {}", describe(&plan));
+    crate::output::line(format_args!(
+        "Kernel simulation for test/run: {}",
+        describe(&plan)
+    ))?;
     let Some(target) = target else {
-        println!("Runner checks skipped: no kernel floor (--distro or --kernel).");
+        crate::output::line(format_args!(
+            "Runner checks skipped: no kernel floor (--distro or --kernel)."
+        ))?;
         return Ok(true);
     };
     let image = match &plan {
@@ -476,25 +496,34 @@ pub(crate) fn doctor(simulation: &Simulation) -> Result<bool, String> {
                 .map(|d| d.image.to_string())
         }),
     };
-    let report = |name: &str, result: &Result<String, String>| match result {
-        Ok(text) if text == UNTESTED => println!("  {name}: not tested: {text}"),
-        Ok(text) => println!("  {name}: ok: {text}"),
-        Err(text) => println!("  {name}: unavailable: {text}"),
+    let report = |name: &str, result: &Result<String, String>| -> Result<(), String> {
+        match result {
+            Ok(text) if text == UNTESTED => {
+                crate::output::line(format_args!("  {name}: not tested: {text}"))?
+            }
+            Ok(text) => crate::output::line(format_args!("  {name}: ok: {text}"))?,
+            Err(text) => crate::output::line(format_args!("  {name}: unavailable: {text}"))?,
+        }
+        Ok(())
     };
-    println!("Runner checks:");
+    crate::output::line(format_args!("Runner checks:"))?;
     let local = check_local(&target);
-    report("local", &local);
-    let container = check_container(&target, image.as_deref());
-    report("container", &container);
+    report("local", &local)?;
+    let container = match check_container(&target, image.as_deref()) {
+        Ok(text) => Ok(text),
+        Err(ProbeError::Probe(error)) => Err(error),
+        Err(ProbeError::Output(error)) => return Err(error),
+    };
+    report("container", &container)?;
     let selected = match plan {
         Plan::Local(_) => local.is_ok(),
         Plan::Container(..) => container.is_ok(),
         Plan::Direct => true,
     };
-    println!(
+    crate::output::line(format_args!(
         "Selected runner: {}",
         if selected { "usable" } else { "NOT usable" }
-    );
+    ))?;
     Ok(selected)
 }
 
