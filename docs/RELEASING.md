@@ -7,13 +7,12 @@ and of glibc data/source packages.
 
 ## Release records
 
-Latest verified published release: **0.2.3**. Version **0.2.4 is a candidate, not
-published**. Update this maintained index as verification completes; packaged
+Latest verified published release: **0.2.4** (2026-11-01). Update this maintained index as verification completes; packaged
 READMEs link here without calling a pinned historical version current.
 
 | Version | Date | State and evidence |
 | --- | --- | --- |
-| [0.2.4](RELEASE-0.2.4.md) | 2026-11-01 | Candidate: registry/package/clean-install run 41275479293 passed at `896ac7b`; review/merge/publication pending. |
+| [0.2.4](RELEASE-0.2.4.md) | 2026-11-01 | Published and verified; source/tag `889515b191ead51303b1321de858ec4e2209722c`; archive, actual README render and published-install run 41276430527 passed. |
 | [0.2.3](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |
 | [0.2.2](RELEASE-0.2.2.md) | 2026-11-01 | Published and verified; source/tag `b87563c6be6faf89ac26055f88fb520991125b8b`. |
 | [0.2.1](RELEASE-0.2.1.md) | 2026-10-31 | Published and verified; source/tag `767c16aef0e49c37018b3907be480363dfdb9175`. |
