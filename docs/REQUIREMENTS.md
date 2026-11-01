@@ -2,10 +2,10 @@
 
 ## Scope and sources
 
-This index records confirmed constraints for cargo-libc 0.2.3, with runtime/API
-behavior unchanged from 0.2.2, not a backlog or universal compatibility claim. Documentation audit: 2026-11-01, baseline main
+This index records confirmed constraints for cargo-libc 0.2.4, with runtime/API
+behavior unchanged from 0.2.3/0.2.2, not a backlog or universal compatibility claim. Documentation audit: 2026-11-01, baseline main
 `1ca27da9086ebf6cf19a6f2c0e858108b38cac46`; current immutable released source/tag:
-`289f28d161027e86decc808fc1745ec4a5b74d39` / `v0.2.3`. The original 0.2.2 source
+`889515b191ead51303b1321de858ec4e2209722c` / `v0.2.4`. The original 0.2.2 source
 `b87563c6be6faf89ac26055f88fb520991125b8b` and evidence remain unchanged.
 
 Authority and sources are [AGENTS.md](../AGENTS.md), the maintained
@@ -34,6 +34,12 @@ Evidence shorthand used below:
   passed at current released source. Both are bounded Ubuntu x86_64 / Rust 1.90 /
   Clang 18 evidence; dependency-doc and actual docs.rs link/banner rendering are
   verified separately in the record.
+- **R24/I24:** [0.2.4 record](RELEASE-0.2.4.md), 2026-11-01: registry run
+  [41275479293](https://github.com/rustcommons/cargo-libc/actions/runs/41275479293)
+  passed at `896ac7b`; clean published-install
+  [41276430527](https://github.com/rustcommons/cargo-libc/actions/runs/41276430527)
+  passed at released `889515b`. README neutral navigation and all six images were
+  checked in the actual docs.rs page; dependency/code payload is unchanged.
 - **Audit:** explicit source/document/workflow inspection on 2026-11-01 at the
   baseline above. This does not imply an execution test or new native qualification.
 
@@ -91,11 +97,11 @@ Evidence shorthand used below:
 | [CI](../.github/workflows/ci.yml), [manual integration](../.github/workflows/candidate-integration.yml), [scripts](../scripts), [examples](../examples) | Executable validation definitions / fixtures | Definitions describe possible coverage; only named successful runs supply execution evidence. |
 | [LICENSE](../LICENSE), [NOTICE](../NOTICE.md), [banner](assets/banner.svg) | Maintained legal/reference / presentation | Preserve attribution and licenses; banner is not part of the current package include list. |
 
-| [RELEASE-0.2.3](RELEASE-0.2.3.md) | Current published release evidence | Official archive/VCS/checksum, registry qualification and published locked installation passed; real-browser docs.rs links/banner verified. |
+| [RELEASE-0.2.3](RELEASE-0.2.3.md) | Historical release evidence | Official archive/VCS/checksum, registry qualification and published locked installation passed; real-browser docs.rs links/banner verified. |
 
 | [0.2.3 render assets](assets/release-0.2.3/render-proof.json) and [screenshot](assets/release-0.2.3/docsrs-readme.png) | Historical render evidence | Captured exact docs.rs version, actual link URLs/HTTP statuses and loaded banner; excluded from package. |
 
-| [RELEASE-0.2.4](RELEASE-0.2.4.md) | Candidate release record | Minimal version-neutral README navigation fix; exact candidate run 41275479293 passed at `896ac7b`; no runtime/dependency changes, not published. |
+| [RELEASE-0.2.4](RELEASE-0.2.4.md) | Current published release evidence | Minimal version-neutral README navigation fix; R24/I24, official archive/tag and actual docs.rs render verified; no runtime/dependency change. |
 
 ## Maintenance
 
@@ -133,7 +139,7 @@ Cross-repository review may clarify links, but does not authorize changes outsid
 this repository or broaden qualification.
 
 Freshness follow-up, 2026-11-01: published 0.2.3 still labels its 0.2.2 evidence
-link as current. The authorized [0.2.4 candidate](RELEASE-0.2.4.md) replaces that
+link as current. The completed [0.2.4 release](RELEASE-0.2.4.md) replaces that
 label/link with version-neutral release-policy navigation. Dated version states
 are maintained in [the release index](RELEASING.md#release-records). No new
 requirement ID or behavior change is introduced; prior snapshots remain immutable.

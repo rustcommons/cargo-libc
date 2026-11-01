@@ -1,0 +1,55 @@
+{
+  "url": "https://docs.rs/crate/cargo-libc/0.2.4",
+  "neutralLinks": [
+    {
+      "text": "Release policy and records",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md"
+    }
+  ],
+  "oldCurrentLabel": false,
+  "oldPinnedLink": false,
+  "images": [
+    {
+      "src": "https://raw.githubusercontent.com/rustcommons/cargo-libc/main/docs/assets/banner.svg",
+      "alt": "cargo-libc: an orange gear and Cargo-to-ELF diagram",
+      "complete": true,
+      "naturalWidth": 1200,
+      "naturalHeight": 420
+    },
+    {
+      "src": "https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml/badge.svg",
+      "alt": "CI",
+      "complete": true,
+      "naturalWidth": 90,
+      "naturalHeight": 20
+    },
+    {
+      "src": "https://img.shields.io/badge/Rust-1.90%2B-orange",
+      "alt": "Rust 1.90+",
+      "complete": true,
+      "naturalWidth": 78,
+      "naturalHeight": 20
+    },
+    {
+      "src": "https://img.shields.io/badge/license-MIT-blue",
+      "alt": "License: MIT",
+      "complete": true,
+      "naturalWidth": 78,
+      "naturalHeight": 20
+    },
+    {
+      "src": "https://img.shields.io/crates/v/cargo-libc",
+      "alt": "crates.io",
+      "complete": true,
+      "naturalWidth": 102,
+      "naturalHeight": 20
+    },
+    {
+      "src": "https://img.shields.io/docsrs/cargo-libc",
+      "alt": "docs.rs",
+      "complete": true,
+      "naturalWidth": 86,
+      "naturalHeight": 20
+    }
+  ]
+}

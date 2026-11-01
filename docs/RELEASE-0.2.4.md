@@ -1,9 +1,10 @@
-# cargo-libc 0.2.4 release preparation
+# cargo-libc 0.2.4 release record
 
-Status: authorized minimal documentation-only candidate, **not published**.
-Registry/package/clean-install gates passed; independent review/merge and
-publication remain pending. Latest verified published version is 0.2.3. Current states and dated records live
-in the maintained [release index](RELEASING.md#release-records).
+Status: **published and verified**, 2026-11-01, from immutable released commit
+`889515b191ead51303b1321de858ec4e2209722c`; exact tag `v0.2.4`. Registry/package
+qualification, official archive, docs.rs README rendering and clean published
+locked installation passed. Current states and dated records live in the
+maintained [release index](RELEASING.md#release-records).
 
 ## Correction and scope
 
@@ -102,8 +103,63 @@ no old current-release label. Its sole text delta is the requested navigation
 line. Candidate README, manifest/lock and Rust payload were independently
 compared with the downloaded tested package.
 
-The final evidence update changes only excluded release/index/trace/roadmap
-documents and the audit JSON. All source, README, manifest/lock, workflow and
-package inputs remain identical to tested `896ac7b`. No full suite was repeated
-for these records. Independent final approval and normal merge remain pending;
-no publication or tag is claimed. Prior 0.2.3 snapshots and evidence stay intact.
+The prepublication evidence update changed only excluded records and audit
+JSON. Approved head `53b828c93115c79ef493c1041770f156f2060ec5` merged normally
+in [PR #6](https://github.com/rustcommons/cargo-libc/pull/6) as
+`889515b191ead51303b1321de858ec4e2209722c`, preserving reviewed commits. Its tree
+matched the approved head; all source, README, manifests/lock, workflow and
+package inputs matched tested `896ac7b`. No full suite was repeated for excluded
+evidence. Prior 0.2.3 snapshots and evidence stay intact.
+
+## Official publication and actual README rendering
+
+The official non-yanked [0.2.4 archive](https://crates.io/crates/cargo-libc/0.2.4)
+contains 23 files and matches API/index SHA-256
+`b456ab453f55e12c7a890f1b40b759a9d0d8c12c17acedc7af331ca8a1774868`.
+Clean VCS is `889515b191ead51303b1321de858ec4e2209722c`. Every payload file,
+original/normalized manifest, lock and README were checked against that released
+commit; direct floors and all dependency entries/checksums are unchanged.
+[Tag v0.2.4](https://github.com/rustcommons/cargo-libc/tree/v0.2.4) was created at
+that exact commit and verified remotely without moving any previous tag.
+
+[Docs.rs status](https://docs.rs/crate/cargo-libc/0.2.4/status.json) reports
+`doc_status: true`; the [versioned API](https://docs.rs/cargo-libc/0.2.4/cargo_libc/)
+and [actual crate README](https://docs.rs/crate/cargo-libc/0.2.4) return HTTP 200.
+The initial 404 cleared as docs.rs completed indexing/building; it was not treated
+as successful rendering evidence.
+
+Real-browser inspection confirms exactly **Release policy and records** linking
+to `https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md`, with no
+old "Current release:" label or 0.2.2 evidence link. The target returns HTTP 200.
+All six README images loaded, including the 1200×420 banner. Retained
+[render](assets/release-0.2.4/docsrs-readme.png) and
+[DOM proof](assets/release-0.2.4/readme-render-proof.json) capture the actual
+versioned page; screenshot SHA-256:
+`4399ee74d3156709867cc13a83abb552d684f3f5ff32df339faa313bff29e467`.
+The maintained release index is updated by this bookkeeping change to latest
+verified published **0.2.4**, with previous releases retained as dated history.
+The packaged README remains version-neutral for future index updates.
+
+## Clean published installation
+
+[Run 41276430527](https://github.com/rustcommons/cargo-libc/actions/runs/41276430527)
+**passed** at the exact released commit, Ubuntu 24.04 x86_64 / Rust 1.90.0 /
+Clang 18. It used a clean Cargo home and isolated root for
+`cargo install cargo-libc --version 0.2.4 --locked`. All five executables passed
+version/help, provider output/preparation/verification, C/CMake build/run/inspect
+and C++ refusal checks. Installed stream cases passed stdin, exact JSON stdout,
+separate diagnostics, local kernel runner and failure status preservation, plus
+Docker/Podman run/test with spaced intended environment variables, unrelated
+variable exclusion and exit 7.
+
+Downloaded [artifact 13070523885](https://github.com/rustcommons/cargo-libc/actions/runs/41276430527/artifacts/13070523885)
+records the exact commit and installed outcomes. Its downloaded ZIP matches
+GitHub's SHA-256 digest:
+`5755677932fd73386dd35d22518f191fd81b131c412ed545470dc11ba89360d2`.
+
+Final bookkeeping changes only excluded release/index/trace/roadmap documents
+and render assets. Source, package README, manifest/lock, workflow and all package
+inputs remain identical to the immutable released commit. No full suite was
+repeated for these records; no new API/data/ABI/cache/collector/feature behavior
+or broader qualification is claimed. Tier 3 remains deferred and prebuilt remains
+legally gated.
