@@ -58,7 +58,7 @@ Evidence shorthand used below:
 | CL-REQ-023 | Independently version cargo-libc; authorized releases require applicable gates, registry-only resolution, clean package install and immutable release identity. [Release policy](RELEASING.md). | [release record](RELEASE-0.2.2.md); [manual workflow](../.github/workflows/candidate-integration.yml); scanner/kernel minima 0.3.3, other direct minima unchanged. | R22 and I22; official archive checksum, clean VCS/tag `b87563c` and docs.rs checks dated 2026-11-01. | Verified; exact 0.2.2 release only, not authorization or proof for future releases. |
 | CL-REQ-024 | Real old-system tier 3 qualification is deferred, not completed and not a routine-release blocker; new old-system claims require actual environment/workload evidence. [AGENTS validation](../AGENTS.md#validation); [roadmap](ROADMAP.md#deferred-qualification-and-infrastructure). | [Guide tiers](USER-GUIDE.md#testing-tiers), RELEASING policy. | Audit of adopted 2026-11-01 policy and release exclusions; no real old-system run is claimed. | Deferred; unavailable infrastructure/evidence remains an explicit gap. |
 | CL-REQ-025 | Keep prebuilt mode unavailable pending legal review. [Roadmap decision](ROADMAP.md#maintainer-decisions); [guide providers](USER-GUIDE.md#providers). | cli.rs mode delegates refusal to libc-abi-tools; [architecture](../ARCHITECTURE.md#provider-and-sysroot-inputs). | Audit of producer 0.3.3 prepare mode refusal and maintained guide; no prebuilt publication/qualification in R22. | Deferred; legal clearance and a separately approved implementation remain required. |
-| CL-REQ-026 | Maintain setup-first README, authoritative guides, stable trace IDs, identifiable historical evidence and immutable package snapshots. [AGENTS documentation rules](../AGENTS.md#documentation-and-requirements-traceability). | This index/map and linked maintained guides; published README/API docs remain immutable snapshots. | Audit 2026-11-01: source/command/link/render/diff checks; central conventions link requires final verification after its separate merge. | Implemented—partial verification; central standard integration remains pending, no package release is implied by new trace links. |
+| CL-REQ-026 | Maintain setup-first README, authoritative guides, stable trace IDs, identifiable historical evidence and immutable package snapshots. [AGENTS documentation rules](../AGENTS.md#documentation-and-requirements-traceability). | This index/map and linked maintained guides; published README/API docs remain immutable snapshots. | Audit 2026-11-01: source/command/link/render/diff checks; shared convention page HTTP 200 and Contents API blob `1b659ff536d43bcae5b09626069e89488058ba6f` verified against central merge `c8a0b9c01aae5657dd0ef649bd37b18d81919ce5`. | Verified; bounded documentation audit only, no package release or universal behavior verification implied. |
 
 ## Documentation map
 
@@ -103,7 +103,13 @@ Those presentation corrections can accompany a future separately authorized
 release; this trace index alone requires none. No Rust API source/example change
 or new product release is proposed by this audit.
 
-The shared [documentation standard](https://github.com/rustcommons/.github/blob/main/docs/DOCUMENTATION.md)
-is being introduced separately. Verify that final link/content after its merge
-before merging this documentation PR. Cross-repository review may clarify links,
-but does not authorize changes outside this repository or broaden qualification.
+The initial audit observed HTTP 404 for the shared documentation standard while
+it was being introduced. Resolution, 2026-11-01: the
+[shared standard](https://github.com/rustcommons/.github/blob/main/docs/DOCUMENTATION.md)
+is live after central merge `c8a0b9c01aae5657dd0ef649bd37b18d81919ce5`. The GitHub
+page returns HTTP 200; Contents API on main and that exact commit identifies blob
+`1b659ff536d43bcae5b09626069e89488058ba6f`. Its required headings, table columns,
+CL-REQ prefix, status vocabulary, authority and evidence rules were checked
+against this index. The exact shared AGENTS section remains unchanged.
+Cross-repository review may clarify links, but does not authorize changes outside
+this repository or broaden qualification.
