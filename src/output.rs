@@ -1,4 +1,4 @@
-//! Fallible stdout writes. A closed pipe discards output, not command results.
+//! Fallible command-output writes. A closed pipe discards output, not command results.
 
 use std::io::{self, Write};
 
@@ -21,6 +21,12 @@ pub(crate) fn write(args: std::fmt::Arguments<'_>) -> Result<(), String> {
 
 pub(crate) fn line(args: std::fmt::Arguments<'_>) -> Result<(), String> {
     write(format_args!("{args}\n"))
+}
+
+/// Human diagnostics for commands whose stdout belongs to a child process.
+pub(crate) fn diagnostic(args: std::fmt::Arguments<'_>) -> Result<(), String> {
+    write_to(&mut io::stderr().lock(), format_args!("{args}\n"))
+        .map_err(|e| format!("cannot write stderr: {e}"))
 }
 
 pub(crate) fn flush() -> Result<(), String> {

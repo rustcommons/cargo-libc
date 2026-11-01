@@ -335,6 +335,13 @@ cargo-libc offers three levels of evidence. Each is stronger than the one before
    to the project. This deferred coverage gap does not block ordinary cargo-libc
    releases under the [release policy](RELEASING.md#validation-and-deferred-qualification).
 
+Cargo command setup diagnostics go to stderr, including the human command and
+probe lines printed by `--dry-run`. For `run` and `test`, stdout is
+reserved for Cargo and the executed program/test harness, so redirecting program
+JSON does not include cargo-libc's setup lines. Child exit statuses are preserved;
+child output and errors retain the child's own handling. Explicit output commands
+such as `inspect`, `env`, `doctor` and `provider` retain their stdout output.
+
 ## Plain Cargo and CI
 
 `cargo libc env` prints the settings so that plain Cargo builds the same way. This

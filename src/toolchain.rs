@@ -266,21 +266,29 @@ impl Toolchain {
     }
 
     pub(crate) fn print_diagnostics(&self, info: &Diagnostics) -> Result<(), String> {
-        crate::output::line(format_args!(
+        self.diagnostics_to(info, crate::output::line)
+    }
+
+    fn diagnostics_to(
+        &self,
+        info: &Diagnostics,
+        line: fn(std::fmt::Arguments<'_>) -> Result<(), String>,
+    ) -> Result<(), String> {
+        line(format_args!(
             "Target: {TARGET}; requested glibc ceiling: {}",
             self.ceiling
         ))?;
-        crate::output::line(format_args!(
+        line(format_args!(
             "Sysroot: {}; headers: glibc {}",
             self.sysroot.display(),
             info.header_version
         ))?;
-        crate::output::line(format_args!("Compiler: {}", info.compiler_version))?;
-        crate::output::line(format_args!("Linker: {}", info.linker_version))?;
+        line(format_args!("Compiler: {}", info.compiler_version))?;
+        line(format_args!("Linker: {}", info.linker_version))?;
         for (name, path) in &info.files {
-            crate::output::line(format_args!("  {name}: {}", path.display()))?;
+            line(format_args!("  {name}: {}", path.display()))?;
         }
-        crate::output::line(format_args!("Target input probes passed. Full dependency resolution and target runtime behavior remain separate checks."))?;
+        line(format_args!("Target input probes passed. Full dependency resolution and target runtime behavior remain separate checks."))?;
         Ok(())
     }
 
@@ -463,7 +471,7 @@ fn cargo_command(
         }
     }
     let diagnostic = config.diagnose()?;
-    config.print_diagnostics(&diagnostic)?;
+    config.diagnostics_to(&diagnostic, crate::output::diagnostic)?;
     let driver = sibling("libc-linker")?;
     let (cc, cxx) = crate::cc::wrappers()?;
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
@@ -476,7 +484,7 @@ fn cargo_command(
     // Target linker config also affects host build units on same-triple builds.
     // Explicit --target plus encoded rustflags keeps this linker target-only.
     let flags = config.rustflags(&driver)?;
-    crate::output::line(format_args!(
+    crate::output::diagnostic(format_args!(
         "Target C compiler (cc crate, CMake): {} (C only; host units keep the host compiler)",
         cc.display()
     ))?;
@@ -489,7 +497,7 @@ fn cargo_command(
 }
 
 fn print_command(cmd: &Command) -> Result<(), String> {
-    crate::output::line(format_args!(
+    crate::output::diagnostic(format_args!(
         "Cargo command: {:?} {:?}",
         cmd.get_program(),
         cmd.get_args().collect::<Vec<_>>()
@@ -508,8 +516,8 @@ pub(crate) fn build(
     cmd.arg("--message-format=json-render-diagnostics")
         .args(cargo_args);
     print_command(&cmd)?;
-    crate::output::line(format_args!("Rust linker driver: {}", driver.display()))?;
-    crate::output::line(format_args!(
+    crate::output::diagnostic(format_args!("Rust linker driver: {}", driver.display()))?;
+    crate::output::diagnostic(format_args!(
         "Artifact selected for direct ELF verification: {}",
         artifact.display()
     ))?;
@@ -592,7 +600,7 @@ pub(crate) fn cargo_passthrough(
     cmd.args(cargo_args);
     print_command(&cmd)?;
     let links = subcommand == "rustc";
-    crate::output::line(format_args!(
+    crate::output::diagnostic(format_args!(
         "Rust linker driver: {}{}",
         driver.display(),
         if links {
@@ -607,12 +615,12 @@ pub(crate) fn cargo_passthrough(
     let status = cmd.status().map_err(|e| format!("cannot run Cargo: {e}"))?;
     if status.success() {
         if subcommand == "check" {
-            crate::output::line(format_args!(
+            crate::output::diagnostic(format_args!(
                 "Type check passed for glibc {} target flags. Nothing was linked: build and inspect the executable to check its requirements.",
                 config.ceiling
             ))?;
         } else if links {
-            crate::output::line(format_args!(
+            crate::output::diagnostic(format_args!(
                 "Built with glibc {} target flags. The output was not checked: run cargo libc inspect on it.",
                 config.ceiling
             ))?;
@@ -650,8 +658,8 @@ pub(crate) fn install(
     }
     cmd.args(cargo_args);
     print_command(&cmd)?;
-    crate::output::line(format_args!("Rust linker driver: {}", driver.display()))?;
-    crate::output::line(format_args!(
+    crate::output::diagnostic(format_args!("Rust linker driver: {}", driver.display()))?;
+    crate::output::diagnostic(format_args!(
         "Every executable this install builds is checked against glibc {}.",
         config.ceiling
     ))?;
@@ -664,7 +672,7 @@ pub(crate) fn install(
             return Ok(status.code().unwrap_or(1));
         }
         if artifacts.is_empty() {
-            crate::output::line(format_args!(
+            crate::output::diagnostic(format_args!(
                 "Cargo built no executable (already installed?); nothing was checked."
             ))?;
             return Ok(0);
@@ -674,7 +682,7 @@ pub(crate) fn install(
             passed &= verify_executable(config, artifact, scan)?;
         }
         if !passed {
-            crate::output::line(format_args!("An installed executable failed the check above; remove it or rebuild for a newer target."))?;
+            crate::output::diagnostic(format_args!("An installed executable failed the check above; remove it or rebuild for a newer target."))?;
         }
         Ok(if passed { 0 } else { 2 })
     })();
@@ -806,13 +814,13 @@ pub(crate) fn test_or_run(
     cmd.args(cargo_args);
     simulation.set_environment(&mut cmd, config.ceiling);
     print_command(&cmd)?;
-    crate::output::line(format_args!("Rust linker driver: {}", driver.display()))?;
-    crate::output::line(format_args!("Target runner: {}", runner.display()))?;
-    crate::output::line(format_args!(
+    crate::output::diagnostic(format_args!("Rust linker driver: {}", driver.display()))?;
+    crate::output::diagnostic(format_args!("Target runner: {}", runner.display()))?;
+    crate::output::diagnostic(format_args!(
         "Kernel simulation: {}",
         simulate::describe(&plan)
     ))?;
-    crate::output::line(format_args!(
+    crate::output::diagnostic(format_args!(
         "Each binary is checked against glibc {} before it runs.",
         config.ceiling
     ))?;

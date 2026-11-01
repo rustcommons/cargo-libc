@@ -160,7 +160,7 @@ impl RawConfig {
             let prepared = libc_abi_tools::provider::cli::ensure(&release, mode, gcc)
                 .map_err(|e| format!("cannot prepare the glibc {release} provider: {e}"))?;
             let descriptor = prepared.entry.descriptor();
-            eprintln!(
+            crate::output::diagnostic(format_args!(
                 "glibc {release} provider ({mode} mode, {}): {}",
                 if prepared.reused {
                     "cached"
@@ -168,9 +168,9 @@ impl RawConfig {
                     "prepared"
                 },
                 descriptor.display()
-            );
+            ))?;
             for note in &prepared.notes {
-                eprintln!("  {note}");
+                crate::output::diagnostic(format_args!("  {note}"))?;
             }
             return Toolchain::from_provider(&descriptor, self.cc, self.ld, self.ceiling);
         }
