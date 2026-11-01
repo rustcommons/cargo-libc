@@ -36,7 +36,7 @@ flowchart TB
     PLAIN --> CARGO
     subgraph BUILD["Build boundary: host stays native"]
         CARGO["Cargo<br/>unsuffixed target"]
-        CARGO --> HOST["Host scripts / macros<br/>native; host C too"]
+        CARGO --> HOST["Build scripts<br/>proc macros + host C<br/>native"]
         CARGO --> TARGET["Target Rust + C<br/>linker / cc wrappers<br/>C++ refused"]
     end
     TARGET --> ELF["ELF outputs"]
