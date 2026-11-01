@@ -90,9 +90,15 @@ fixture leaked plain-runner environment overrides into managed Cargo, correctly
 refused by the product. Run 41265169357 was cancelled to make environment isolation
 explicit. No product semantics were weakened to satisfy these fixtures.
 
-## Unreleased adoption plan
+## Adoption plan (completed)
 
-Recommend **cargo-libc 0.2.2** under [Choosing a version](RELEASING.md#choosing-a-version):
+The sequence below completed with published **cargo-libc 0.2.2** at
+`b87563c6be6faf89ac26055f88fb520991125b8b`. The
+[release record](RELEASE-0.2.2.md) contains actual registry/archive checksums,
+registry-only and published-install runs, docs.rs and tag verification. The
+following was the prepublication plan, retained with the qualification evidence.
+
+Recommended **cargo-libc 0.2.2** under [Choosing a version](RELEASING.md#choosing-a-version):
 these are compatible bug corrections. A compatible internal dependency patch
 minimum is not an MSRV or required native-tool floor increase. New scope, breaking
 contracts or those tool-floor increases would instead require a minor release.
@@ -109,8 +115,8 @@ contracts or those tool-floor increases would instead require a minor release.
    authorized cargo-libc 0.2.2 publication; verify clean published locked installation
    afterward. Source-candidate evidence is not a substitute for these gates.
 
-This work changes no package version, production dependency, lock or tag and does
-not publish a release. Duplicate-option rejection remains deferred in the
+The source qualification recorded above changed no package version, production
+dependency, lock or tag and did not publish a release. Duplicate-option rejection remains deferred in the
 [roadmap](ROADMAP.md#cli-consistency-review). Signal termination status and provider
 cache `--force` replacement remain optional follow-up reviews. Broad unchanged
 provider/Python matrices were not repeated; tier 3 remains deferred with its

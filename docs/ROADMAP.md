@@ -8,8 +8,8 @@ approval.
 [cargo-libc 0.2.1](RELEASE-0.2.1.md) is published and its registry installation,
 release tag and docs.rs documentation are verified.
 
-[cargo-libc 0.2.2](RELEASE-0.2.2.md) is in release preparation; registry adoption
-and publication checks remain pending.
+[cargo-libc 0.2.2](RELEASE-0.2.2.md) is published. Registry-only release gates,
+clean published installation, exact release tag and docs.rs are verified.
 
 ## Release policy adopted
 

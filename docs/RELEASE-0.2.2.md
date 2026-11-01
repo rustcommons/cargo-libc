@@ -1,8 +1,9 @@
-# cargo-libc 0.2.2 release preparation
+# cargo-libc 0.2.2 release record
 
-Status: authorized patch release in preparation; not published. Version 0.2.1 and
-its tag remain immutable. All five linux-abi-tools 0.3.3 packages are published and independently verified.
-Registry-only release validation passed; final evidence review and merge remain pending.
+Status: **published and verified**, 2026-11-01. Released commit
+`b87563c6be6faf89ac26055f88fb520991125b8b`; immutable tag `v0.2.2` points exactly
+to it. Registry-only release validation, clean published installation and docs.rs
+checks passed. Version 0.2.1 and its tag remain unchanged.
 
 ## Scope and compatibility
 
@@ -21,8 +22,7 @@ The reviewed changes are merged at
   stdin, intended environment variables and child statuses under Docker/Podman.
 
 These correct existing contracts and use a patch under the
-[release policy](RELEASING.md). No MSRV, native-tool floor or platform expansion is
-planned. Duplicate-option handling remains deferred.
+[release policy](RELEASING.md). No MSRV, native-tool floor or platform scope changed. Duplicate-option handling remains deferred.
 
 ## Provider cache refresh
 
@@ -43,7 +43,7 @@ passed at consumer `192e0157063f6b2c1ab868f075eb6897b61b15f8` with producer
 superseded fixture failures. It used disposable source patches and does not
 establish registry-only release validation.
 
-## Remaining gates
+## Completed release gates
 
 - [x] Verify all five official 0.3.3 archives, index checksums, non-yanked status,
   source identity and internal dependency requirements after publication.
@@ -57,9 +57,9 @@ establish registry-only release validation.
   large/malformed ELF and Docker/Podman regressions.
 - [x] Install the unpacked proposed package with a clean Cargo home and `--locked`;
   exercise all five installed executables and affected native/container workflows.
-- [ ] Independent review, normal merge and exact merged package-input equivalence;
+- [x] Independent review, normal merge and exact merged package-input equivalence;
   record the immutable release commit and artifact checksums before publication.
-- [ ] After publication confirmation, verify the official archive, checksum,
+- [x] After publication confirmation, verify the official archive, checksum,
   source identity and docs.rs; tag the exact release commit and run clean
   published `cargo install cargo-libc --version 0.2.2 --locked` validation.
 
@@ -129,10 +129,49 @@ The tested native `.crate` SHA-256 is
 `7e137008235f64e063d99d8e15fd3b04c920df6aba11842aed0f6ef262f0d3a7`.
 Its original manifest, lock and every Rust source file match the exact candidate.
 This disposable workflow package is test evidence, not a published archive; the
-final official archive checksum/VCS identity must be verified after publication.
+official archive checksum/VCS verification is recorded below.
 
-The final evidence update changes only this excluded release document. Source,
-regression scripts/tests, workflow, manifests, lock and all package inputs remain
-identical to tested `734f9bc4205e4a5c119feaa3dd35c49a4761e1c3`. No full suite was
-repeated for the evidence text. Independent final review precedes merge;
-publication and tagging have not occurred.
+Final reviewed head `2d6f77ed765e12e1343704694bf9abb9d5db6e57` changed only this
+excluded release document relative to tested
+`734f9bc4205e4a5c119feaa3dd35c49a4761e1c3`. Source, regression scripts/tests,
+workflow, manifests, lock and all package inputs remained identical.
+[PR #3](https://github.com/rustcommons/cargo-libc/pull/3) merged normally as
+`b87563c6be6faf89ac26055f88fb520991125b8b`, preserving reviewed commits; its tree
+exactly matches the approved head. No full suite was repeated for evidence text.
+
+## Publication and installed verification
+
+The official [crates.io 0.2.2 release](https://crates.io/crates/cargo-libc/0.2.2)
+is non-yanked. Downloaded archive SHA-256 matches both the API and sparse index:
+`7ebc74cde32437217a0e8bcf0fec84c33436fb2ed33d066fac9651e4d0da7caf`.
+`.cargo_vcs_info.json` records clean released commit
+`b87563c6be6faf89ac26055f88fb520991125b8b`. All package payload files, original
+and normalized manifests and the registry lock were verified against that commit;
+all four tools are registry 0.3.3 and glibc inputs remain 0.1.0 with unchanged
+checksums. No source override is packaged.
+
+[Tag v0.2.2](https://github.com/rustcommons/cargo-libc/tree/v0.2.2) was created at
+that exact commit and verified remotely. The [docs.rs status](https://docs.rs/crate/cargo-libc/0.2.2/status.json)
+reports `doc_status: true`, and the [versioned API page](https://docs.rs/cargo-libc/0.2.2/cargo_libc/)
+returns HTTP 200.
+
+[Published-install run 41269812853](https://github.com/rustcommons/cargo-libc/actions/runs/41269812853)
+**passed** at the exact released commit on Ubuntu 24.04 x86_64 / Rust 1.90.0 /
+Clang 18. Installed mode ran
+`cargo install cargo-libc --version 0.2.2 --locked` in a clean Cargo home into an
+isolated installation root, using the published registry package. It exercised
+all five executables, help/version/inspection, shared provider output and
+preparation/verification, C/CMake execution and target C++ refusal. Installed
+run/test also passed exact JSON stdout, separate diagnostics, redirected stdin,
+local kernel runner and failure statuses, plus Docker and Podman run/test with
+spaced intended environment variables, unrelated-variable exclusion and exit 7.
+
+Downloaded [published-install artifact 13069180772](https://github.com/rustcommons/cargo-libc/actions/runs/41269812853/artifacts/13069180772)
+records the exact release commit and passing installed checks. Its downloaded ZIP
+SHA-256 matches GitHub's digest:
+`cf3b0085c417d685ed7ca93e943d6bdc523d3278a1ea5dde73f9261d76fa9275`.
+
+Release bookkeeping changes only excluded repository documentation; package
+inputs remain identical to the immutable released commit. Tier 3 qualification
+remains deferred as described above; no real old-system compatibility or broader
+unchanged provider/Python matrix result is claimed.
