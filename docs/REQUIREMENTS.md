@@ -95,6 +95,8 @@ Evidence shorthand used below:
 
 | [0.2.3 render assets](assets/release-0.2.3/render-proof.json) and [screenshot](assets/release-0.2.3/docsrs-readme.png) | Historical render evidence | Captured exact docs.rs version, actual link URLs/HTTP statuses and loaded banner; excluded from package. |
 
+| [RELEASE-0.2.4](RELEASE-0.2.4.md) | Candidate release record | Minimal version-neutral README navigation fix; no runtime/dependency changes, not published. |
+
 ## Maintenance
 
 Keep `CL-REQ-001` through `CL-REQ-026` stable. Add new IDs without renumbering,
@@ -129,3 +131,9 @@ CL-REQ prefix, status vocabulary, authority and evidence rules were checked
 against this index. The exact shared AGENTS section remains unchanged.
 Cross-repository review may clarify links, but does not authorize changes outside
 this repository or broaden qualification.
+
+Freshness follow-up, 2026-11-01: published 0.2.3 still labels its 0.2.2 evidence
+link as current. The authorized [0.2.4 candidate](RELEASE-0.2.4.md) replaces that
+label/link with version-neutral release-policy navigation. Dated version states
+are maintained in [the release index](RELEASING.md#release-records). No new
+requirement ID or behavior change is introduced; prior snapshots remain immutable.
