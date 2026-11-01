@@ -47,7 +47,7 @@ fn main() {
 
     def invoke(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         return subprocess.run(args, input=b'redirected input\n', stdout=stdout,
-                              stderr=stderr, env=env, check=False)
+                              stderr=stderr, env=env, check=False, timeout=180)
 
     expected = b'{"ok":true}\n'
     for command in ['run', 'test']:
@@ -99,11 +99,13 @@ fn main() {
                                  'x86_64-unknown-linux-gnu.2.17', '--cc', clang,
                                  '--format', 'cargo'], capture_output=True, env=env, check=True)
         import tomllib
+        cargo_env = env.copy()
         env.update(tomllib.loads(config.stdout.decode())['env'])
         result = invoke(runner)
         assert result.returncode == 0 and result.stdout == expected, result
         assert invoke(runner + ['fail']).returncode == 7
         print('libc-runner: redirected input/output and exit status passed')
+        env = cargo_env  # Plain-runner target settings must not leak into managed Cargo.
 
         if os.environ.get('CHECK_STREAM_CONTAINERS'):
             env.update(CARGO_F2_TEST='cargo value with spaces', RUST_F2_TEST='rust value with spaces',
