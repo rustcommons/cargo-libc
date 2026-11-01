@@ -22,13 +22,13 @@ for field in [24, 32]:
     data = bytearray(original)
     struct.pack_into('<Q', data, shoff + dynsym * 64 + field, 2**64 - 1)
     cases[f'overflow-{field}'] = data
-# Repeated valid sections alias the same records, bounding aggregate work rather
-# than just individual offsets. Program headers remain untouched.
+# One selected dynamic-symbol table exceeds the documented record budget.
+# Appended records are file-backed; program headers remain untouched.
 data = bytearray(original)
-struct.pack_into('<Q', data, 40, len(original))
-struct.pack_into('<H', data, 60, count + 2000)
-data += b''.join(sections) + sections[dynsym] * 2000
-cases['aliased-records'] = data
+struct.pack_into('<Q', data, shoff + dynsym * 64 + 24, len(original))
+struct.pack_into('<Q', data, shoff + dynsym * 64 + 32, 65537 * 24)
+data += bytes(65537 * 24)
+cases['excess-records'] = data
 with tempfile.TemporaryDirectory(prefix='cargo-libc-malformed-') as tmp:
     for name, data in cases.items():
         path = Path(tmp) / name
@@ -45,6 +45,6 @@ with tempfile.TemporaryDirectory(prefix='cargo-libc-malformed-') as tmp:
             result = subprocess.run(args, capture_output=True, timeout=10, preexec_fn=limits)
             assert result.returncode == 1, (name, option, result)
             assert b'panicked' not in result.stderr and b'memory allocation' not in result.stderr
-            if name == 'aliased-records':
+            if name == 'excess-records':
                 assert b'budget' in result.stderr or b'record limit' in result.stderr, result.stderr
         print(f'{name}: direct inspection passes, all scanner entry paths reject within 512 MiB/10s')
