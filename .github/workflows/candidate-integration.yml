@@ -119,11 +119,6 @@ jobs:
             cargo test --locked --offline
             cargo clippy --all-targets --locked --offline -- -D warnings
           } 2>&1 | tee "$EVIDENCE/portable.log"
-      - name: Run and test redirected streams
-        run: |
-          set -euo pipefail
-          cd "$CONSUMER"
-          python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$EVIDENCE/run-streams.log"
       - name: Shared provider stdout regression
         run: |
           set -euo pipefail
@@ -140,6 +135,20 @@ jobs:
           cargo fetch --manifest-path examples/hello/Cargo.toml --locked
           cargo fetch --manifest-path examples/too-new/Cargo.toml --locked
           cargo fetch --manifest-path examples/c-deps/Cargo.toml --locked
+      - name: Run and test redirected streams
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$EVIDENCE/run-streams.log"
+      - name: Candidate scanner and container IO boundaries
+        if: inputs.integration_mode == 'source'
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y --no-install-recommends podman
+          cd "$CONSUMER"
+          bash scripts/install-crun.sh "$RUNNER_TEMP/crun"
+          python3 scripts/check-malformed-scan.py target/debug/cargo-libc 2>&1 | tee "$EVIDENCE/malformed-scan.log"
+          CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$EVIDENCE/container-streams.log"
       - name: Automatic providers, reuse, inspect, run and symbol refusal
         run: |
           set -euo pipefail

@@ -293,17 +293,23 @@ fn check_host(program: &str, info: &ElfInfo) -> Option<i32> {
     match result {
         HostGlibc::Satisfied => None,
         HostGlibc::Unknown(e) => {
-            eprintln!("libc-runner: warning: host glibc not checked ({e}); running {program}");
+            if crate::output::diagnostic(format_args!(
+                "libc-runner: warning: host glibc not checked ({e}); running {program}"
+            ))
+            .is_err()
+            {
+                return Some(1);
+            }
             None
         }
         HostGlibc::Missing(missing) => {
             let need = highest(&missing).map_or_else(String::new, |v| format!(" {v} or newer"));
-            eprintln!(
+            let _ = crate::output::diagnostic(format_args!(
                 "libc-runner: not running {program}: the host's libraries lack {}, so the \
                  loader would refuse it. Run it in a container with glibc{need} (--runner \
                  container --image IMAGE, or --distro), or build it with an older provider.",
                 missing.join(", ")
-            );
+            ));
             Some(2)
         }
     }
@@ -339,9 +345,11 @@ pub fn run_program(mut args: impl Iterator<Item = OsString>) -> Result<i32, Stri
     let assessment = report::assess(&info, Some(ceiling));
     if !assessment.errors.is_empty() {
         for error in &assessment.errors {
-            eprintln!("libc-runner: {program}: {error}");
+            let _ = crate::output::diagnostic(format_args!("libc-runner: {program}: {error}"));
         }
-        eprintln!("libc-runner: not running {program}: it needs a newer glibc than {ceiling}");
+        let _ = crate::output::diagnostic(format_args!(
+            "libc-runner: not running {program}: it needs a newer glibc than {ceiling}"
+        ));
         return Ok(2);
     }
 
@@ -354,12 +362,12 @@ pub fn run_program(mut args: impl Iterator<Item = OsString>) -> Result<i32, Stri
     }
     if let Some(t) = &target {
         if t.kernel < table_floor() {
-            eprintln!(
+            crate::output::diagnostic(format_args!(
                 "libc-runner: warning: kernel data starts at {}; {} is treated as {}",
                 table_floor(),
                 t.kernel,
                 table_floor()
-            );
+            ))?;
         }
     }
     match (&plan, &target) {

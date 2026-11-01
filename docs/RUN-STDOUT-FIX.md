@@ -18,6 +18,21 @@ continues the operation. Genuine write errors remain failures. No global early
 exit, panic suppression or error-string matching was introduced. Existing stdout
 BrokenPipe tests remain in place; child output uses the child's own error handling.
 
+## Review follow-up
+
+The final stderr fallback now writes without panicking across all five executables.
+A failed diagnostic cannot replace deliberate error 1, runner refusal 2 or a child
+status with panic status 101. Setup diagnostics remain fallible; only BrokenPipe
+is ignored, and genuine write errors return failure. Runner refusal diagnostics
+are best effort because the refusal already determines status 2. Human `--dry-run`
+command/probe lines go to stderr as well; this is part of the same patch correction.
+
+Portable regressions assert exact statuses with both preclosed stderr and
+`/dev/full`. Native coverage adds explicit local kernel-floor runs and dry-run
+stream separation. Fresh combined qualification uses producer
+`c04269a6ea864b3a6371e8813d14f0fa069eb006`; its results are pending and do not follow
+from the earlier F2 run below. Production dependencies remain unchanged.
+
 ## Verified evidence
 
 - Baseline `92bc2b7874a5ee23975bd04e2ea29eb306b53f00` (same affected Rust source as

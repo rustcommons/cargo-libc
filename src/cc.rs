@@ -244,7 +244,8 @@ pub fn run(language: Language) -> i32 {
     match result {
         Ok(status) => status.code().unwrap_or(1),
         Err(error) => {
-            eprintln!("{name}: {error}");
+            // Preserve the command failure even when its diagnostic cannot be written.
+            let _ = crate::output::diagnostic(format_args!("{name}: {error}"));
             1
         }
     }

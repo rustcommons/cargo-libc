@@ -83,7 +83,12 @@ impl Elf {
         put(&mut bytes, 452, &3_u32.to_le_bytes());
         put(&mut bytes, 472, &288_u64.to_le_bytes());
         put(&mut bytes, 480, &(strings.len() as u64).to_le_bytes());
-        let path = std::env::temp_dir().join(format!("cargo-libc-stdout-{}", std::process::id()));
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let path = std::env::temp_dir().join(format!(
+            "cargo-libc-stdout-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        ));
         fs::write(&path, bytes).unwrap();
         Self(path)
     }
@@ -158,4 +163,94 @@ fn non_pipe_stdout_errors_fail() {
     let output = command().arg("--help").stdout(full).output().unwrap();
     assert_status(&output, 1);
     assert!(String::from_utf8_lossy(&output.stderr).contains("cannot write stdout"));
+}
+
+fn closed_stderr(cmd: &mut Command) -> Output {
+    let (writer, reader) = UnixStream::pair().unwrap();
+    drop(reader);
+    cmd.stderr(Stdio::from(OwnedFd::from(writer)))
+        .output()
+        .unwrap()
+}
+
+fn owned_failure(binary: &str) -> Command {
+    let mut cmd = Command::new(binary);
+    // Exercise missing wrapper configuration rather than inherited build settings.
+    for (key, _) in std::env::vars_os() {
+        if key.to_string_lossy().starts_with("CARGO_LIBC_") {
+            cmd.env_remove(key);
+        }
+    }
+    cmd.env_remove("CARGO_CFG_CARGO_LIBC_PROFILE");
+    if binary == env!("CARGO_BIN_EXE_cargo-libc") {
+        cmd.arg("not-a-command");
+    }
+    cmd
+}
+
+#[test]
+fn all_five_final_errors_preserve_status_with_unwritable_stderr() {
+    for binary in [
+        env!("CARGO_BIN_EXE_cargo-libc"),
+        env!("CARGO_BIN_EXE_libc-linker"),
+        env!("CARGO_BIN_EXE_libc-runner"),
+        env!("CARGO_BIN_EXE_libc-cc"),
+        env!("CARGO_BIN_EXE_libc-cxx"),
+    ] {
+        let normal = owned_failure(binary).output().unwrap();
+        assert_status(&normal, 1);
+        assert!(!normal.stderr.is_empty(), "{binary}");
+        assert_status(&closed_stderr(&mut owned_failure(binary)), 1);
+        #[cfg(target_os = "linux")]
+        {
+            let full = fs::OpenOptions::new()
+                .write(true)
+                .open("/dev/full")
+                .unwrap();
+            assert_status(&owned_failure(binary).stderr(full).output().unwrap(), 1);
+        }
+    }
+}
+
+#[test]
+fn runner_refusal_keeps_status_two_with_unwritable_stderr() {
+    let elf = Elf::new();
+    let command = || {
+        let mut cmd = owned_failure(env!("CARGO_BIN_EXE_libc-runner"));
+        cmd.arg(&elf.0).env("CARGO_LIBC_RUN_GLIBC", "2.17");
+        cmd
+    };
+    assert_status(&command().output().unwrap(), 2);
+    assert_status(&closed_stderr(&mut command()), 2);
+    #[cfg(target_os = "linux")]
+    {
+        let full = fs::OpenOptions::new()
+            .write(true)
+            .open("/dev/full")
+            .unwrap();
+        assert_status(&command().stderr(full).output().unwrap(), 2);
+    }
+}
+
+#[test]
+fn compiler_child_status_survives_unwritable_stderr() {
+    for (binary, key) in [
+        (env!("CARGO_BIN_EXE_libc-cc"), "CARGO_LIBC_HOST_CC"),
+        (env!("CARGO_BIN_EXE_libc-cxx"), "CARGO_LIBC_HOST_CXX"),
+    ] {
+        let command = || {
+            let mut cmd = owned_failure(binary);
+            cmd.env(key, "/bin/sh").args(["-c", "exit 7"]);
+            cmd
+        };
+        assert_status(&closed_stderr(&mut command()), 7);
+        #[cfg(target_os = "linux")]
+        {
+            let full = fs::OpenOptions::new()
+                .write(true)
+                .open("/dev/full")
+                .unwrap();
+            assert_status(&command().stderr(full).output().unwrap(), 7);
+        }
+    }
 }
