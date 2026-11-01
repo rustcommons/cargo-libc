@@ -2,7 +2,8 @@
 
 Status: authorized documentation-only patch, **not published**. Both input
 packages are published and verified; the real registry lock is adopted. Exact
-0.2.3 release validation remains pending.
+0.2.3 registry/native/package validation passed; final review and merge remain
+pending. Publication has not occurred.
 
 ## Scope
 
@@ -28,11 +29,11 @@ collector/data/field/cache formats and product behavior are unchanged. Version
   glibc-provider-sources 0.1.1 in the real registry lock. Keep all four tools at
   0.3.3 and direct caret floors unchanged: scanner/kernel 0.3.3, libc-abi-tools
   0.3.2, linux-targets 0.3.0. No new dependencies, source overrides or patches.
-- Run the exact registry candidate once through Rust 1.90 fmt/MSRV, unit/process/
+- Completed: the exact registry candidate passed Rust 1.90 fmt/MSRV, unit/process/
   doctests, Clippy, docs and package gates; preserve bounded native provider/C/
   plain-Cargo/sysroot, stream/stdin/environment/status, scanner/real-ELF and
   Docker/Podman checks and clean unpacked-package locked installation.
-- Compare package paths and Rust/license/notice payload byte-for-byte against
+- Completed: package paths and Rust/license/notice payload were compared byte-for-byte against
   the official 0.2.2 archive; compare manifests allowing only the package version
   change. Record README and intentional lock differences explicitly.
 - Obtain independent review and normal merge approval; verify exact merged
@@ -74,7 +75,72 @@ checksum, and the unchanged direct requirements. No production source override
 or third-party dependency is present. Runtime Rust sources, product test/scripts
 and example payloads remain identical to released `b87563c`.
 
-Run 41274051174 was cancelled during toolchain setup before consumer checks:
-a preparation-script error omitted the final checksum assertions from that
-dispatch. It is not qualifying evidence or a product failure. The complete
-candidate requires a fresh exact-ref registry run.
+Superseded run 41274051174 omitted the final checksum assertions because of a
+preparation-script error. Cancellation was requested during toolchain setup;
+portable/provider checks and native stream setup proceeded before cancellation
+completed, so those checks are redundant preliminary evidence, not release
+qualification. The complete candidate is
+`b40b2de58e842d1d274f7882b0396ddb9612eead`, dispatched as
+[run 41274081431](https://github.com/rustcommons/cargo-libc/actions/runs/41274081431).
+No product failure was observed and no local full suite was repeated.
+
+A scoped local Rust 1.90 locked dependency documentation check,
+`RUSTDOCFLAGS="-D warnings" cargo doc --locked --offline`, passed on 2026-11-01.
+The rendered `glibc_abilists::Signature::Exception` contains the corrected
+explicit-exception wording and does not claim verified signature/key presence;
+`glibc_provider_sources` documentation also renders from the adopted lock.
+This checks the new dependency API documentation as well as the root docs,
+without claiming additional native execution.
+
+## Exact-candidate qualification
+
+[Run 41274081431](https://github.com/rustcommons/cargo-libc/actions/runs/41274081431)
+**passed** at `b40b2de58e842d1d274f7882b0396ddb9612eead` on Ubuntu 24.04 x86_64,
+Rust/Cargo 1.90.0 and Clang 18. This was registry mode: no producer checkout or
+source patches, and no dependency update in the disposable validation workspace.
+Saved manifest, lock and metadata match the exact candidate and all seven
+asserted versions and registry checksums. Direct requirement floors are unchanged.
+
+Passing gates:
+
+- fmt, MSRV/all-target check, 71 unit tests, seven process regressions, doctests,
+  all-target Clippy with warnings denied and root docs with warnings denied;
+- provider closed-stdout/later-error behavior, redirected run/test JSON stdout,
+  separate diagnostics, stdin, dry-run, local kernel runner and error/child statuses;
+- malformed offset/reused-chain rejection, aliased-header acceptance, and large
+  official Rust Cargo/librustc ELF tables (79,207/146,741 records) within the named
+  memory/time bounds;
+- Docker/Podman run and test with stdin, spaced intended environment variables,
+  unrelated-variable exclusion, exact JSON stdout and exit 7;
+- bounded source providers 2.17/2.28, reuse/inspection/symbol refusal, C/CMake,
+  target C++ refusal, Cargo commands, both plain-Cargo formats and host-sysroot/
+  host-target separation;
+- verified package, checksum-verified official 0.2.2 path/payload comparison and
+  clean-Cargo-home `cargo install --path <unpacked-package> --locked`, followed by
+  all five installed executables/helpers, provider/C/CMake checks and installed
+  stream/Docker/Podman regressions.
+
+Downloaded [artifact 13070901258](https://github.com/rustcommons/cargo-libc/actions/runs/41274081431/artifacts/13070901258)
+contains exact refs, registry metadata, manifest/lock, logs, the tested crate and
+`package-payload-comparison.json`. Its downloaded ZIP matches GitHub's digest:
+`75b4c66e28de6095a5c82afb114024cafee8ef9da23be73c93fa5a25c45d0206`.
+Tested native crate SHA-256:
+`b4563628697239f3798987aff8440fb5a12189745abde32d79a98bba05b17318`.
+This disposable package is test evidence, not an official published archive.
+
+The package comparison confirms the same paths as official 0.2.2, excluding
+optional VCS metadata, and byte-identical Rust/license/notice payload. The
+original manifest differs only in its own version; the intentional root lock
+changes and corrected README are the other package payload changes. Candidate
+README, original manifest, lock and every Rust file were also compared directly
+with the downloaded tested package.
+
+The final evidence update changes only excluded release/trace/roadmap documents.
+Source, tests, scripts, workflow, README, manifests, lock and all package inputs
+remain identical to tested `b40b2de58e842d1d274f7882b0396ddb9612eead`. No full
+suite is repeated for the evidence text. Independent final approval and normal
+merge remain required; no publication or tag is claimed.
+
+This bounded evidence does not rerun the full unchanged glibc/Python matrix or
+supply real old-system tier 3 qualification. Prebuilt legal clearance remains
+open. The documentation-only patch introduces no wider compatibility claim.
