@@ -1,0 +1,78 @@
+{
+  "url": "https://docs.rs/crate/cargo-libc/0.2.3",
+  "links": [
+    {
+      "text": "Install",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#install"
+    },
+    {
+      "text": "user guide",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md"
+    },
+    {
+      "text": "Python extensions",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#python-extensions-maturin"
+    },
+    {
+      "text": "release and versioning policy",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md"
+    },
+    {
+      "text": "Limits",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#limits"
+    },
+    {
+      "text": "roadmap",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/ROADMAP.md"
+    },
+    {
+      "text": "0.2.2 release evidence",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASE-0.2.2.md"
+    },
+    {
+      "text": "requirements and documentation index",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/REQUIREMENTS.md"
+    }
+  ],
+  "banner": [
+    {
+      "src": "https://raw.githubusercontent.com/rustcommons/cargo-libc/main/docs/assets/banner.svg",
+      "complete": true,
+      "naturalWidth": 1200,
+      "naturalHeight": 420
+    }
+  ],
+  "verified_date": "2026-11-01",
+  "http_checks": [
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASE-0.2.2.md",
+      "status": 200,
+      "bytes": 240400
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md",
+      "status": 200,
+      "bytes": 219896
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/REQUIREMENTS.md",
+      "status": 200,
+      "bytes": 295879
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/ROADMAP.md",
+      "status": 200,
+      "bytes": 218378
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md",
+      "status": 200,
+      "bytes": 399050
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rustcommons/cargo-libc/main/docs/assets/banner.svg",
+      "status": 200,
+      "bytes": 2989
+    }
+  ]
+}

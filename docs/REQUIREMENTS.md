@@ -2,10 +2,11 @@
 
 ## Scope and sources
 
-This index records confirmed constraints for cargo-libc 0.2.2, not a backlog or a
-claim of universal compatibility. Documentation audit: 2026-11-01, baseline main
-`1ca27da9086ebf6cf19a6f2c0e858108b38cac46`; immutable released source/tag:
-`b87563c6be6faf89ac26055f88fb520991125b8b` / `v0.2.2`.
+This index records confirmed constraints for cargo-libc 0.2.3, with runtime/API
+behavior unchanged from 0.2.2, not a backlog or universal compatibility claim. Documentation audit: 2026-11-01, baseline main
+`1ca27da9086ebf6cf19a6f2c0e858108b38cac46`; current immutable released source/tag:
+`289f28d161027e86decc808fc1745ec4a5b74d39` / `v0.2.3`. The original 0.2.2 source
+`b87563c6be6faf89ac26055f88fb520991125b8b` and evidence remain unchanged.
 
 Authority and sources are [AGENTS.md](../AGENTS.md), the maintained
 [user guide](USER-GUIDE.md), [provider contract](PROVIDER-CONTRACT.md),
@@ -26,6 +27,13 @@ Evidence shorthand used below:
   2026-11-01, released commit above; clean Cargo home, registry locked installation,
   installed executables and bounded native/container checks. See
   [publication evidence](RELEASE-0.2.2.md#publication-and-installed-verification).
+- **R23/I23:** [0.2.3 record](RELEASE-0.2.3.md), 2026-11-01. Registry run
+  [41274081431](https://github.com/rustcommons/cargo-libc/actions/runs/41274081431)
+  passed at `b40b2de58e842d1d274f7882b0396ddb9612eead`, and clean published-install
+  [41274796646](https://github.com/rustcommons/cargo-libc/actions/runs/41274796646)
+  passed at current released source. Both are bounded Ubuntu x86_64 / Rust 1.90 /
+  Clang 18 evidence; dependency-doc and actual docs.rs link/banner rendering are
+  verified separately in the record.
 - **Audit:** explicit source/document/workflow inspection on 2026-11-01 at the
   baseline above. This does not imply an execution test or new native qualification.
 
@@ -55,7 +63,7 @@ Evidence shorthand used below:
 | CL-REQ-020 | Both plain-Cargo formats use unsuffixed target, generated machine-specific paths, separate inspection and target-only flags; shell format refuses whitespace paths. [Guide: plain Cargo](USER-GUIDE.md#plain-cargo-and-ci). | toolchain.rs `export_environment`; `--format sh/cargo`; [command reference](CARGO-WORKFLOWS.md). | R22 `smoke-commands.sh` covers both formats, build/test/inspection and too-new-symbol refusal; Audit of shell path checks. | Verified; arbitrary external Cargo configuration merging is not qualified. |
 | CL-REQ-021 | PyO3/maturin `cdylib` workflow requires separate inspection, Python ABI/tag/dependency checks and actual target tests. [Guide: Python extensions](USER-GUIDE.md#python-extensions-maturin). | toolchain.rs shared-library path; [smoke-python-ext.sh](../scripts/smoke-python-ext.sh); F11 retains separate library-type scope. | Audit of shared-link path/script and CI Python job; historical guide workflow. R22/I22 explicitly excluded Python matrix. | Implemented—partial verification; no fresh 0.2.2 Python matrix or universal manylinux claim. |
 | CL-REQ-022 | Keep implementation dependencies std plus first-party registry crates, preserve input attribution/licenses. [AGENTS](../AGENTS.md#scope-and-implementation); [NOTICE](../NOTICE.md). | [Cargo.toml](../Cargo.toml), [Cargo.lock](../Cargo.lock), NOTICE; embedded producer inputs under their licenses. | Audit of manifest/lock/include list and notices; R22 registry resolution; published archive verification in release record. | Verified; technical provenance is not legal clearance for prebuilt distribution. |
-| CL-REQ-023 | Independently version cargo-libc; authorized releases require applicable gates, registry-only resolution, clean package install and immutable release identity. [Release policy](RELEASING.md). | [release record](RELEASE-0.2.2.md); [manual workflow](../.github/workflows/candidate-integration.yml); scanner/kernel minima 0.3.3, other direct minima unchanged. | R22 and I22; official archive checksum, clean VCS/tag `b87563c` and docs.rs checks dated 2026-11-01. | Verified; exact 0.2.2 release only, not authorization or proof for future releases. |
+| CL-REQ-023 | Independently version cargo-libc; authorized releases require applicable gates, registry-only resolution, clean package install and immutable release identity. [Release policy](RELEASING.md). | [release record](RELEASE-0.2.2.md); [manual workflow](../.github/workflows/candidate-integration.yml); scanner/kernel minima 0.3.3, other direct minima unchanged. | R22 and I22; official archive checksum, clean VCS/tag `b87563c` and docs.rs checks dated 2026-11-01. | Verified; exact recorded releases only; R23/I23 and official 0.2.3 archive/tag/docs.rs checks extend this evidence, not authorization or proof for future releases. |
 | CL-REQ-024 | Real old-system tier 3 qualification is deferred, not completed and not a routine-release blocker; new old-system claims require actual environment/workload evidence. [AGENTS validation](../AGENTS.md#validation); [roadmap](ROADMAP.md#deferred-qualification-and-infrastructure). | [Guide tiers](USER-GUIDE.md#testing-tiers), RELEASING policy. | Audit of adopted 2026-11-01 policy and release exclusions; no real old-system run is claimed. | Deferred; unavailable infrastructure/evidence remains an explicit gap. |
 | CL-REQ-025 | Keep prebuilt mode unavailable pending legal review. [Roadmap decision](ROADMAP.md#maintainer-decisions); [guide providers](USER-GUIDE.md#providers). | cli.rs mode delegates refusal to libc-abi-tools; [architecture](../ARCHITECTURE.md#provider-and-sysroot-inputs). | Audit of producer 0.3.3 prepare mode refusal and maintained guide; no prebuilt publication/qualification in R22. | Deferred; legal clearance and a separately approved implementation remain required. |
 | CL-REQ-026 | Maintain setup-first README, authoritative guides, stable trace IDs, identifiable historical evidence and immutable package snapshots. [AGENTS documentation rules](../AGENTS.md#documentation-and-requirements-traceability). | This index/map and linked maintained guides; published README/API docs remain immutable snapshots. | Audit 2026-11-01: source/command/link/render/diff checks; shared convention page HTTP 200 and Contents API blob `1b659ff536d43bcae5b09626069e89488058ba6f` verified against central merge `c8a0b9c01aae5657dd0ef649bd37b18d81919ce5`. | Verified; bounded documentation audit only, no package release or universal behavior verification implied. |
@@ -78,12 +86,14 @@ Evidence shorthand used below:
 | [CANDIDATE-INTEGRATION-0.3.2](CANDIDATE-INTEGRATION-0.3.2.md), [COMBINED-STDOUT-INTEGRATION-0.3.2](COMBINED-STDOUT-INTEGRATION-0.3.2.md) | Historical source-candidate evidence | Exact disposable source patches/refs are not current registry adoption. |
 | [REGISTRY-VALIDATION-0.2.1](REGISTRY-VALIDATION-0.2.1.md), [RELEASE-0.2.1](RELEASE-0.2.1.md) | Historical release evidence | Preserve 0.2.1 archive/source/checksums; 0.2.2 is a different immutable release. |
 | [RUN-STDOUT-FIX](RUN-STDOUT-FIX.md) | Historical correction / qualification evidence | Includes superseded invalid fixtures and the completed adoption pointer; do not resurrect old expected failures. |
-| [RELEASE-0.2.2](RELEASE-0.2.2.md) | Current published release evidence, historically fixed refs | Source/registry/install/archive/tag/docs.rs evidence and exclusions; append corrections rather than invent new execution. |
+| [RELEASE-0.2.2](RELEASE-0.2.2.md) | Historical release evidence, fixed refs | Source/registry/install/archive/tag/docs.rs evidence and exclusions; append corrections rather than invent new execution. |
 | [src/lib.rs](../src/lib.rs) and public Rust doc comments / [docs.rs 0.2.2](https://docs.rs/cargo-libc/0.2.2/cargo_libc/) | Maintained source API docs / immutable published snapshot | Internal implementation entrypoints, not a stable external library API; no Rust examples changed in this audit. |
 | [CI](../.github/workflows/ci.yml), [manual integration](../.github/workflows/candidate-integration.yml), [scripts](../scripts), [examples](../examples) | Executable validation definitions / fixtures | Definitions describe possible coverage; only named successful runs supply execution evidence. |
 | [LICENSE](../LICENSE), [NOTICE](../NOTICE.md), [banner](assets/banner.svg) | Maintained legal/reference / presentation | Preserve attribution and licenses; banner is not part of the current package include list. |
 
-| [RELEASE-0.2.3](RELEASE-0.2.3.md) | Planned release record | Authorized documentation-only patch; producer docs crates verified/adopted; registry/package/native run 41274081431 passed at `b40b2de`; final review and publication pending. |
+| [RELEASE-0.2.3](RELEASE-0.2.3.md) | Current published release evidence | Official archive/VCS/checksum, registry qualification and published locked installation passed; real-browser docs.rs links/banner verified. |
+
+| [0.2.3 render assets](assets/release-0.2.3/render-proof.json) and [screenshot](assets/release-0.2.3/docsrs-readme.png) | Historical render evidence | Captured exact docs.rs version, actual link URLs/HTTP statuses and loaded banner; excluded from package. |
 
 ## Maintenance
 
@@ -106,9 +116,8 @@ release; this trace index alone requires none. No Rust API source/example change
 [documentation-only 0.2.3](RELEASE-0.2.3.md) specifically to distribute the corrected
 README links on docs.rs, where the published relative guide/banner links fail;
 crates.io's link rewriting does not repair that docs.rs snapshot. The trace index
-alone was not a reason for publication. Registry adoption and exact candidate gates for
-0.2.3 passed (run 41274081431 at `b40b2de`, 2026-11-01); final review/merge and
-publication remain pending; 0.2.2 records and package contents stay immutable.
+alone was not a reason for publication. Registry adoption, exact candidate gates, normal merge, official publication,
+docs.rs render and published installation for 0.2.3 passed (R23/I23, 2026-11-01); 0.2.2 records and package contents stay immutable.
 
 The initial audit observed HTTP 404 for the shared documentation standard while
 it was being introduced. Resolution, 2026-11-01: the
