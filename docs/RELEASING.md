@@ -116,7 +116,7 @@ an existing registry archive.
    explains use of the packaged lock with `--locked`. The manual workflow's
    `registry` and `installed` modes and [installed smoke script](../scripts/smoke-installed.sh)
    provide the existing sequence; review their version-specific arguments before
-   each release (installed mode currently targets 0.2.1). Record verified outcomes
+   each release (installed mode currently targets 0.2.2). Record verified outcomes
    and remaining coverage gaps in the release record and roadmap.
 
 If a gate fails, stop the affected next step and correct or document the failure;

@@ -100,7 +100,7 @@ jobs:
                          for p in data['packages'] if p['name'] != 'cargo-libc')
           for name in ['libc-abi-tools', 'kernel-abi-tools', 'linux-abi-scan', 'linux-targets']:
               manifest = producer / ('Cargo.toml' if name == 'libc-abi-tools' else f'crates/{name}/Cargo.toml')
-              expected = tomllib.loads(manifest.read_text())['package']['version'] if source_mode else '0.3.2'
+              expected = tomllib.loads(manifest.read_text())['package']['version'] if source_mode else '0.3.3'
               matches = [p for p in data['packages'] if p['name'] == name]
               assert len(matches) == 1, (name, matches)
               p = matches[0]
@@ -116,8 +116,10 @@ jobs:
           {
             cargo fmt --all -- --check
             cargo check --all-targets --locked --offline
-            cargo test --locked --offline
+            cargo test --all-targets --locked --offline
+            cargo test --doc --locked --offline
             cargo clippy --all-targets --locked --offline -- -D warnings
+            RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --locked --offline
           } 2>&1 | tee "$EVIDENCE/portable.log"
       - name: Shared provider stdout regression
         run: |
@@ -140,8 +142,7 @@ jobs:
           set -euo pipefail
           cd "$CONSUMER"
           python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$EVIDENCE/run-streams.log"
-      - name: Candidate scanner and container IO boundaries
-        if: inputs.integration_mode == 'source'
+      - name: Scanner and container IO boundaries
         run: |
           set -euo pipefail
           sudo apt-get install -y --no-install-recommends podman
@@ -186,6 +187,7 @@ jobs:
             cargo fetch --manifest-path "$package/Cargo.toml" --locked
             cargo install --path "$package" --locked --offline --root "$RUNNER_TEMP/package-install"
             bash scripts/smoke-installed.sh "$RUNNER_TEMP/package-install" /usr/bin/clang-18 "$version"
+            CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/package-install/bin" /usr/bin/clang-18
           } 2>&1 | tee "$EVIDENCE/package-install.log"
       - name: Verify production files are unchanged
         if: always()
@@ -209,18 +211,20 @@ jobs:
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@1.90.0
-      - name: Install published 0.2.1 into a clean root and exercise helpers
+      - name: Install published 0.2.2 into a clean root and exercise helpers
         run: |
           set -euo pipefail
           test "$(uname -m)" = x86_64
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends clang-18 gcc g++ binutils cmake
+          sudo apt-get install -y --no-install-recommends clang-18 gcc g++ binutils cmake podman
+          bash scripts/install-crun.sh "$RUNNER_TEMP/crun"
           mkdir -p "$RUNNER_TEMP/evidence"
           {
             git rev-parse HEAD
             export CARGO_HOME="$RUNNER_TEMP/published-cargo-home"
-            cargo install cargo-libc --version 0.2.1 --locked --root "$RUNNER_TEMP/published-install"
-            bash scripts/smoke-installed.sh "$RUNNER_TEMP/published-install" /usr/bin/clang-18 0.2.1
+            cargo install cargo-libc --version 0.2.2 --locked --root "$RUNNER_TEMP/published-install"
+            bash scripts/smoke-installed.sh "$RUNNER_TEMP/published-install" /usr/bin/clang-18 0.2.2
+            CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/published-install/bin" /usr/bin/clang-18
           } 2>&1 | tee "$RUNNER_TEMP/evidence/published-install.log"
       - uses: actions/upload-artifact@v4
         if: always()

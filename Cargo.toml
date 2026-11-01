@@ -1,6 +1,6 @@
 [package]
 name = "cargo-libc"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 rust-version = "1.90"
 description = "Cargo subcommand: build Rust for an older glibc (2.17 through 2.44 on x86-64 Linux) and check what binaries require"
@@ -46,8 +46,8 @@ strip = true
 
 [dependencies]
 # First-party rustcommons crates for tier 1 binary scans (`inspect --distro`/`--kernel`).
-kernel-abi-tools = "0.3.0"
-linux-abi-scan = "0.3.0"
+kernel-abi-tools = "0.3.3"
+linux-abi-scan = "0.3.3"
 linux-targets = "0.3.0"
 # Provider preparation (`cargo libc provider`, automatic providers). Its default
 # features compile in glibc's ABI lists (glibc-abilists) and recorded sources
