@@ -98,7 +98,7 @@ jobs:
               assert not manifest_data.get('patch') and not manifest_data.get('replace')
               assert all(p['source'] == 'registry+https://github.com/rust-lang/crates.io-index'
                          for p in data['packages'] if p['name'] != 'cargo-libc')
-              expected_versions = {'cargo-libc': '0.2.3',
+              expected_versions = {'cargo-libc': '0.2.4',
                                    'libc-abi-tools': '0.3.3', 'kernel-abi-tools': '0.3.3',
                                    'linux-abi-scan': '0.3.3', 'linux-targets': '0.3.3',
                                    'glibc-abilists': '0.1.2', 'glibc-provider-sources': '0.1.1'}
@@ -208,30 +208,39 @@ jobs:
             python3 - <<'PYVERIFY'
           import hashlib, io, json, os, tarfile, tomllib, urllib.request
           from pathlib import Path
-          url = 'https://static.crates.io/crates/cargo-libc/cargo-libc-0.2.2.crate'
+          url = 'https://static.crates.io/crates/cargo-libc/cargo-libc-0.2.3.crate'
           with urllib.request.urlopen(url, timeout=60) as response:
               baseline = response.read()
-          assert hashlib.sha256(baseline).hexdigest() == '7ebc74cde32437217a0e8bcf0fec84c33436fb2ed33d066fac9651e4d0da7caf'
+          assert hashlib.sha256(baseline).hexdigest() == 'cec36f14679064031545748420e97b3fbadea811be7b504177f6b25c1dfd585a'
           def payload(archive):
               return {m.name.split('/', 1)[1]: archive.extractfile(m).read()
                       for m in archive.getmembers() if m.isfile()}
           with tarfile.open(fileobj=io.BytesIO(baseline)) as archive:
               old = payload(archive)
-          with tarfile.open('target/package/cargo-libc-0.2.3.crate') as archive:
+          with tarfile.open('target/package/cargo-libc-0.2.4.crate') as archive:
               new = payload(archive)
           assert set(old) - {'.cargo_vcs_info.json'} == set(new) - {'.cargo_vcs_info.json'}
           unchanged = sorted(name for name in old if name.startswith('src/') or name in ['LICENSE', 'NOTICE.md'])
           assert all(old[name] == new[name] for name in unchanged)
           old_manifest = tomllib.loads(old['Cargo.toml.orig'].decode())
           new_manifest = tomllib.loads(new['Cargo.toml.orig'].decode())
-          assert old_manifest['package']['version'] == '0.2.2'
-          assert new_manifest['package']['version'] == '0.2.3'
-          old_manifest['package']['version'] = '0.2.3'
+          assert old_manifest['package']['version'] == '0.2.3'
+          assert new_manifest['package']['version'] == '0.2.4'
+          old_manifest['package']['version'] = '0.2.4'
           assert old_manifest == new_manifest
-          evidence = {'baseline': 'cargo-libc 0.2.2', 'candidate': 'cargo-libc 0.2.3',
+          old_lock = tomllib.loads(old['Cargo.lock'].decode())
+          new_lock = tomllib.loads(new['Cargo.lock'].decode())
+          own = next(p for p in old_lock['package'] if p['name'] == 'cargo-libc')
+          assert own['version'] == '0.2.3'
+          own['version'] = '0.2.4'
+          assert old_lock == new_lock
+          readme = new['README.md'].decode()
+          assert '[Release policy and records](https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md)' in readme
+          assert 'Current release:' not in readme
+          evidence = {'baseline': 'cargo-libc 0.2.3', 'candidate': 'cargo-libc 0.2.4',
                       'unchanged_payload_sha256': {name: hashlib.sha256(new[name]).hexdigest() for name in unchanged}}
           (Path(os.environ['EVIDENCE']) / 'package-payload-comparison.json').write_text(json.dumps(evidence, indent=2) + '\n')
-          print('All package paths and Rust/license/notice payload match official 0.2.2; only version/lock/README metadata differ.')
+          print('All package paths and Rust/license/notice payload match official 0.2.3; only version/lock/README metadata differ.')
           PYVERIFY
             export CARGO_HOME="$RUNNER_TEMP/package-cargo-home"
             cargo fetch --manifest-path "$package/Cargo.toml" --locked
@@ -261,7 +270,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@1.90.0
-      - name: Install published 0.2.3 into a clean root and exercise helpers
+      - name: Install published 0.2.4 into a clean root and exercise helpers
         run: |
           set -euo pipefail
           test "$(uname -m)" = x86_64
@@ -272,8 +281,8 @@ jobs:
           {
             git rev-parse HEAD
             export CARGO_HOME="$RUNNER_TEMP/published-cargo-home"
-            cargo install cargo-libc --version 0.2.3 --locked --root "$RUNNER_TEMP/published-install"
-            bash scripts/smoke-installed.sh "$RUNNER_TEMP/published-install" /usr/bin/clang-18 0.2.3
+            cargo install cargo-libc --version 0.2.4 --locked --root "$RUNNER_TEMP/published-install"
+            bash scripts/smoke-installed.sh "$RUNNER_TEMP/published-install" /usr/bin/clang-18 0.2.4
             CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/published-install/bin" /usr/bin/clang-18
           } 2>&1 | tee "$RUNNER_TEMP/evidence/published-install.log"
       - uses: actions/upload-artifact@v4

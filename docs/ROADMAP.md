@@ -17,6 +17,11 @@ clean published installation, exact release tag and docs.rs are verified.
 README correction, exact registry/package/native gates, docs.rs guide/banner
 rendering, immutable tag and clean published locked installation.
 
+[cargo-libc 0.2.4](RELEASE-0.2.4.md) is a documentation-only candidate to replace
+the packaged README's stale current-release label with version-neutral navigation.
+Exact candidate gates passed; it is not published. [Release status and records](RELEASING.md#release-records)
+are maintained independently of immutable package snapshots.
+
 ## Release policy adopted
 
 - [x] [Release and versioning policy](RELEASING.md), adopted 2026-11-01.

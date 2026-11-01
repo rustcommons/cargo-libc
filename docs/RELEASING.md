@@ -1,10 +1,22 @@
 # Release and versioning policy
 
-Adopted 2026-11-01. This is the maintained policy for cargo-libc. The
-[0.2.1 release record](RELEASE-0.2.1.md) documents the completed release; it is
-not a pending checklist. Versions are independent of the five-crate
+Adopted 2026-11-01. This is the maintained policy and release-record index for
+cargo-libc. Versions are independent of the five-crate
 [linux-abi-tools workspace](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/RELEASING.md)
 and of glibc data/source packages.
+
+## Release records
+
+Latest verified published release: **0.2.3**. Version **0.2.4 is a candidate, not
+published**. Update this maintained index as verification completes; packaged
+READMEs link here without calling a pinned historical version current.
+
+| Version | Date | State and evidence |
+| --- | --- | --- |
+| [0.2.4](RELEASE-0.2.4.md) | 2026-11-01 | Candidate: registry/package/clean-install run 41275479293 passed at `896ac7b`; review/merge/publication pending. |
+| [0.2.3](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |
+| [0.2.2](RELEASE-0.2.2.md) | 2026-11-01 | Published and verified; source/tag `b87563c6be6faf89ac26055f88fb520991125b8b`. |
+| [0.2.1](RELEASE-0.2.1.md) | 2026-10-31 | Published and verified; source/tag `767c16aef0e49c37018b3907be480363dfdb9175`. |
 
 ## Choosing a version
 
@@ -116,7 +128,7 @@ an existing registry archive.
    explains use of the packaged lock with `--locked`. The manual workflow's
    `registry` and `installed` modes and [installed smoke script](../scripts/smoke-installed.sh)
    provide the existing sequence; review their version-specific arguments before
-   each release (installed mode currently targets 0.2.3). Record verified outcomes
+   each release (installed mode currently targets 0.2.4). Record verified outcomes
    and remaining coverage gaps in the release record and roadmap.
 
 If a gate fails, stop the affected next step and correct or document the failure;

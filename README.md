@@ -78,7 +78,7 @@ completed. Ordinary releases retain this explicit coverage gap under the
 [VALIDATION.md](https://github.com/rustcommons/cargo-libc/blob/main/VALIDATION.md) for what was tested, [Limits](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#limits),
 and the [roadmap](https://github.com/rustcommons/cargo-libc/blob/main/docs/ROADMAP.md).
 
-Current release: [0.2.2 release evidence](https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASE-0.2.2.md).
+[Release policy and records](https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md).
 The [requirements and documentation index](https://github.com/rustcommons/cargo-libc/blob/main/docs/REQUIREMENTS.md)
 maps confirmed constraints to source, guides, scoped checks and known gaps.
 
