@@ -23,32 +23,35 @@ Solid arrows show implemented control/data flow for Cargo commands. The dotted
 
 ```mermaid
 flowchart TB
-    CLI["cargo libc<br/>Cargo command or env selection"]
-    AUTO["libc-abi-tools<br/>provider preparation / cache<br/>source or container mode"]
-    INPUT["Trusted provider descriptor<br/>or sysroot + GCC runtime"]
-    CFG["Target-only Cargo settings"]
+    CLI["cargo libc<br/>build / env selection"]
+    AUTO["libc-abi-tools<br/>prepare / reuse<br/>source / container"]
+    INPUT["Trusted descriptor<br/>or sysroot + GCC"]
+    CFG["Target-only settings"]
     CLI -->|automatic provider| AUTO
     CLI -->|explicit inputs| INPUT
     AUTO --> CFG
     INPUT --> CFG
     CFG --> CARGO
-    CFG -. "env: shell or TOML" .-> PLAIN["Plain Cargo / maturin"]
+    CFG -. "env: shell or TOML" .-> PLAIN["Plain Cargo<br/>or maturin"]
     PLAIN --> CARGO
-    subgraph BUILD["Build boundary: host units stay native"]
-        CARGO["Cargo with explicit<br/>unsuffixed Rust target"]
-        CARGO --> HOST["Host scripts / proc macros<br/>native compiler and host C"]
-        CARGO --> TARGET["Target Rust + C<br/>libc-linker / libc-cc<br/>target C++ refused"]
+    subgraph BUILD["Build boundary: host stays native"]
+        CARGO["Cargo<br/>unsuffixed target"]
+        CARGO --> HOST["Host scripts / macros<br/>native; host C too"]
+        CARGO --> TARGET["Target Rust + C<br/>linker / cc wrappers<br/>C++ refused"]
     end
-    TARGET --> ELF["Target ELF"]
-    ELF -->|"build/install or explicit inspect"| REPORT["Direct ELF / glibc checks<br/>optional linux-abi-scan: tier 1"]
-    ELF -->|"test / run"| RUNNER["libc-runner<br/>glibc checks before execution"]
-    RUNNER --> EXEC["No kernel floor: host execution<br/>With floor: local/container tier 2<br/>kernel-abi-tools"]
+    TARGET --> ELF["ELF outputs"]
+    ELF -->|"build/install or inspect"| REPORT["ELF / glibc checks<br/>optional tier 1 scan"]
+    ELF -->|"test / run"| RUNNER["libc-runner<br/>glibc checks"]
+    RUNNER -->|no kernel floor| HOSTRUN["Host execution"]
+    RUNNER -->|kernel floor| SIM["kernel-abi-tools<br/>local / container<br/>tier 2 simulation"]
 ```
 
 `build` checks its selected Cargo-reported executable; `install` checks the
 executables it built **after installation**. Plain Cargo/maturin outputs,
 including `cdylib`, require separate `inspect`; `inspect` also accepts existing
-ELF files independently of this build path. Host units never use the provider's
+ELF files independently of this build path. The target wrappers are
+`libc-linker` and `libc-cc`; a full sysroot requires its GCC runtime inputs.
+Optional tier 1 scanning is delegated to `linux-abi-scan`. Host units never use the provider's
 target linker. The provider builder embeds `glibc-abilists` and
 `glibc-provider-sources` inputs; imported descriptors remain trusted local inputs,
 not authenticated SDKs. Container execution uses its image's userland and the
