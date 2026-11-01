@@ -33,7 +33,7 @@ You need:
 - **GNU binutils**, with `ld.bfd` as the linker. Choose another linker with `--ld`.
 - **GCC**, which builds the glibc provider and supplies `crtbegin.o`/`crtend.o`.
   The producer records qualification for GCC 11 through 16; see its
-  [provider evidence](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDERS.md).
+  [source-mode GCC qualification](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/USING-PROVIDERS.md#choosing-a-mode).
   This is not a qualification of every host/tool combination.
 - **CMake**, only if a dependency builds C with it.
 - **podman or docker**, only for container-mode providers or the container

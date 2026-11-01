@@ -78,10 +78,12 @@ Evidence shorthand used below:
 | [CANDIDATE-INTEGRATION-0.3.2](CANDIDATE-INTEGRATION-0.3.2.md), [COMBINED-STDOUT-INTEGRATION-0.3.2](COMBINED-STDOUT-INTEGRATION-0.3.2.md) | Historical source-candidate evidence | Exact disposable source patches/refs are not current registry adoption. |
 | [REGISTRY-VALIDATION-0.2.1](REGISTRY-VALIDATION-0.2.1.md), [RELEASE-0.2.1](RELEASE-0.2.1.md) | Historical release evidence | Preserve 0.2.1 archive/source/checksums; 0.2.2 is a different immutable release. |
 | [RUN-STDOUT-FIX](RUN-STDOUT-FIX.md) | Historical correction / qualification evidence | Includes superseded invalid fixtures and the completed adoption pointer; do not resurrect old expected failures. |
-| [RELEASE-0.2.2](RELEASE-0.2.2.md) | Current release evidence, historically fixed refs | Source/registry/install/archive/tag/docs.rs evidence and exclusions; append corrections rather than invent new execution. |
+| [RELEASE-0.2.2](RELEASE-0.2.2.md) | Current published release evidence, historically fixed refs | Source/registry/install/archive/tag/docs.rs evidence and exclusions; append corrections rather than invent new execution. |
 | [src/lib.rs](../src/lib.rs) and public Rust doc comments / [docs.rs 0.2.2](https://docs.rs/cargo-libc/0.2.2/cargo_libc/) | Maintained source API docs / immutable published snapshot | Internal implementation entrypoints, not a stable external library API; no Rust examples changed in this audit. |
 | [CI](../.github/workflows/ci.yml), [manual integration](../.github/workflows/candidate-integration.yml), [scripts](../scripts), [examples](../examples) | Executable validation definitions / fixtures | Definitions describe possible coverage; only named successful runs supply execution evidence. |
 | [LICENSE](../LICENSE), [NOTICE](../NOTICE.md), [banner](assets/banner.svg) | Maintained legal/reference / presentation | Preserve attribution and licenses; banner is not part of the current package include list. |
+
+| [RELEASE-0.2.3](RELEASE-0.2.3.md) | Planned release record | Authorized documentation-only patch; pending producer docs crates and registry/package/native gates, not a published release. |
 
 ## Maintenance
 
@@ -100,8 +102,12 @@ API documentation. The immutable 0.2.2 README uses relative links to excluded gu
 presents CI coverage as running on every push. This audit fixes the repository
 README links and distinguishes workflow definitions from actual run evidence.
 Those presentation corrections can accompany a future separately authorized
-release; this trace index alone requires none. No Rust API source/example change
-or new product release is proposed by this audit.
+release; this trace index alone requires none. No Rust API source/example change is proposed. A subsequent decision authorized
+[documentation-only 0.2.3](RELEASE-0.2.3.md) specifically to distribute the corrected
+README links on docs.rs, where the published relative guide/banner links fail;
+crates.io's link rewriting does not repair that docs.rs snapshot. The trace index
+alone was not a reason for publication. Registry adoption and candidate gates for
+0.2.3 remain pending; 0.2.2 records and package contents stay immutable.
 
 The initial audit observed HTTP 404 for the shared documentation standard while
 it was being introduced. Resolution, 2026-11-01: the
