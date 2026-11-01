@@ -67,6 +67,13 @@ After the above:
 - other architectures (aarch64 first) and C libraries (musl), each once its baseline
   and static/dynamic linking behavior are defined.
 
+## CLI consistency review
+
+- [ ] Review duplicate `--sysroot`, `--gcc-runtime`, `--cc`, `--ld` and inspect
+  `--max-glibc` handling: these currently accept the last value. Rejecting them
+  would change accepted CLI behavior; decide the contract and release scope before
+  changing it. This is not a blocker for the stdout diagnostic correction.
+
 ## Presentation
 
 - [ ] A raster social preview image for GitHub, if wanted; the README uses the SVG
