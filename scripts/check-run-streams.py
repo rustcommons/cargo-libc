@@ -61,7 +61,8 @@ fn main() {
         assert b'Target:' in normal.stderr and b'Cargo command:' in normal.stderr, normal.stderr
         assert b'child stderr marker' in normal.stderr, normal.stderr
         failure = invoke(args + ['--', 'fail'])
-        expected_failure = 7 if command == 'run' else 101
+        # The harness-free test, like run, preserves its exit status.
+        expected_failure = 7
         assert failure.returncode == expected_failure, failure
         assert failure.stdout == expected, failure.stdout
         # Preclosed reader: deterministic, independent of scheduler/head timing.
@@ -73,7 +74,7 @@ fn main() {
         finally:
             os.close(writer)
         with open('/dev/full', 'wb') as full:
-            assert invoke(args, stdout=full).returncode == (23 if command == 'run' else 101)
+            assert invoke(args, stdout=full).returncode == 23
             diagnostic_error = invoke(args, stderr=full)
             assert diagnostic_error.returncode != 0
         print(f'{command}: exact JSON stdout, separate diagnostics, stdin and failure statuses passed')

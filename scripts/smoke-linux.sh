@@ -53,9 +53,13 @@ grep -q 'not reported' "$test_dir/rejection.log"
 # the host build script and procedural macro are not routed through it.
 cargo libc run --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc" \
   --kernel 3.10 --runner local -- --release --locked --offline --bin glibc-hello \
-  --target-dir "$test_dir/target output" >"$test_dir/run.log" 2>&1
-cat "$test_dir/run.log"
-grep -q 'Kernel simulation: Linux 3.10 with the local seccomp filter' "$test_dir/run.log"
+  --target-dir "$test_dir/target output" >"$test_dir/run.log" 2>"$test_dir/run.err"
+cat "$test_dir/run.log" "$test_dir/run.err"
+grep -q 'Kernel simulation: Linux 3.10 with the local seccomp filter' "$test_dir/run.err"
+if grep -q 'Kernel simulation:' "$test_dir/run.log"; then
+  echo 'run diagnostics leaked to stdout' >&2
+  exit 1
+fi
 grep -q 'target executable ran; thread result = 42' "$test_dir/run.log"
 # check: same target flags, host units stay native, nothing is linked.
 cargo libc check --sysroot / --gcc-runtime "$test_gcc" --glibc "$test_glibc" --cc "$test_cc" \
