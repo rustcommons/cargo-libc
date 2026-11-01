@@ -1,5 +1,9 @@
 # cargo-libc 0.2.1 registry release validation
 
+Historical evidence for the exact revisions/version below. Current release and
+registry state: [cargo-libc 0.2.2](RELEASE-0.2.2.md); current constraints and gaps:
+[requirements index](REQUIREMENTS.md).
+
 [Run 41244617689](https://github.com/rustcommons/cargo-libc/actions/runs/41244617689)
 passed on Ubuntu 24.04 x86_64 at consumer
 `c7fcd04312743f27f6a035df49530fb6f2ef5097`, using Rust/Cargo 1.90.0. This run used

@@ -1,5 +1,9 @@
 # Combined stdout-fix integration with linux-abi-tools 0.3.2
 
+Historical evidence for the exact revisions/version below. Current release and
+registry state: [cargo-libc 0.2.2](RELEASE-0.2.2.md); current constraints and gaps:
+[requirements index](REQUIREMENTS.md).
+
 On 2026-10-31, [run 41243277747](https://github.com/rustcommons/cargo-libc/actions/runs/41243277747)
 passed every step of the manual candidate integration workflow, including the
 shared-provider stdout regression and bounded native x86_64 checks.

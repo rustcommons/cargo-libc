@@ -1,5 +1,10 @@
 # Experimental glibc provider contract
 
+Maintained v1 consumer reference. For normal automatic provider/cache workflows,
+use the [user guide](USER-GUIDE.md#providers); the manual exporter examples below
+are producer development fixtures. Current release evidence and gaps are in
+[0.2.2](RELEASE-0.2.2.md) and the [requirements index](REQUIREMENTS.md).
+
 Version 1 connects generated link-only DSOs to Cargo through a trusted local
 descriptor. It supports x86_64 Linux dynamically linked non-PIE Rust executables,
 Rust shared libraries (`cdylib`, linked without `crt1.o` and with GCC's
@@ -32,7 +37,7 @@ relative symlinks inside those directories are allowed.
 | gcc-startup | Explicit GCC `crtbegin.o`/`crtend.o`, providing compiler startup support |
 | compiler-runtime | `libgcc_s.so.1` and `libgcc_s.so` to link against: a generated link-only stub with GCC 4.8.5's interface (`libc-abi libgcc stub`), the same for every release, so programs need nothing newer than CentOS 7's compiler runtime. Its functions trap; programs run with the target system's real `libgcc_s.so.1`, never the stub |
 
-From the libc-abi-tools checkout, export after generating and independently
+From the `rustcommons/linux-abi-tools` checkout (package `libc-abi-tools`), export after generating and independently
 checking the complete stubs:
 
 ```bash

@@ -1,4 +1,4 @@
-![cargo-libc: an orange gear and Cargo-to-ELF diagram](docs/assets/banner.svg)
+![cargo-libc: an orange gear and Cargo-to-ELF diagram](https://raw.githubusercontent.com/rustcommons/cargo-libc/main/docs/assets/banner.svg)
 
 # cargo-libc
 
@@ -20,14 +20,14 @@ shared libraries (`cdylib`); other architectures and C libraries are planned.
 
 Requirements are an x86_64 Linux host, Rust 1.90 or later, a Clang that supports
 `--gcc-install-dir`, GNU binutils, and GCC. See
-[Install](docs/USER-GUIDE.md#install). The five installed executables (`cargo-libc`,
+[Install](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#install). The five installed executables (`cargo-libc`,
 `libc-linker`, `libc-runner`, `libc-cc`, `libc-cxx`) must stay in one directory.
 
 ```sh
 cargo install cargo-libc --locked
 ```
 
-**Continue with the [user guide](docs/USER-GUIDE.md)** for the quick start, target
+**Continue with the [user guide](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md)** for the quick start, target
 selection, every command, C dependencies, Python extensions, CI and troubleshooting.
 
 ## What it does
@@ -52,7 +52,7 @@ selection, every command, C dependencies, Python extensions, CI and troubleshoot
   for CI or other tools.
 - **Builds Python extensions.** A PyO3 extension built by maturin with the
   `cargo libc env` settings can target an older glibc; see
-  [Python extensions](docs/USER-GUIDE.md#python-extensions-maturin).
+  [Python extensions](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#python-extensions-maturin).
 - **Builds C dependencies for the target.** C built through the `cc` crate or
   CMake gets the target's headers and links against its stubs. Build scripts and
   procedural macros stay native.
@@ -63,7 +63,8 @@ Python or downloaded SDK.
 
 ## Status
 
-This is an early release (0.2). Hosted CI, on every push:
+This is an early release (0.2). The [CI definition](https://github.com/rustcommons/cargo-libc/blob/main/.github/workflows/ci.yml)
+includes the following coverage when those jobs run:
 
 - builds, checks, runs and inspects with the automatic provider for every release
   2.17–2.44, including C dependencies and every command;
@@ -73,9 +74,13 @@ This is an early release (0.2). Hosted CI, on every push:
 
 Real old-system (tier 3) qualification is currently unavailable and deferred, not
 completed. Ordinary releases retain this explicit coverage gap under the
-[release and versioning policy](docs/RELEASING.md). See
-[VALIDATION.md](VALIDATION.md) for what was tested, [Limits](docs/USER-GUIDE.md#limits),
-and the [roadmap](docs/ROADMAP.md).
+[release and versioning policy](https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md). See
+[VALIDATION.md](https://github.com/rustcommons/cargo-libc/blob/main/VALIDATION.md) for what was tested, [Limits](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#limits),
+and the [roadmap](https://github.com/rustcommons/cargo-libc/blob/main/docs/ROADMAP.md).
+
+Current release: [0.2.2 release evidence](https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASE-0.2.2.md).
+The [requirements and documentation index](https://github.com/rustcommons/cargo-libc/blob/main/docs/REQUIREMENTS.md)
+maps confirmed constraints to source, guides, scoped checks and known gaps.
 
 ## Source map
 

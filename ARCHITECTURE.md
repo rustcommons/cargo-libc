@@ -1,5 +1,9 @@
 # Architecture
 
+Maintained design reference for the implemented scope. The
+[requirements index](docs/REQUIREMENTS.md) maps constraints and verification gaps;
+[0.2.2 release evidence](docs/RELEASE-0.2.2.md) records the current registry baseline.
+
 `cargo-libc` coordinates Cargo builds for a selected upstream glibc release on
 x86_64 Linux. It supports dynamically linked executables and shared libraries
 (`cdylib`), including Python extensions. Other architectures and C libraries,
