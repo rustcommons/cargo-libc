@@ -24,14 +24,16 @@ Evidence shorthand used below:
   x86_64 / Rust 1.90.0 / Clang 18; exact logs, checksums and exclusions in the
   [0.2.2 release record](RELEASE-0.2.2.md#registry-only-release-validation).
 - **I22:** [published-install run 41269812853](https://github.com/rustcommons/cargo-libc/actions/runs/41269812853),
-  2026-11-01, released commit above; clean Cargo home, registry locked installation,
+  2026-11-01, released 0.2.2 commit `b87563c6be6faf89ac26055f88fb520991125b8b`;
+  clean Cargo home, registry locked installation,
   installed executables and bounded native/container checks. See
   [publication evidence](RELEASE-0.2.2.md#publication-and-installed-verification).
 - **R23/I23:** [0.2.3 record](RELEASE-0.2.3.md), 2026-11-01. Registry run
   [41274081431](https://github.com/rustcommons/cargo-libc/actions/runs/41274081431)
   passed at `b40b2de58e842d1d274f7882b0396ddb9612eead`, and clean published-install
   [41274796646](https://github.com/rustcommons/cargo-libc/actions/runs/41274796646)
-  passed at current released source. Both are bounded Ubuntu x86_64 / Rust 1.90 /
+  passed at released 0.2.3 commit `289f28d161027e86decc808fc1745ec4a5b74d39`.
+  Both are bounded Ubuntu x86_64 / Rust 1.90 /
   Clang 18 evidence; dependency-doc and actual docs.rs link/banner rendering are
   verified separately in the record.
 - **R24/I24:** [0.2.4 record](RELEASE-0.2.4.md), 2026-11-01: registry run
