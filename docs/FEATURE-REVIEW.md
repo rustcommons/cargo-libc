@@ -1,5 +1,10 @@
 # Feature review: cargo-libc, cargo-zigbuild, and Zig
 
+Historical decision inventory prepared 2026-10-10. Its proposal dispositions and
+F/E identifiers are preserved; they do not override later implemented behavior.
+Current scope is in the [user guide](USER-GUIDE.md),
+[requirements index](REQUIREMENTS.md) and [0.2.2 release record](RELEASE-0.2.2.md).
+
 Review prepared 2026-10-10. This is a decision inventory, **not an approved
 commitment to implement every feature**. All new scope decisions remain pending
 user review. Existing functionality stays qualified only within its documented
@@ -55,11 +60,19 @@ capabilities, not every inherited Cargo flag or internal compiler workaround.
 An implemented upstream helper is not proof that every platform combination is
 qualified. Unknown upstream support is recorded as unverified, not absent.
 
-Our current baseline: Linux x86_64 application builds, GNU providers 2.17 through 2.44,
+Baseline at the original review (not current feature status): Linux x86_64 application builds, GNU providers 2.17 through 2.44,
 29 real input profiles, direct ELF inspection, and an experimental local v1
 contract. CLI/inspection tests on Windows do not qualify Windows application
 builds. Native cc/CMake/pkg-config/bindgen adapters and user SDK delivery are not
 implemented. Source/runtime/license scope is in [our validation](../VALIDATION.md).
+
+Implementation update (2026-11-01): the maintained guide now covers the F03–F09
+Cargo commands and F14 plain-Cargo shell/config workflows. F15 target C and F18
+CMake fixtures are implemented; F25 has automatic preparation/local caching,
+while authenticated relocatable SDK delivery remains open. These observations
+do not declare every original acceptance criterion passed: notably `install`
+checks after installation, and arbitrary native integrations remain unqualified.
+Use the [requirements index](REQUIREMENTS.md) for named evidence and gaps.
 
 ## How to read the proposals
 
@@ -72,7 +85,7 @@ These are estimates, not delivery dates. Each row includes a completion test.
 
 ## Cargo workflow parity candidates
 
-| ID / scope | Feature and upstream evidence | Our current state | Proposal / cost | Acceptance or review gate |
+| ID / scope | Feature and upstream evidence | State at review / later noted changes | Proposal / cost | Acceptance or review gate |
 | --- | --- | --- | --- | --- |
 | F01 Core | Version-suffixed targets (S1/S3/S4) | Suffix implemented and real-provider qualified; provider still explicit | Retain / M | Strip suffix for rustc; exact provider selected; reject conflicts/unknown releases |
 | F02 Adjacent | Normal build flags/workspaces (S7) | Tested workspace/package/bin/example/features/profiles and fresh artifacts; reserved options remain managed | Retain / M | Profiles/features/bin/example/workspace/locked/offline options preserved; managed target cannot be overridden |
@@ -91,7 +104,7 @@ These are estimates, not delivery dates. Each row includes a completion test.
 
 ## Native dependency and compiler integration
 
-| ID / scope | Feature and upstream evidence | Our current state | Proposal / cost | Acceptance or review gate |
+| ID / scope | Feature and upstream evidence | State at review / later noted changes | Proposal / cost | Acceptance or review gate |
 | --- | --- | --- | --- | --- |
 | F15 Core | Target C compiler adapter (S3/S4) | Controlled C fixtures; arbitrary build scripts not configured | Next / L | A real `cc` crate dependency compiles/links with target headers while host tools remain native |
 | F16 Adjacent | C++ compiler/runtime adapter (S3/S11) | Not qualified | Later / L | Choose runtime explicitly; constructors/exceptions/unwind work; audit GLIBCXX/CXXABI or alternative runtime requirements separately |
@@ -105,7 +118,7 @@ These are estimates, not delivery dates. Each row includes a completion test.
 
 ## Providers and platform scope
 
-| ID / scope | Feature and upstream evidence | Our current state | Proposal / cost | Acceptance or review gate |
+| ID / scope | Feature and upstream evidence | State at review / later noted changes | Proposal / cost | Acceptance or review gate |
 | --- | --- | --- | --- | --- |
 | F24 Core | glibc ABI data + headers/CRT/nonshared generation (S9) | Producer matrix/stubs; pinned real support inputs | Retain/extend / L | Qualify each provider, preserve version/default/library identity; publish exact tested scope |
 | F25 Core | Installation/discovery/cache (S1/S6; Zig carries its libc inputs) | User-supplied inputs; workflow bundles only | Next / L | Authenticated provider identity, relocatable installation, offline use, concurrent installs and cache invalidation |
@@ -172,8 +185,8 @@ Suggested review batches:
 4. **Backend/platform expansion:** F27–F30/F32–F36/E07/E08. Approve from
    concrete users and supported environments, not a feature-count target.
 
-Continue glibc provider rollout (2.19 next) and historical research as already
-tracked; neither is contingent on copying every upstream convenience. Before
+At the original review, continuing the provider rollout (then 2.19 next) and
+historical research were recommendations; neither is contingent on copying every upstream convenience. Before
 public release, revisit the name against the approved scope and actual user
 workflow. A feature review does not authorize a rename or SDK publication.
 
@@ -187,9 +200,12 @@ workflow. A feature review does not authorize a rename or SDK publication.
 
 See [ROADMAP.md](ROADMAP.md) for open work and [VALIDATION.md](../VALIDATION.md) for what was tested.
 
-F01 implementation and qualification completed following the proceed instructions.
-Producer cbf31dd / consumer ed4c997 passed the current Rust 1.99/Clang 21/24
+F01 implementation and qualification completed following the proceed instructions
+at the historical revisions below.
+Producer cbf31dd / consumer ed4c997 passed that Rust 1.99/Clang 21/24
 provider matrix ([evidence](https://github.com/rustcommons/linux-abi-tools/actions/runs/38076305526)).
-Other feature decisions remain pending; F01 does not add automatic acquisition.
+Other proposal dispositions below are historical. F01 itself did not add automatic
+acquisition; automatic provider preparation and later Cargo/C workflows are now
+documented in the maintained guide, without approving the remaining proposals.
 
 F02 qualification completed following the proceed instruction; see [Cargo workflows](CARGO-WORKFLOWS.md) and [the passing real-provider matrix](https://github.com/rustcommons/linux-abi-tools/actions/runs/38077381465). Other proposed feature decisions remain pending.

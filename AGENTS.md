@@ -21,8 +21,9 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
   valid ABI entries and must not be discarded just because they predate 2.17.
 - Preserve the existing sysroot-backed build and direct ELF inspection behavior.
 - Keep host build scripts/procedural macros separate from target linker settings.
-- Generated ABI libraries, native dependency adapters, and other libc backends
-  must be documented as planned until implemented and validated.
+- Document generated ABI/provider and native C adapter workflows as supported only
+  within implemented and validated scope. Other libc backends and unimplemented
+  native dependency adapters remain planned.
 - Keep Rust implementation dependencies minimal: std plus first-party
   rustcommons crates (`linux-abi-scan`, `linux-targets`, `kernel-abi-tools`, and
   `libc-abi-tools` for providers, all from crates.io); no third-party crates.
@@ -52,6 +53,15 @@ Release/version choices and qualification gaps follow the maintained
 [release policy](docs/RELEASING.md). Real old-system tier 3 qualification is
 deferred, not complete; ordinary releases require applicable automated gates
 and an explicit coverage gap, not unavailable old-system infrastructure.
+
+## Documentation and requirements traceability
+
+- Follow the [Rust Commons documentation conventions](https://github.com/rustcommons/.github/blob/main/docs/DOCUMENTATION.md).
+- Maintain [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) as the repository's index of confirmed requirements, their sources, implementation or documentation, verification evidence, and gaps. Preserve stable repository-scoped IDs and existing identifiers; never renumber or reuse them.
+- Distinguish verified behavior, partial verification, planned work, deferred work, and scope exclusions. A source reference or passing test supports only the scope it actually checks; record missing evidence explicitly.
+- Keep the README focused on purpose, prerequisites, setup, and guide links. Keep detailed workflows in maintained guides, future work in the roadmap, and dated release or validation evidence identifiable as historical records.
+- Update affected requirements, documentation, and trace links together when behavior, scope, interfaces, prerequisites, or validation changes. Use exact versions or revisions for release evidence, and do not rewrite historical outcomes or treat repository edits as changes to an immutable published package.
+- Validate documentation changes with source and command checks, links, rendering, and a clean diff. Run additional builds or tests only when changed examples, package contents, or behavior require them.
 
 ## Git conventions
 

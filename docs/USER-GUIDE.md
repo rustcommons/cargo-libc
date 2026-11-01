@@ -1,5 +1,8 @@
 # cargo-libc user guide
 
+Maintained guide for cargo-libc 0.2.2. See the [requirements index](REQUIREMENTS.md)
+and [release evidence](RELEASE-0.2.2.md) for scope and verification limits.
+
 cargo-libc builds Rust programs on a current x86_64 Linux machine for older glibc
 releases. You choose the oldest glibc your users have, and cargo-libc links against
 exactly what that glibc release defines. It then checks the result, and can run
@@ -29,7 +32,9 @@ You need:
   `/usr/bin/clang`; choose another with `--cc`. Clang 18, 21 and 24 were tested.
 - **GNU binutils**, with `ld.bfd` as the linker. Choose another linker with `--ld`.
 - **GCC**, which builds the glibc provider and supplies `crtbegin.o`/`crtend.o`.
-  GCC 11 through 16 are qualified.
+  The producer records qualification for GCC 11 through 16; see its
+  [source-mode GCC qualification](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/USING-PROVIDERS.md#choosing-a-mode).
+  This is not a qualification of every host/tool combination.
 - **CMake**, only if a dependency builds C with it.
 - **podman or docker**, only for container-mode providers or the container
   test runner.
@@ -57,8 +62,8 @@ cargo libc build --target x86_64-unknown-linux-gnu.2.17 \
 
 On first use for a release this prints
 `glibc 2.17 provider (source mode, prepared)`: cargo-libc compiled and verified the
-glibc 2.17 provider, which takes a few seconds and is cached. Then it builds and
-prints a report for the executable named by `--artifact`. A passing report says
+glibc 2.17 provider, which is cached; preparation time depends on the host.
+Then it builds and prints a report for the executable named by `--artifact`. A passing report says
 **the executable requires no `GLIBC_*` version newer than 2.17**.
 
 Arguments before `--` are cargo-libc's; everything after `--` goes to Cargo. Cargo
@@ -123,7 +128,12 @@ The **provider** for a release supplies everything needed to link for it:
 - link-only stubs of glibc's libraries;
 - a `libgcc_s` stub.
 
-cargo-libc prepares it the first time you select the release and then reuses it.
+cargo-libc prepares it for the selected release and input hash, then reuses a
+matching cache entry. The hash includes the provider tool version: updating the
+locked `libc-abi-tools` version can require fresh preparation. Old version-keyed
+entries are not silently reused. Source mode uses embedded inputs but still needs
+host GCC/native tools; container preparation may need source downloads and image
+access. See [0.2.2 cache refresh](RELEASE-0.2.2.md#provider-cache-refresh).
 
 | Mode | How | When |
 | --- | --- | --- |
@@ -135,7 +145,8 @@ Choose a mode with `--provider-mode container` or `CARGO_LIBC_PROVIDER_MODE`, an
 the GCC with `CARGO_LIBC_PROVIDER_GCC`. A refused provider is never replaced by
 another mode behind your back.
 
-Manage the cache (`$CARGO_LIBC_PROVIDER_DIR`, default `~/.cargo/libc-providers`) with
+Manage the cache (`$CARGO_LIBC_PROVIDER_DIR`, else `$CARGO_HOME/libc-providers`,
+else `~/.cargo/libc-providers`) with
 `cargo libc provider prepare|list|path|verify|export|import|remove`. The full
 guide covers when to choose each mode and how to use providers on offline and
 air-gapped machines:
@@ -147,6 +158,11 @@ prepared ([PROVIDER-CONTRACT](PROVIDER-CONTRACT.md)). `--sysroot DIR` with
 system instead: its headers, startup files, `libc.so`, `libc_nonshared.a`, loader
 and GCC runtime. With a sysroot, the selected release is a ceiling that the build is
 checked against, not something cargo-libc enforces at link time. Prefer providers.
+
+Provider descriptors and build inputs are trusted local configuration, not
+authenticated SDKs. Only use trusted container images: the container runner
+forwards `CARGO*` and `RUST*` environment variables, which can include registry
+credentials. Do not expose secrets through test output or untrusted images.
 
 ## Commands
 
@@ -420,9 +436,10 @@ maturin calls Cargo itself, so this uses [`cargo libc env`](#plain-cargo-and-ci)
   nothing from Python.
 - **The wheel tag is maturin's.** `--compatibility manylinux_2_NN` makes maturin
   audit the extension against that [manylinux](https://github.com/pypa/manylinux)
-  policy and tag the wheel with it. pip then installs it on any Linux with glibc
-  2.NN or newer. The policy also checks that the extension links only libraries every
-  such system has.
+  policy and tag the wheel with it. pip uses that tag when selecting wheels;
+  it is not evidence that the wheel works on every matching system. Python ABI, architecture, dependent libraries
+  and actual runtime behavior still need checks. The audit checks allowed library
+  dependencies against the selected policy.
 - **Python's version is separate.** The wheel needs a CPython its tag accepts, for
   example 3.10 or later for an `abi3-py310` wheel. Old distributions often ship an
   older Python, so the target machine may need a newer CPython installed alongside.
@@ -490,8 +507,9 @@ maturin calls Cargo itself, so this uses [`cargo libc env`](#plain-cargo-and-ci)
    ```
 
 The container shares your machine's kernel. Both steps 5 and 6 are evidence, not
-qualification: only a real target system, [tier 3](#testing-tiers), qualifies a
-release.
+real old-system qualification: that requires a real target system,
+[tier 3](#testing-tiers). This deferred gap does not block ordinary releases under
+the [release policy](RELEASING.md#validation-and-deferred-qualification).
 
 ### Things to know
 
@@ -591,10 +609,17 @@ arguments can still add files.
 - **`install`:** the same as `build`, for every executable it built.
 - **`inspect`:** 0 if it passed, 2 if the check or scan failed, and 1 for input
   errors.
-- **`check`, `clippy`, `doc`, `rustc`, `test`, `run`:** Cargo's exit code.
-- **`libc-runner`:** makes a binary fail with 2 when it needs a newer glibc than
-  allowed.
+- **`check`, `clippy`, `doc`, `rustc`, `test`, `run`:** Cargo's numeric exit code
+  when it starts; configuration/start/output errors exit 1.
+- **`libc-runner`:** refuses with 2 when the selected glibc ceiling or known host
+  library versions cannot satisfy the binary. Child numeric statuses are retained;
+  signal termination is not a promise of shell-style `128 + signal` propagation.
 - **`doctor`:** 2 when the runner `test`/`run` would choose is unusable.
+
+Owned output ignores only BrokenPipe at write/flush boundaries and continues the
+operation; later failures retain their status. Genuine output errors remain
+failures. Final error reporting is best effort and does not panic if stderr is
+closed or full. See [stream/status evidence](RELEASE-0.2.2.md).
 
 **Environment variables.**
 

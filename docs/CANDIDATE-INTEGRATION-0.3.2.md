@@ -1,5 +1,9 @@
 # linux-abi-tools 0.3.2 source-candidate integration
 
+Historical evidence for the exact revisions/version below. Current release and
+registry state: [cargo-libc 0.2.2](RELEASE-0.2.2.md); current constraints and gaps:
+[requirements index](REQUIREMENTS.md).
+
 Historical evidence for the revisions below. For the revised stdout fixes, see
 the superseding [combined integration report](COMBINED-STDOUT-INTEGRATION-0.3.2.md).
 

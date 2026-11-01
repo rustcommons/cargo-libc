@@ -1,5 +1,9 @@
 # Migration from cargo-glibc
 
+Historical migration record (2026-10-09), with current installation guidance below.
+For current releases and requirements, see [0.2.2](RELEASE-0.2.2.md) and the
+[trace index](REQUIREMENTS.md).
+
 The source directory contained 22 files. Each was copied and compared by SHA-256
 before the unmodified prototype was committed as `be7dee4`. Original source,
 documentation, examples, lockfiles, and license can be recovered from that commit.
@@ -21,7 +25,10 @@ valid. The `glibc-hello` example keeps its name because it tests the glibc backe
 
 There is no compatibility alias for `cargo glibc`. Install from this repository
 with `cargo install --path . --locked --offline`, then use `cargo libc --help`.
-Both binaries must be installed together. Removing the old source folder does not
+Keep all five current executables (`cargo-libc`, `libc-linker`, `libc-runner`,
+`libc-cc`, `libc-cxx`) together in the installation directory. Source installation
+with `--offline` requires the locked dependencies to have been fetched first;
+normal registry installation is in the [user guide](USER-GUIDE.md#install). Removing the old source folder does not
 uninstall any old binaries already present in a user's Cargo bin directory.
 
 The original `cargo-glibc` source folder was removed on 2026-10-09 after the

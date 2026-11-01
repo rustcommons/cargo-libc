@@ -1,7 +1,9 @@
 # Roadmap
 
 Open work and adopted policy decisions. What cargo-libc does today is in the [user guide](USER-GUIDE.md), and
-what was tested is in [VALIDATION.md](../VALIDATION.md). Candidate features are
+current release evidence is in [RELEASE-0.2.2.md](RELEASE-0.2.2.md).
+[VALIDATION.md](../VALIDATION.md) retains historical results; the
+[requirements index](REQUIREMENTS.md) maps confirmed constraints and gaps. Candidate features are
 inventoried in the [feature review](FEATURE-REVIEW.md); listing one there is not
 approval.
 
@@ -10,6 +12,10 @@ release tag and docs.rs documentation are verified.
 
 [cargo-libc 0.2.2](RELEASE-0.2.2.md) is published. Registry-only release gates,
 clean published installation, exact release tag and docs.rs are verified.
+
+[cargo-libc 0.2.3](RELEASE-0.2.3.md) is in documentation-only release preparation;
+registry adoption and exact candidate validation passed; final review/merge and
+publication remain pending.
 
 ## Release policy adopted
 
@@ -51,8 +57,9 @@ packaging as a primary role.
 - [ ] Check every executable a workspace build produces, not only the one named with
   `--artifact`.
 - [ ] Validate the dynamic-library closure and runtime search paths.
-- [ ] Merge flags: today `RUSTFLAGS` and `CARGO_ENCODED_RUSTFLAGS` replace cargo-libc's
-  settings instead of combining with them.
+- [ ] Merge flags: managed cargo-libc commands refuse nonempty `RUSTFLAGS` and
+  `CARGO_ENCODED_RUSTFLAGS`; with generated plain-Cargo configuration, Cargo
+  overrides can replace the generated flags instead of combining with them.
 
 ## Later features
 

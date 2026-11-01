@@ -1,6 +1,13 @@
-# Validation — cargo-libc migration
+# Validation — historical records
 
-Validated 2026-10-09. The original prototype's report is preserved unchanged in
+The sections below preserve dated outcomes for their named revisions, beginning
+with migration validation on 2026-10-09. Statements about future work, pending
+checks and dependency versions are historical, not current release status.
+Current baseline: [published 0.2.2](docs/RELEASE-0.2.2.md), including registry-only
+run 41268879926 and published-install run 41269812853 (2026-11-01). See the
+[requirements index](docs/REQUIREMENTS.md) for current coverage and gaps.
+
+Migration validated 2026-10-09. The original prototype's report is preserved unchanged in
 [docs/PROTOTYPE-VALIDATION.md](docs/PROTOTYPE-VALIDATION.md); it is historical evidence,
 not a claim that those exact tool versions were rerun for the migration.
 

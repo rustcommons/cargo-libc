@@ -1,5 +1,9 @@
 # cargo-libc 0.2.1
 
+Historical evidence for the exact revisions/version below. Current release and
+registry state: [cargo-libc 0.2.2](RELEASE-0.2.2.md); current constraints and gaps:
+[requirements index](REQUIREMENTS.md).
+
 This is a completed release record. Future releases follow the
 [release and versioning policy](RELEASING.md), adopted 2026-11-01.
 

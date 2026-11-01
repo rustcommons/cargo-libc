@@ -1,5 +1,9 @@
 # Cargo flags and workspace builds
 
+Maintained command restrictions, followed by dated fixture evidence. Current
+[workflow guide](USER-GUIDE.md#commands), [0.2.2 evidence](RELEASE-0.2.2.md) and
+[requirements](REQUIREMENTS.md) describe the release scope.
+
 Pass ordinary Cargo build options after the coordinator's separator. Options
 before it select the provider, target, compiler/linker, and executable to inspect.
 
@@ -49,7 +53,8 @@ triple, without the glibc suffix.
 ## Preserved restrictions and scope
 
 Cargo target overrides, configuration overrides, message-format changes, an
-additional argument separator, and toolchain selectors after the separator are
+additional argument separator outside supported clippy/rustc tool arguments and
+test/run program arguments, and toolchain selectors after the separator are
 rejected. These restrictions protect the controlled target and artifact reporting;
 general safe configuration/flag merging is separate work (F13). Existing global
 Rustflags overrides remain rejected.
