@@ -45,9 +45,10 @@ fn main() {
     env['PATH'] = str(bin_dir) + os.pathsep + env['PATH']
     env.setdefault('CARGO_LIBC_PROVIDER_DIR', str(root / 'providers'))
 
-    def invoke(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+    def invoke(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, *, environment=None):
         return subprocess.run(args, input=b'redirected input\n', stdout=stdout,
-                              stderr=stderr, env=env, check=False, timeout=180)
+                              stderr=stderr, env=env if environment is None else environment,
+                              check=False, timeout=180)
 
     expected = b'{"ok":true}\n'
     for command in ['run', 'test']:
@@ -99,21 +100,21 @@ fn main() {
                                  'x86_64-unknown-linux-gnu.2.17', '--cc', clang,
                                  '--format', 'cargo'], capture_output=True, env=env, check=True)
         import tomllib
-        cargo_env = env.copy()
-        env.update(tomllib.loads(config.stdout.decode())['env'])
-        result = invoke(runner)
+        runner_env = env.copy()
+        runner_env.update(tomllib.loads(config.stdout.decode())['env'])
+        result = invoke(runner, environment=runner_env)
         assert result.returncode == 0 and result.stdout == expected, result
-        assert invoke(runner + ['fail']).returncode == 7
+        assert invoke(runner + ['fail'], environment=runner_env).returncode == 7
         print('libc-runner: redirected input/output and exit status passed')
-        env = cargo_env  # Plain-runner target settings must not leak into managed Cargo.
 
         if os.environ.get('CHECK_STREAM_CONTAINERS'):
-            env.update(CARGO_F2_TEST='cargo value with spaces', RUST_F2_TEST='rust value with spaces',
+            container_env = env.copy()
+            container_env.update(CARGO_F2_TEST='cargo value with spaces', RUST_F2_TEST='rust value with spaces',
                        UNRELATED_F2_TEST='must not be forwarded')
             for engine in ['docker', 'podman']:
-                env['CONTAINER_ENGINE'] = engine
-                env['KERNEL_ABI_ENGINE_ARGS'] = ('--runtime ' + os.environ['CHECK_STREAM_CONTAINERS']) if engine == 'podman' else ''
-                env['KERNEL_ABI_RUN_ARGS'] = '--network none'
+                container_env['CONTAINER_ENGINE'] = engine
+                container_env['KERNEL_ABI_ENGINE_ARGS'] = ('--runtime ' + os.environ['CHECK_STREAM_CONTAINERS']) if engine == 'podman' else ''
+                container_env['KERNEL_ABI_RUN_ARGS'] = '--network none'
                 for command in ['run', 'test']:
                     args = [str(bin_dir / 'cargo-libc'), command, '--target',
                             'x86_64-unknown-linux-gnu.2.17', '--cc', clang,
@@ -122,8 +123,8 @@ fn main() {
                             '--manifest-path', str(root / 'Cargo.toml'), '--locked', '--offline']
                     if command == 'test':
                         args += ['--test', 'stream-test']
-                    result = invoke(args + ['--', 'env-check'])
+                    result = invoke(args + ['--', 'env-check'], environment=container_env)
                     assert result.returncode == 0 and result.stdout == expected, result
-                    failure = invoke(args + ['--', 'env-check', 'fail'])
+                    failure = invoke(args + ['--', 'env-check', 'fail'], environment=container_env)
                     assert failure.returncode == 7 and failure.stdout == expected, failure
                     print(f'{engine} {command}: redirected stdin, exact JSON stdout, spaced environment and exit 7 passed')
