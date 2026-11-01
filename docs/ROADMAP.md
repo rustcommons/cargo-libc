@@ -14,7 +14,7 @@ release tag and docs.rs documentation are verified.
 clean published installation, exact release tag and docs.rs are verified.
 
 [cargo-libc 0.2.3](RELEASE-0.2.3.md) is in documentation-only release preparation;
-registry adoption and validation remain pending.
+registry adoption is complete and candidate validation remains pending.
 
 ## Release policy adopted
 

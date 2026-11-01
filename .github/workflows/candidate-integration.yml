@@ -106,6 +106,17 @@ jobs:
               assert len(data['packages']) == len(expected_versions)
               lock = tomllib.loads(Path('Cargo.lock').read_text())
               assert {p['name']: p['version'] for p in lock['package']} == expected_versions
+              expected_checksums = {
+                  'glibc-abilists': '0f76191d504fe7944029bf5ac1e3ee901b050e7ce3fc946fa2661a9094045287',
+                  'glibc-provider-sources': 'da10605d1cab20eb0ab8cf7ebe19b619737618578dc8c74e6c62a57e1a7ec440',
+                  'kernel-abi-tools': '0feddf7e5e33b15df1b279e3ba99c6a0743aae7edb91dd654e3a69ac01234dd3',
+                  'libc-abi-tools': '6a600e4bb78f84101a30c2658bd26a51ded0c6f79f73b74b99ad1168fa6b3bc7',
+                  'linux-abi-scan': 'eedffc57c88f27dee9bd28c3f177f39a457a694ddbe2678d9ba9e6078702028e',
+                  'linux-targets': '9138ccb80a4467c37c805b9ed7bfab8a574bd749a52fe42c4e00921e24affcb1',
+              }
+              assert {p['name']: p['checksum'] for p in lock['package'] if p['name'] != 'cargo-libc'} == expected_checksums
+              assert all(p['source'] == 'registry+https://github.com/rust-lang/crates.io-index'
+                         for p in lock['package'] if p['name'] != 'cargo-libc')
               assert manifest_data['dependencies'] == {
                   'kernel-abi-tools': '0.3.3', 'linux-abi-scan': '0.3.3',
                   'libc-abi-tools': '0.3.2', 'linux-targets': '0.3.0'}

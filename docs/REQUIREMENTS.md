@@ -83,7 +83,7 @@ Evidence shorthand used below:
 | [CI](../.github/workflows/ci.yml), [manual integration](../.github/workflows/candidate-integration.yml), [scripts](../scripts), [examples](../examples) | Executable validation definitions / fixtures | Definitions describe possible coverage; only named successful runs supply execution evidence. |
 | [LICENSE](../LICENSE), [NOTICE](../NOTICE.md), [banner](assets/banner.svg) | Maintained legal/reference / presentation | Preserve attribution and licenses; banner is not part of the current package include list. |
 
-| [RELEASE-0.2.3](RELEASE-0.2.3.md) | Planned release record | Authorized documentation-only patch; pending producer docs crates and registry/package/native gates, not a published release. |
+| [RELEASE-0.2.3](RELEASE-0.2.3.md) | Planned release record | Authorized documentation-only patch; producer docs crates verified/adopted; registry/package/native gates pending, not a published release. |
 
 ## Maintenance
 
@@ -106,7 +106,7 @@ release; this trace index alone requires none. No Rust API source/example change
 [documentation-only 0.2.3](RELEASE-0.2.3.md) specifically to distribute the corrected
 README links on docs.rs, where the published relative guide/banner links fail;
 crates.io's link rewriting does not repair that docs.rs snapshot. The trace index
-alone was not a reason for publication. Registry adoption and candidate gates for
+alone was not a reason for publication. Registry adoption is complete; exact candidate gates for
 0.2.3 remain pending; 0.2.2 records and package contents stay immutable.
 
 The initial audit observed HTTP 404 for the shared documentation standard while
