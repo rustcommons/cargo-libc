@@ -1,8 +1,8 @@
 # cargo-libc 0.2.2 release preparation
 
 Status: authorized patch release in preparation; not published. Version 0.2.1 and
-its tag remain immutable. Registry adoption awaits verified availability of all
-five linux-abi-tools 0.3.3 packages.
+its tag remain immutable. All five linux-abi-tools 0.3.3 packages are published and independently verified.
+Registry-only release validation remains pending.
 
 ## Scope and compatibility
 
@@ -35,12 +35,12 @@ establish registry-only release validation.
 
 ## Remaining gates
 
-- [ ] Verify all five official 0.3.3 archives, index checksums, non-yanked status,
+- [x] Verify all five official 0.3.3 archives, index checksums, non-yanked status,
   source identity and internal dependency requirements after publication.
-- [ ] Set cargo-libc 0.2.2; require scanner/kernel 0.3.3 and audit propagation
+- [x] Set cargo-libc 0.2.2; require scanner/kernel 0.3.3 and audit propagation
   through provider/internal requirements. Keep unrelated minima and glibc 0.1.0
   inputs unless a concrete dependency requirement needs a change.
-- [ ] Deliberately resolve all four consumed tool crates to registry 0.3.3 in the
+- [x] Deliberately resolve all four consumed tool crates to registry 0.3.3 in the
   real lock; no path/git patches or unrelated dependency upgrades.
 - [ ] Run exact-candidate fmt, MSRV, Clippy, tests, docs and package checks, plus
   registry-only native provider/reuse, C/CMake, config, host/target, stream,
@@ -56,3 +56,27 @@ establish registry-only release validation.
 Tier 3 real old-system qualification remains deferred. Tier 1 scans, tier 2
 simulation and containers on modern kernels do not establish it. Broad unchanged
 provider/Python matrices are outside this bounded release validation.
+
+## Registry adoption
+
+All five official 0.3.3 archives match crates.io API and sparse-index checksums,
+are non-yanked, and record clean VCS source
+`d483fd5a58e1361d008f06db5989acef72a84e54`. Every packaged Rust file matches
+that repository revision. Its Rust sources are unchanged from qualified producer
+`6604ceea74152a2e8bb1b56e5605bd4feecd8365`.
+
+| Package | SHA-256 |
+| --- | --- |
+| linux-targets 0.3.3 | `9138ccb80a4467c37c805b9ed7bfab8a574bd749a52fe42c4e00921e24affcb1` |
+| kernel-abi-tools 0.3.3 | `0feddf7e5e33b15df1b279e3ba99c6a0743aae7edb91dd654e3a69ac01234dd3` |
+| linux-abi-scan 0.3.3 | `eedffc57c88f27dee9bd28c3f177f39a457a694ddbe2678d9ba9e6078702028e` |
+| libc-abi-tools 0.3.3 | `6a600e4bb78f84101a30c2658bd26a51ded0c6f79f73b74b99ad1168fa6b3bc7` |
+| linux-abi-tools 0.3.3 | `82e7bc3bc7fe5bea39f215c6489b83833fd3aaa722b8d7840a15a103fc7ec2e0` |
+
+The real registry lock selects all four consumed tools at 0.3.3. Scanner and
+kernel direct caret minima are `"0.3.3"`; scanner also requires kernel and
+linux-targets 0.3.3 internally, and kernel requires linux-targets 0.3.3. The direct
+linux-targets minimum stays `"0.3.0"`. The provider minimum stays `"0.3.2"`, which
+already guarantees its required shared-output fixes; its 0.3.3 Rust source adds no
+new consumer requirement. Both glibc 0.1.0 versions/checksums remain unchanged.
+No release patches, git/path overrides or unrelated upgrades are present.

@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "cargo-libc"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "kernel-abi-tools",
  "libc-abi-tools",
@@ -26,18 +26,18 @@ checksum = "62eb50dd168d92ce36af896177c886c7889b1f62f5f09d07d64bedff74dac04e"
 
 [[package]]
 name = "kernel-abi-tools"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9da5a4b7dedfb152d6635d7de87efa22a92b1fd6f496ec351caa6d3bbdfd209"
+checksum = "0feddf7e5e33b15df1b279e3ba99c6a0743aae7edb91dd654e3a69ac01234dd3"
 dependencies = [
  "linux-targets",
 ]
 
 [[package]]
 name = "libc-abi-tools"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "079327b25d8d9089e4dc20dc09de4d3dcc0fb2762b55166854c7787bc33db9fc"
+checksum = "6a600e4bb78f84101a30c2658bd26a51ded0c6f79f73b74b99ad1168fa6b3bc7"
 dependencies = [
  "glibc-abilists",
  "glibc-provider-sources",
@@ -45,9 +45,9 @@ dependencies = [
 
 [[package]]
 name = "linux-abi-scan"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2ea34b1aa4ff30bc553fd4a7061da0a3f40914d6e75394a2c1391c6d947bff4"
+checksum = "eedffc57c88f27dee9bd28c3f177f39a457a694ddbe2678d9ba9e6078702028e"
 dependencies = [
  "kernel-abi-tools",
  "linux-targets",
@@ -55,6 +55,6 @@ dependencies = [
 
 [[package]]
 name = "linux-targets"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9e3ec31c779ff773874ca7541dbabc85868aa965af2c54f951516ea5699c104"
+checksum = "9138ccb80a4467c37c805b9ed7bfab8a574bd749a52fe42c4e00921e24affcb1"
