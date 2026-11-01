@@ -6,7 +6,7 @@ on:
       integration_mode:
         description: Source candidate, registry-only release validation, or published installation
         type: choice
-        options: [source, registry, installed]
+        options: [source, registry, installed, streams]
         default: source
       candidate_ref:
         description: Exact 40-character commit SHA in rustcommons/linux-abi-tools
@@ -16,7 +16,7 @@ permissions:
   contents: read
 jobs:
   integration:
-    if: inputs.integration_mode != 'installed'
+    if: inputs.integration_mode == 'source' || inputs.integration_mode == 'registry'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -219,3 +219,48 @@ jobs:
           name: published-install-${{ github.run_id }}
           path: ${{ runner.temp }}/evidence
           if-no-files-found: error
+
+  streams:
+    if: inputs.integration_mode == 'streams'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: 2
+      RUST_TEST_THREADS: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          components: rustfmt, clippy
+      - name: Native prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang-18 gcc binutils
+      - name: Reproduce baseline stdout pollution
+        run: |
+          mkdir -p "$RUNNER_TEMP/baseline" "$RUNNER_TEMP/evidence"
+          git archive 92bc2b7874a5ee23975bd04e2ea29eb306b53f00 | tar -x -C "$RUNNER_TEMP/baseline"
+          cargo build --manifest-path "$RUNNER_TEMP/baseline/Cargo.toml" --locked
+          set -o pipefail
+          python3 scripts/check-run-streams.py "$RUNNER_TEMP/baseline/target/debug" /usr/bin/clang-18 --expect-pollution | tee "$RUNNER_TEMP/evidence/baseline.log"
+      - name: Final portable checks and package
+        run: |
+          cargo fmt --all -- --check
+          cargo test --locked --offline
+          cargo clippy --all-targets --locked --offline -- -D warnings
+          cargo doc --no-deps --locked --offline
+          cargo package --locked --offline
+          cargo build --locked --offline
+      - name: Verify native streams
+        run: |
+          set -o pipefail
+          git rev-parse HEAD | tee "$RUNNER_TEMP/evidence/consumer.txt"
+          python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$RUNNER_TEMP/evidence/fixed.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: run-streams-${{ github.run_id }}
+          path: ${{ runner.temp }}/evidence
