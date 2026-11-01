@@ -13,7 +13,7 @@ READMEs link here without calling a pinned historical version current.
 
 | Version | Date | State and evidence |
 | --- | --- | --- |
-| [0.2.4](RELEASE-0.2.4.md) | 2026-11-01 | Candidate: version-neutral README release navigation; qualification/review/publication pending. |
+| [0.2.4](RELEASE-0.2.4.md) | 2026-11-01 | Candidate: registry/package/clean-install run 41275479293 passed at `896ac7b`; review/merge/publication pending. |
 | [0.2.3](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |
 | [0.2.2](RELEASE-0.2.2.md) | 2026-11-01 | Published and verified; source/tag `b87563c6be6faf89ac26055f88fb520991125b8b`. |
 | [0.2.1](RELEASE-0.2.1.md) | 2026-10-31 | Published and verified; source/tag `767c16aef0e49c37018b3907be480363dfdb9175`. |

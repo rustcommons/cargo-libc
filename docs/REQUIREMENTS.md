@@ -95,7 +95,7 @@ Evidence shorthand used below:
 
 | [0.2.3 render assets](assets/release-0.2.3/render-proof.json) and [screenshot](assets/release-0.2.3/docsrs-readme.png) | Historical render evidence | Captured exact docs.rs version, actual link URLs/HTTP statuses and loaded banner; excluded from package. |
 
-| [RELEASE-0.2.4](RELEASE-0.2.4.md) | Candidate release record | Minimal version-neutral README navigation fix; no runtime/dependency changes, not published. |
+| [RELEASE-0.2.4](RELEASE-0.2.4.md) | Candidate release record | Minimal version-neutral README navigation fix; exact candidate run 41275479293 passed at `896ac7b`; no runtime/dependency changes, not published. |
 
 ## Maintenance
 

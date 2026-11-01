@@ -1,0 +1,205 @@
+{
+  "date": "2026-11-01",
+  "readme_sha256": "59347ff28e36ed70b0ba5c31ba70ee067a07638f9a00f5c2eab273ba028f21c4",
+  "label_audit": "Only intended release-navigation line differs from official 0.2.3 README; no Current release label/pinned patch version; other capability/MSRV/scope/license labels unchanged and compared to manifest/source/CI.",
+  "relative_links": [
+    "LICENSE",
+    "NOTICE.md"
+  ],
+  "images_verified_svg": [
+    "https://raw.githubusercontent.com/rustcommons/cargo-libc/main/docs/assets/banner.svg",
+    "https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml/badge.svg",
+    "https://img.shields.io/badge/Rust-1.90%2B-orange",
+    "https://img.shields.io/badge/license-MIT-blue",
+    "https://img.shields.io/crates/v/cargo-libc",
+    "https://img.shields.io/docsrs/cargo-libc"
+  ],
+  "codeberg_browser_verification": "Actual Zig GNU C Library support README rendered; lightweight HTTP body required browser rendering.",
+  "links": [
+    {
+      "url": "https://clang.llvm.org/docs/ClangCommandLineReference.html",
+      "status": 200,
+      "final_url": "https://clang.llvm.org/docs/ClangCommandLineReference.html",
+      "bytes": 993691
+    },
+    {
+      "url": "https://codeberg.org/ziglang/zig/src/branch/master/lib/libc/glibc/README.md",
+      "status": 200,
+      "final_url": "https://codeberg.org/ziglang/zig/src/branch/master/lib/libc/glibc/README.md",
+      "bytes": 608
+    },
+    {
+      "url": "https://crates.io/crates/cargo-libc",
+      "error": "HTTP Error 404: Not Found",
+      "browser_verification": "Actual cargo-libc page renders v0.2.3 and expected package/install text; basic HTTP 404 is not reproduced in browser."
+    },
+    {
+      "url": "https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags",
+      "status": 200,
+      "final_url": "https://doc.rust-lang.org/cargo/reference/config.html",
+      "bytes": 103258,
+      "fragment_present": true
+    },
+    {
+      "url": "https://doc.rust-lang.org/cargo/reference/external-tools.html#json-messages",
+      "status": 200,
+      "final_url": "https://doc.rust-lang.org/cargo/reference/external-tools.html",
+      "bytes": 36667,
+      "fragment_present": true
+    },
+    {
+      "url": "https://doc.rust-lang.org/cargo/reference/unstable.html#target-applies-to-host",
+      "status": 200,
+      "final_url": "https://doc.rust-lang.org/cargo/reference/unstable.html",
+      "bytes": 159738,
+      "fragment_present": true
+    },
+    {
+      "url": "https://doc.rust-lang.org/rustc/codegen-options/index.html",
+      "status": 200,
+      "final_url": "https://doc.rust-lang.org/rustc/codegen-options/index.html",
+      "bytes": 68159
+    },
+    {
+      "url": "https://docs.rs/cargo-libc",
+      "status": 200,
+      "final_url": "https://docs.rs/cargo-libc/latest/cargo_libc/",
+      "bytes": 21650
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml",
+      "bytes": 336168
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml/badge.svg",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml/badge.svg",
+      "bytes": 2263
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/.github/workflows/ci.yml",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/blob/main/.github/workflows/ci.yml",
+      "bytes": 257925
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/VALIDATION.md",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/blob/main/VALIDATION.md",
+      "bytes": 291447
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md",
+      "bytes": 219896
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/REQUIREMENTS.md",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/REQUIREMENTS.md",
+      "bytes": 299924
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/ROADMAP.md",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/ROADMAP.md",
+      "bytes": 218487
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md",
+      "bytes": 399043
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#install",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md",
+      "bytes": 399043,
+      "fragment_present": true
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#limits",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md",
+      "bytes": 399043,
+      "fragment_present": true
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#python-extensions-maturin",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md",
+      "bytes": 399042,
+      "fragment_present": true
+    },
+    {
+      "url": "https://github.com/rustcommons/glibc-abilists",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/glibc-abilists",
+      "bytes": 255323
+    },
+    {
+      "url": "https://github.com/rustcommons/glibc-provider",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/glibc-provider",
+      "bytes": 254178
+    },
+    {
+      "url": "https://github.com/rustcommons/linux-abi-tools",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/linux-abi-tools",
+      "bytes": 264209
+    },
+    {
+      "url": "https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDERS.md",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDERS.md",
+      "bytes": 269245
+    },
+    {
+      "url": "https://github.com/rustcommons/linux-abi-tools/blob/main/docs/USING-PROVIDERS.md",
+      "status": 200,
+      "final_url": "https://github.com/rustcommons/linux-abi-tools/blob/main/docs/USING-PROVIDERS.md",
+      "bytes": 231039
+    },
+    {
+      "url": "https://img.shields.io/badge/Rust-1.90%2B-orange",
+      "status": 200,
+      "final_url": "https://img.shields.io/badge/Rust-1.90%2B-orange",
+      "bytes": 1270
+    },
+    {
+      "url": "https://img.shields.io/badge/license-MIT-blue",
+      "status": 200,
+      "final_url": "https://img.shields.io/badge/license-MIT-blue",
+      "bytes": 1275
+    },
+    {
+      "url": "https://img.shields.io/crates/v/cargo-libc",
+      "status": 200,
+      "final_url": "https://img.shields.io/crates/v/cargo-libc",
+      "bytes": 1303
+    },
+    {
+      "url": "https://img.shields.io/docsrs/cargo-libc",
+      "status": 200,
+      "final_url": "https://img.shields.io/docsrs/cargo-libc",
+      "bytes": 1277
+    },
+    {
+      "url": "https://raw.githubusercontent.com/rustcommons/cargo-libc/main/docs/assets/banner.svg",
+      "status": 200,
+      "final_url": "https://raw.githubusercontent.com/rustcommons/cargo-libc/main/docs/assets/banner.svg",
+      "bytes": 2989
+    },
+    {
+      "url": "https://refspecs.linuxfoundation.org/LSB_3.1.1/LSB-Core-generic/LSB-Core-generic/symversion.html",
+      "status": 200,
+      "final_url": "https://refspecs.linuxfoundation.org/LSB_3.1.1/LSB-Core-generic/LSB-Core-generic/symversion.html",
+      "bytes": 7460
+    }
+  ]
+}
