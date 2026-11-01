@@ -2,7 +2,7 @@
 
 Maintained design reference for the implemented scope. The
 [requirements index](docs/REQUIREMENTS.md) maps constraints and verification gaps;
-[0.2.2 release evidence](docs/RELEASE-0.2.2.md) records the current registry baseline.
+[release index](docs/RELEASING.md#release-records) records the current registry baseline.
 
 `cargo-libc` coordinates Cargo builds for a selected upstream glibc release on
 x86_64 Linux. It supports dynamically linked executables and shared libraries
@@ -15,6 +15,57 @@ default. Historical validation is retained in
 [PROTOTYPE-VALIDATION.md](docs/PROTOTYPE-VALIDATION.md); current workflows and
 limits belong in the [user guide](docs/USER-GUIDE.md), and open work in the
 [roadmap](docs/ROADMAP.md).
+
+## Implemented build and execution flow
+
+Solid arrows show implemented control/data flow for Cargo commands. The dotted
+`env` edge exports settings; it does not perform a build or post-build inspection.
+
+```mermaid
+flowchart TB
+    CLI["cargo libc<br/>Cargo command or env selection"]
+    AUTO["libc-abi-tools<br/>provider preparation / cache<br/>source or container mode"]
+    INPUT["Trusted provider descriptor<br/>or sysroot + GCC runtime"]
+    CFG["Target-only Cargo settings"]
+    CLI -->|automatic provider| AUTO
+    CLI -->|explicit inputs| INPUT
+    AUTO --> CFG
+    INPUT --> CFG
+    CFG --> CARGO
+    CFG -. "env: shell or TOML" .-> PLAIN["Plain Cargo / maturin"]
+    PLAIN --> CARGO
+    subgraph BUILD["Build boundary: host units stay native"]
+        CARGO["Cargo with explicit<br/>unsuffixed Rust target"]
+        CARGO --> HOST["Host scripts / proc macros<br/>native compiler and host C"]
+        CARGO --> TARGET["Target Rust + C<br/>libc-linker / libc-cc<br/>target C++ refused"]
+    end
+    TARGET --> ELF["Target ELF"]
+    ELF -->|"build/install or explicit inspect"| REPORT["Direct ELF / glibc checks<br/>optional linux-abi-scan: tier 1"]
+    ELF -->|"test / run"| RUNNER["libc-runner<br/>glibc checks before execution"]
+    RUNNER --> EXEC["No kernel floor: host execution<br/>With floor: local/container tier 2<br/>kernel-abi-tools"]
+```
+
+`build` checks its selected Cargo-reported executable; `install` checks the
+executables it built **after installation**. Plain Cargo/maturin outputs,
+including `cdylib`, require separate `inspect`; `inspect` also accepts existing
+ELF files independently of this build path. Host units never use the provider's
+target linker. The provider builder embeds `glibc-abilists` and
+`glibc-provider-sources` inputs; imported descriptors remain trusted local inputs,
+not authenticated SDKs. Container execution uses its image's userland and the
+modern host kernel, not a real old kernel.
+
+**Outside the implemented flow:** `prebuilt` remains unavailable pending legal
+review; other architectures/libcs are planned. Real old-system tier 3
+qualification is deferred, not complete and not an ordinary-release blocker.
+No arrow represents delivery of those capabilities.
+
+Source backing: [selection/delegation](src/cli.rs),
+[Cargo settings, artifact checks and exports](src/toolchain.rs),
+[host/target C dispatch](src/cc.rs), [ELF reporting](src/report.rs) and
+[runner checks/plans](src/simulate.rs). Relevant existing requirements are
+CL-REQ-003/005–008/010–013/015–017/020/024–025 in the
+[trace index](docs/REQUIREMENTS.md#requirements). The diagram is an implementation
+map, not additional runtime qualification or a new contract.
 
 ## Coordinator and dependencies
 
