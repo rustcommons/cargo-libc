@@ -29,9 +29,13 @@ command/probe lines go to stderr as well; this is part of the same patch correct
 
 Portable regressions assert exact statuses with both preclosed stderr and
 `/dev/full`. Native coverage adds explicit local kernel-floor runs and dry-run
-stream separation. Fresh combined qualification uses producer
-`c04269a6ea864b3a6371e8813d14f0fa069eb006`; its results are pending and do not follow
-from the earlier F2 run below. Production dependencies remain unchanged.
+stream separation. Combined qualification against producer `c04269a6ea864b3a6371e8813d14f0fa069eb006`
+is obsolete: review found its global record cap rejects valid large Rust binaries.
+Run 41264363861 was cancelled. A corrected producer revision is required before
+fresh qualification; no combined acceptance is claimed. The harness now accepts
+aliased dynamic-symbol headers and official Rust toolchain binaries with fixed
+tables above 65,536 entries, while rejecting overlapping version chains and offset
+overflows under explicit memory/time limits. Production dependencies remain unchanged.
 
 ## Verified evidence
 
