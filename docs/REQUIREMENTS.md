@@ -83,7 +83,7 @@ Evidence shorthand used below:
 | [README](../README.md) | Maintained entry guide | Purpose, prerequisites, registry setup, guide/trace links; packaged, so excluded-doc links use absolute GitHub URLs. |
 | [AGENTS](../AGENTS.md), [CLAUDE shim](../CLAUDE.md) | Maintained repository instructions | AGENTS is primary; shim points only to it, never a second authority. |
 | [USER-GUIDE](USER-GUIDE.md) | Maintained guide/reference | CLI, targets, setup, providers, C/Python, both plain-Cargo formats, streams/status and limits. |
-| [ARCHITECTURE](../ARCHITECTURE.md) | Maintained design/reference | Existing coordinator/provider/data boundaries and exclusions; no approval of redesigns. |
+| [ARCHITECTURE](../ARCHITECTURE.md#implemented-build-and-execution-flow) | Maintained design/reference + Mermaid flow | Implemented selection, host/target, artifact and runner boundaries: CL-REQ-003/005–008/010–013/015–017/020/024–025. Source-backed diagram; planned/legal/tier 3 boundaries are exclusions, not delivered arrows or new evidence. |
 | [PROVIDER-CONTRACT](PROVIDER-CONTRACT.md) | Maintained format reference with historical examples | Six-field v1 consumer contract; manual exporter examples are producer development fixtures, not a new SDK. |
 | [CARGO-WORKFLOWS](CARGO-WORKFLOWS.md) | Maintained restrictions + historical fixture evidence | Current argument rules; explicitly dated qualification applies to listed refs. |
 | [RELEASING](RELEASING.md) | Maintained policy | Independent versions, authorization, registry/package/install checks and deferred tier 3. |
