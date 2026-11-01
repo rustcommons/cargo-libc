@@ -48,6 +48,11 @@ Run `cargo fmt --all -- --check`, `cargo test --locked --offline`, and
 Linux build/link execution requires Linux, Clang, a linker, and a target sysroot.
 Distinguish host tests from actual oldest-target runtime qualification.
 
+Release/version choices and qualification gaps follow the maintained
+[release policy](docs/RELEASING.md). Real old-system tier 3 qualification is
+deferred, not complete; ordinary releases require applicable automated gates
+and an explicit coverage gap, not unavailable old-system infrastructure.
+
 ## Git conventions
 
 **No tool attribution, anywhere.** Do not add `Co-Authored-By: Claude ...` trailers,

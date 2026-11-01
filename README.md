@@ -71,7 +71,9 @@ This is an early release (0.2). Hosted CI, on every push:
   container and source providers for every release
   ([PROVIDERS](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/PROVIDERS.md)).
 
-What CI does not do is run your program on a real old system: tier 3 is yours. See
+Real old-system (tier 3) qualification is currently unavailable and deferred, not
+completed. Ordinary releases retain this explicit coverage gap under the
+[release and versioning policy](docs/RELEASING.md). See
 [VALIDATION.md](VALIDATION.md) for what was tested, [Limits](docs/USER-GUIDE.md#limits),
 and the [roadmap](docs/ROADMAP.md).
 

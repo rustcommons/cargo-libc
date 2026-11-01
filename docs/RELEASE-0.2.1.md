@@ -1,5 +1,8 @@
 # cargo-libc 0.2.1
 
+This is a completed release record. Future releases follow the
+[release and versioning policy](RELEASING.md), adopted 2026-11-01.
+
 Published on 2026-10-31. [crates.io](https://crates.io/crates/cargo-libc/0.2.1) and
 [docs.rs](https://docs.rs/cargo-libc/0.2.1/cargo_libc/) serve the released version.
 Tag [`v0.2.1`](https://github.com/rustcommons/cargo-libc/tree/v0.2.1) points

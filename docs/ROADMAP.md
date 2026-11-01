@@ -1,6 +1,6 @@
 # Roadmap
 
-Open work only. What cargo-libc does today is in the [user guide](USER-GUIDE.md), and
+Open work and adopted policy decisions. What cargo-libc does today is in the [user guide](USER-GUIDE.md), and
 what was tested is in [VALIDATION.md](../VALIDATION.md). Candidate features are
 inventoried in the [feature review](FEATURE-REVIEW.md); listing one there is not
 approval.
@@ -8,29 +8,37 @@ approval.
 [cargo-libc 0.2.1](RELEASE-0.2.1.md) is published and its registry installation,
 release tag and docs.rs documentation are verified.
 
-## Next
+## Release policy adopted
 
-In this order; each item says what it waits on.
+- [x] [Release and versioning policy](RELEASING.md), adopted 2026-11-01.
+  Cargo-libc versions remain independent of dependency versions.
 
-1. [ ] **Tier 3 on real old systems.** For example CentOS 7 (glibc 2.17, Linux 3.10)
-   and SLES 12 SP5 (glibc 2.22, Linux 4.12), for executables and Python extensions,
-   including native C dependencies; and a real Rocky Linux 9 build host. This is the
-   main missing evidence behind the releases. There are no hosts; a possible route is
-   virtual machines in CI (GitHub's Linux runners can usually run KVM): CentOS 7's
-   cloud image from its archive, and openSUSE Leap 42.x (also glibc 2.22) as a free
-   stand-in for SLES 12 SP5, which needs a SUSE subscription. Check first that the
-   runners allow it.
-2. [ ] **Maintainer decisions:**
-   - a release and versioning policy;
-   - the [feature review](FEATURE-REVIEW.md): approve, defer, reject or ask for
-     evidence on each item, starting with core delivery and plain Cargo, then native
-     dependencies, Cargo conveniences and link modes, then platform expansion; record
-     ownership, prerequisites, maintenance cost and acceptance evidence for approved
-     items;
-   - the legal review, which gates `prebuilt` mode and `glibc-provider-binaries`.
+## Maintainer decisions
 
-   Revisit the name before adopting general toolchain/SDK management or platform
-   packaging as a primary role.
+- [ ] The [feature review](FEATURE-REVIEW.md): approve, defer, reject or ask for
+  evidence on each item, starting with core delivery and plain Cargo, then native
+  dependencies, Cargo conveniences and link modes, then platform expansion; record
+  ownership, prerequisites, maintenance cost and acceptance evidence for approved
+  items.
+- [ ] The legal review, which gates `prebuilt` mode and `glibc-provider-binaries`.
+
+Revisit the name before adopting general toolchain/SDK management or platform
+packaging as a primary role.
+
+## Deferred qualification and infrastructure
+
+- [ ] **Tier 3 on real old systems.** As decided on 2026-11-01, these environments
+  are unavailable and the maintainer cannot provide or run them. This work is
+  deferred, not complete and not an ordinary-release blocker. Releases may ship
+  with applicable automated gates passing and an explicit tier 3 coverage gap,
+  under the [release policy](RELEASING.md#validation-and-deferred-qualification).
+  Any new real-old-system compatibility claim still needs actual evidence.
+
+  Potential qualification includes old distribution/kernel combinations,
+  executables and Python extensions with native C dependencies, and relevant
+  build hosts. Tier 1 scans, tier 2 simulation and containers on modern kernels
+  do not supply that evidence. A full-VM approach is an investigation only; no
+  new CI platform, user hardware, funding or delivery is committed.
 
 ## Providers and artifact checks
 

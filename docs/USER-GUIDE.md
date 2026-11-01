@@ -330,8 +330,10 @@ cargo-libc offers three levels of evidence. Each is stronger than the one before
    syscall availability and `madvise`. The local runner keeps your machine's
    libraries.
 3. **Tier 3, a real target.** Run the program on a real system at your minimums,
-   such as a RHEL 7 VM. Only this tier qualifies a release, and cargo-libc does not
-   do it for you.
+   such as a RHEL 7 VM. Only this tier supplies real old-system qualification;
+   cargo-libc does not do it for you. These environments are currently unavailable
+   to the project. This deferred coverage gap does not block ordinary cargo-libc
+   releases under the [release policy](RELEASING.md#validation-and-deferred-qualification).
 
 ## Plain Cargo and CI
 
