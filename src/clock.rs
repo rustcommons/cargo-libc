@@ -187,6 +187,19 @@ impl Profile {
         }
         let bytes = value.as_encoded_bytes();
         let text = value.to_str();
+        const PLACEMENT: &[&str] = &["-Ttext", "-Tdata", "-Tbss", "-Ttext-segment"];
+        if text.is_some_and(|text| PLACEMENT.contains(&text)) {
+            *option_value = true;
+            return Ok(value.to_owned());
+        }
+        if text.is_some_and(|text| {
+            PLACEMENT.iter().any(|flag| {
+                text.strip_prefix(flag)
+                    .is_some_and(|rest| rest.starts_with('='))
+            })
+        }) {
+            return Ok(value.to_owned());
+        }
         if text.is_some_and(|text| {
             [
                 "-o",
@@ -433,6 +446,51 @@ mod tests {
         })
         .unwrap_err()
         .contains("not a release candidate"));
+    }
+
+    #[test]
+    fn section_placement_flags_are_not_linker_scripts() {
+        let profile = Profile {
+            libraries: Libraries {
+                libc: "/target/libc.so.6".into(),
+                rt: "/target/librt.so.1".into(),
+            },
+            overlay: None,
+            identity: "test".into(),
+        };
+        for flag in ["-Ttext", "-Tdata", "-Tbss", "-Ttext-segment"] {
+            for args in [
+                vec![flag.into(), "0x400000".into()],
+                vec![format!("{flag}=0x400000").into()],
+                vec![format!("-Wl,{flag},0x400000").into()],
+                vec![format!("-Wl,{flag}=0x400000").into()],
+                vec![
+                    "-Xlinker".into(),
+                    flag.into(),
+                    "-Xlinker".into(),
+                    "0x400000".into(),
+                ],
+                vec!["-Xlinker".into(), format!("{flag}=0x400000").into()],
+            ] {
+                assert_eq!(profile.link_args(args.clone()).unwrap(), args);
+                let mut with_script = args;
+                with_script.push("-Wl,-T,unknown-script".into());
+                assert!(profile
+                    .link_args(with_script)
+                    .unwrap_err()
+                    .contains("opaque linker input"));
+            }
+            for missing in [
+                vec![flag.into()],
+                vec![format!("-Wl,{flag}").into()],
+                vec!["-Xlinker".into(), flag.into()],
+            ] {
+                assert!(profile
+                    .link_args(missing)
+                    .unwrap_err()
+                    .contains("missing linker/driver option operand"));
+            }
+        }
     }
 
     struct Files(PathBuf);
