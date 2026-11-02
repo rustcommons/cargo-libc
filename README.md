@@ -11,8 +11,8 @@
 [![docs.rs](https://img.shields.io/docsrs/cargo-libc)](https://docs.rs/cargo-libc)
 
 A Cargo subcommand that builds Rust programs on a current x86_64 Linux machine for
-an older glibc, 2.17 through 2.44. It links against exactly what the release you
-choose defines, checks what the result requires, and can run your tests under a
+an older glibc, 2.17 through 2.44. It links using interfaces available in the release
+you choose, checks what the result requires, and can run your tests under a
 simulation of the target's kernel. It supports dynamically linked executables and
 shared libraries (`cdylib`); other architectures and C libraries are planned.
 
@@ -40,6 +40,11 @@ selection, every command, C dependencies, Python extensions, CI and troubleshoot
   It verifies every object against the build CI qualified, and caches the
   provider. See
   [Using glibc providers](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/USING-PROVIDERS.md).
+- **Selects libc clock defaults.** Ordinary references to `clock_gettime`,
+  `clock_getres`, `clock_settime`, `clock_nanosleep` and `clock_getcpuclockid`
+  prefer libc through a derived link profile; explicit legacy versions remain
+  available. See [Clock linking](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#clock-linking)
+  for input boundaries and configuration refresh.
 - **Checks the result.** `build` and `install` check that the executables they
   produce require no newer `GLIBC_*` version, and `inspect` checks any ELF file.
   With a kernel floor they also run a static scan (tier 1, the least reliable
@@ -63,7 +68,7 @@ Python or downloaded SDK.
 
 ## Status
 
-This is an early release (0.2). The [CI definition](https://github.com/rustcommons/cargo-libc/blob/main/.github/workflows/ci.yml)
+This tool is in early development. The [CI definition](https://github.com/rustcommons/cargo-libc/blob/main/.github/workflows/ci.yml)
 includes the following coverage when those jobs run:
 
 - builds, checks, runs and inspects with the automatic provider for every release
@@ -88,6 +93,8 @@ maps confirmed constraints to source, guides, scoped checks and known gaps.
 | --- | --- |
 | `src/cli.rs` | Command parsing; automatic providers through `libc-abi-tools` |
 | `src/toolchain.rs` | Input probes, target flags, Cargo execution, the linker and C compiler drivers, artifact checks, `env` |
+| `src/clock.rs` | Selected target clock inputs, delegated RT overlay, private configuration identity and controlled full-path replacement |
+| `src/clock_named.rs` | Completed-Clang named-input search/state validation and bounded standard-library scripts |
 | `src/cc.rs`, `src/bin/libc-cc.rs`, `src/bin/libc-cxx.rs` | C compiler wrappers for target C dependencies |
 | `src/simulate.rs`, `src/bin/libc-runner.rs` | Tier 2 target runner: glibc checks, then the local filter or a container |
 | `src/report.rs` | glibc assessment, tier 1 scan, human and JSON reports |

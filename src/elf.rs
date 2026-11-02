@@ -27,6 +27,7 @@ const DT_NULL: u64 = 0;
 const DT_NEEDED: u64 = 1;
 const DT_STRTAB: u64 = 5;
 const DT_STRSZ: u64 = 10;
+const DT_SONAME: u64 = 14;
 const DT_RPATH: u64 = 15;
 const DT_RUNPATH: u64 = 29;
 const DT_VERDEF: u64 = 0x6fff_fffc;
@@ -46,6 +47,8 @@ const MAX_OUTPUT_STRING_BYTES: usize = 16 * 1024 * 1024;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ElfInfo {
     pub machine: u16,
+    /// Optional DT_SONAME; ordinary shared objects need not declare one.
+    pub soname: Option<String>,
     pub interpreter: Option<String>,
     /// DT_NEEDED values, in their original order.
     pub needed: Vec<String>,
@@ -488,6 +491,7 @@ pub fn inspect(bytes: &[u8]) -> Result<ElfInfo, String> {
     check_load_mappings(&mut loads)?;
     let mut info = ElfInfo {
         machine,
+        soname: None,
         interpreter,
         needed: Vec::new(),
         rpath: Vec::new(),
@@ -515,6 +519,7 @@ pub fn inspect(bytes: &[u8]) -> Result<ElfInfo, String> {
     let mut verdef = None;
     let mut verdefnum = None;
     let mut needed = Vec::new();
+    let mut soname = None;
     let mut rpath = None;
     let mut runpath = None;
     let mut terminated = false;
@@ -529,6 +534,7 @@ pub fn inspect(bytes: &[u8]) -> Result<ElfInfo, String> {
                 break;
             }
             DT_NEEDED => needed.push(value),
+            DT_SONAME => set_once(&mut soname, value, "DT_SONAME")?,
             DT_STRTAB => set_once(&mut strtab, value, "DT_STRTAB")?,
             DT_STRSZ => set_once(&mut strsz, value, "DT_STRSZ")?,
             DT_RPATH => set_once(&mut rpath, value, "DT_RPATH")?,
@@ -560,6 +566,15 @@ pub fn inspect(bytes: &[u8]) -> Result<ElfInfo, String> {
             strings,
             offset,
             "DT_NEEDED library",
+            false,
+            &mut budget,
+        )?);
+    }
+    if let Some(offset) = soname {
+        info.soname = Some(table_string(
+            strings,
+            offset,
+            "DT_SONAME",
             false,
             &mut budget,
         )?);

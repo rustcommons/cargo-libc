@@ -351,6 +351,7 @@ mod tests {
 
     fn fixture(needs: &[(&str, bool)]) -> ElfInfo {
         ElfInfo {
+            soname: None,
             machine: 62,
             interpreter: None,
             needed: vec!["libc.so.6".into()],

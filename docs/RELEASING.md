@@ -12,6 +12,7 @@ READMEs link here without calling a pinned historical version current.
 
 | Version | Date | State and evidence |
 | --- | --- | --- |
+| [0.3.0 candidate](RELEASE-0.3.0.md) | 2026-11-02 | Not published; derived five-clock profile, registry/native/consumer and final package/install gates passed; final narrow review, merge and publication pending. |
 | [0.2.4](RELEASE-0.2.4.md) | 2026-11-01 | Published and verified; source/tag `889515b191ead51303b1321de858ec4e2209722c`; archive, actual README render and published-install run 41276430527 passed. |
 | [0.2.3](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |
 | [0.2.2](RELEASE-0.2.2.md) | 2026-11-01 | Published and verified; source/tag `b87563c6be6faf89ac26055f88fb520991125b8b`. |
@@ -127,7 +128,7 @@ an existing registry archive.
    explains use of the packaged lock with `--locked`. The manual workflow's
    `registry` and `installed` modes and [installed smoke script](../scripts/smoke-installed.sh)
    provide the existing sequence; review their version-specific arguments before
-   each release (installed mode currently targets 0.2.4). Record verified outcomes
+   each release (installed mode currently targets 0.3.0). Record verified outcomes
    and remaining coverage gaps in the release record and roadmap.
 
 If a gate fails, stop the affected next step and correct or document the failure;

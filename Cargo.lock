@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "cargo-libc"
-version = "0.2.4"
+version = "0.3.0"
 dependencies = [
  "kernel-abi-tools",
  "libc-abi-tools",
@@ -35,9 +35,9 @@ dependencies = [
 
 [[package]]
 name = "libc-abi-tools"
-version = "0.3.3"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a600e4bb78f84101a30c2658bd26a51ded0c6f79f73b74b99ad1168fa6b3bc7"
+checksum = "915611aa54c3fe77eefedb34bac233b077e59669130a116e2f20bc25297af009"
 dependencies = [
  "glibc-abilists",
  "glibc-provider-sources",
