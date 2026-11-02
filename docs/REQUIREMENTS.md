@@ -114,8 +114,9 @@ Evidence shorthand used below:
 Release-documentation audit, 2026-11-02: official archives for all eight tags
 match registry checksums, clean VCS and tagged source; see [history](releases/HISTORY.md).
 Local release-doc/syntax/link checks apply only to this documentation candidate.
-GitHub Releases were absent at inspection; green hosted bootstrap and post-publication
-live-body/latest verification are explicit remaining gaps under CL-REQ-023.
+GitHub Releases were absent at the initial inspection. CL-REQ-023 now records
+successful hosted bootstrap and full live-body/latest verification; historical
+runtime-evidence gaps are preserved.
 The [0.4.0 plan](UNWINDER-0.4.0-PLAN.md) is proposed work, not a confirmed new
 runtime requirement or additional evidence for existing requirements.
 
