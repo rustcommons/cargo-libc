@@ -41,6 +41,10 @@ git -C "$checkout" archive HEAD | tar -x -C "$evidence/consumer"
   gcc --version
   ld.bfd --version
 } > "$evidence/refs-tools.txt"
+{
+  printf 'Core check/build/tests and clock/C/sysroot phases: caller toolchain (%s)\n' "$(rustc --version)"
+  printf 'Formatting, direct Clippy and smoke-commands (which invokes cargo libc clippy): existing %s toolchain\n' "$lint_toolchain"
+} > "$evidence/toolchain-scopes.txt"
 python3 - "$evidence/consumer/Cargo.toml" "$producer" <<'PY'
 import json,sys,tomllib
 from pathlib import Path
@@ -92,7 +96,7 @@ PY
   test "$("$old_root/bin/cargo-libc" --version)" = 'cargo-libc 0.2.4'
   python3 scripts/check-clock-profile.py target/debug "$old_root/bin" "$evidence/clocks"
   for fixture in hello too-new c-deps; do cargo fetch --manifest-path "examples/$fixture/Cargo.toml" --locked; done
-  bash scripts/smoke-commands.sh /usr/bin/clang-18 2.22
+  rustup run "$lint_toolchain" bash scripts/smoke-commands.sh /usr/bin/clang-18 2.22
   if command -v cmake >/dev/null; then
     bash scripts/smoke-c-deps.sh /usr/bin/clang-18 2.22
     CARGO_LIBC_SMOKE_CC=/usr/bin/clang-18 bash scripts/smoke-linux.sh
