@@ -7,6 +7,7 @@ producer=$(realpath "${2:?producer checkout}")
 old_root=$(realpath -m "${3:?old installation root}")
 evidence=$(realpath -m "${4:?fresh evidence directory}")
 expected_producer=${5:?exact independently reviewed producer SHA}
+lint_toolchain=${QUALIFY_LINT_TOOLCHAIN:-1.99.0}
 [[ "$expected_producer" =~ ^[0-9a-f]{40}$ ]] || { echo 'Expected producer ref must be a full commit SHA' >&2; exit 1; }
 if [ "$expected_producer" = 1b3b51c8afad88e05b0dc238c15f5ee879f94184 ]; then
   echo 'Producer 1b3b51c8 is review-blocked; use the corrected reviewed ref, not release gates on that source.' >&2
@@ -16,9 +17,12 @@ export CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=2
 test "$(uname -m)" = x86_64
 test "$(git -C "$producer" rev-parse HEAD)" = "$expected_producer"
 git -C "$producer" diff --quiet HEAD --
-for tool in cargo rustc python3 clang-18 gcc ld.bfd readelf; do
+for tool in cargo rustc rustup python3 clang-18 gcc ld.bfd readelf ar; do
   command -v "$tool" >/dev/null || { echo "Missing existing native qualification tool: $tool" >&2; exit 1; }
 done
+# `rustup run` requires an existing toolchain; it never installs components.
+rustup run "$lint_toolchain" cargo fmt --version
+rustup run "$lint_toolchain" cargo clippy --version
 test ! -e "$evidence/consumer"
 mkdir -p "$evidence/consumer"
 git -C "$checkout" archive HEAD | tar -x -C "$evidence/consumer"
@@ -27,6 +31,11 @@ git -C "$checkout" archive HEAD | tar -x -C "$evidence/consumer"
   git -C "$producer" rev-parse HEAD
   rustc -vV
   cargo -V
+  printf 'Lint toolchain: %s\n' "$lint_toolchain"
+  rustup run "$lint_toolchain" rustc -vV
+  rustup run "$lint_toolchain" cargo -V
+  rustup run "$lint_toolchain" cargo fmt --version
+  rustup run "$lint_toolchain" cargo clippy --version
   uname -a
   clang-18 --version
   gcc --version
@@ -71,10 +80,11 @@ for p in data['packages']:
         assert p['source']=='registry+https://github.com/rust-lang/crates.io-index'
 print('Exact root-only source adoption; other tools and glibc pins/checksums unchanged')
 PY
-  cargo fmt --all -- --check
-  cargo test --lib clock:: --locked --offline
+  rustup run "$lint_toolchain" cargo fmt --all -- --check
+  cargo check --all-targets --locked --offline
+  cargo test --lib clock --locked --offline
   cargo test --lib elf:: --locked --offline
-  cargo clippy --all-targets --locked --offline -- -D warnings
+  rustup run "$lint_toolchain" cargo clippy --all-targets --locked --offline -- -D warnings
   cargo build --locked --offline
   if [ ! -x "$old_root/bin/cargo-libc" ]; then
     cargo install cargo-libc --version 0.2.4 --locked --root "$old_root"

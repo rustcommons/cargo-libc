@@ -148,7 +148,7 @@ jobs:
           set -euo pipefail
           cd "$CONSUMER"
           cargo fmt --all -- --check
-          cargo test --lib clock:: --locked --offline
+          cargo test --lib clock --locked --offline
           cargo test --lib elf:: --locked --offline
           cargo clippy --all-targets --locked --offline -- -D warnings
           cargo build --locked --offline

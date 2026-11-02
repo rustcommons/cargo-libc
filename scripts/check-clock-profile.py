@@ -17,9 +17,24 @@ clocks = ['clock_gettime', 'clock_getres', 'clock_settime', 'clock_nanosleep', '
 base = os.environ.copy()
 base['CARGO_LIBC_PROVIDER_DIR'] = str(evidence / 'providers')
 counter = 0
+trace_dir = evidence / 'clang-traces'
+trace_dir.mkdir()
+trace_cc = evidence / 'trace-clang'
+trace_cc.write_text('''#!/usr/bin/env python3
+import json,subprocess,sys,tempfile
+from pathlib import Path
+p=subprocess.run(['/usr/bin/clang-18',*sys.argv[1:]],stderr=subprocess.PIPE)
+if '-###' in sys.argv:
+    with tempfile.NamedTemporaryFile(prefix='clang-',suffix='.trace',dir=''' + repr(str(trace_dir)) + ''',delete=False) as f:
+        f.write(p.stderr)
+        Path(f.name+'.json').write_text(json.dumps(sys.argv[1:],indent=2))
+sys.stderr.buffer.write(p.stderr)
+raise SystemExit(p.returncode)
+''')
+trace_cc.chmod(0o755)
 
 
-def run(args, env=None, cwd=None):
+def run(args, env=None, cwd=None, expect_error=False):
     global counter
     counter += 1
     stem = evidence / f'command-{counter:03}'
@@ -28,13 +43,16 @@ def run(args, env=None, cwd=None):
     stem.with_suffix('.stdout').write_bytes(p.stdout)
     stem.with_suffix('.stderr').write_bytes(p.stderr)
     stem.with_suffix('.exit').write_text(str(p.returncode))
+    if expect_error:
+        assert p.returncode != 0, f'Unexpected acceptance: {args}'
+        return p.stderr.decode()
     if p.returncode:
         raise RuntimeError(f'{args}: {p.returncode}\n{p.stderr.decode(errors="replace")}')
     return p.stdout.decode()
 
 
 def config(binary, extra):
-    text = run([binary / 'cargo-libc', 'env', '--glibc', '2.22', '--cc', '/usr/bin/clang-18', '--format', 'cargo', *extra])
+    text = run([binary / 'cargo-libc', 'env', '--glibc', '2.22', '--cc', trace_cc, '--format', 'cargo', *extra])
     env = base.copy()
     env.update(tomllib.loads(text)['env'])
     env['CARGO_CFG_CARGO_LIBC_PROFILE'] = 'clock-native-fixture'
@@ -143,9 +161,82 @@ for linker in ['/usr/bin/ld.bfd', str(lld)]:
         rows.append({'name': name, 'linker': linker, 'results': results})
         print(f'PASS {Path(linker).name}: {name}', flush=True)
 
+# Real named-input controls and the reviewer's absolute-RT script bypass.
+named = evidence / 'named-inputs'
+named.mkdir()
+env, _ = config(new_bin, ['--provider', str(descriptor)])
+old_env, _ = config(old_bin, ['--provider', str(descriptor)])
+source = named / 'ordinary.c'
+source.write_text('int ordinary_symbol(void) { return 7; }\n')
+obj = named / 'ordinary.o'
+run([new_bin / 'libc-cc', '-fPIC', '-c', source, '-o', obj], env)
+run([new_bin / 'libc-cc', '-shared', obj, '-o', named / 'libordinary.so'], env)
+run(['ar', 'rcs', named / 'libordinary.a', obj])
+run(['ar', 'rcs', named / 'libfoo.a', obj])
+use_source = named / 'use.c'
+use_source.write_text('extern int ordinary_symbol(void); int use_symbol(void) { return ordinary_symbol(); }\n')
+use_obj = named / 'use.o'
+run([new_bin / 'libc-cc', '-fPIC', '-c', use_source, '-o', use_obj], env)
+alternate_rt = named / 'alternate-rt.so'
+shutil.copy2(rt, alternate_rt)
+(named / 'libfoo.so').write_text(f'INPUT ( {alternate_rt} )\n')
+source = named / 'main.c'
+source.write_text(simple)
+obj = named / 'main.o'
+run([new_bin / 'libc-cc', '-fPIC', '-c', source, '-o', obj], env)
+before = named / 'before-bypass.elf'
+run([old_bin / 'libc-cc', obj, '-L' + str(named), '-lfoo', '-lc', '-Wl,-Map=' + str(named / 'before-bypass.map'), '-o', before], old_env)
+before_result = inspect(before)
+assert all((c, 'GLIBC_2.2.5', 'librt.so.1') in before_result['imports'] for c in clocks), before_result
+assert str(alternate_rt) in (named / 'before-bypass.map').read_text()
+named_results = {'before_bypass': before_result, 'accepted': [], 'refused': []}
+for name, selectors in [
+    ('ordinary-elf', ['-lordinary', '-L' + str(named)]),
+    ('exact-archive', ['-L' + str(named), '-l:libordinary.a']),
+    ('static-scope', ['-L' + str(named), '-Wl,--push-state,-Bstatic', '-lordinary', '-Wl,--pop-state']),
+    ('static-skips-script', ['-L' + str(named), '-Wl,--push-state,-Bstatic', '-lfoo', '-Wl,--pop-state']),
+]:
+    output = named / (name + '.elf')
+    mapping = named / (name + '.map')
+    run([new_bin / 'libc-cc', obj, use_obj, *selectors, '-lrt', '-lc', '-Wl,-Map=' + str(mapping), '-o', output], env)
+    result = inspect(output)
+    assert all((c, 'GLIBC_2.17', 'libc.so.6') in result['imports'] for c in clocks), result
+    expected_input = 'libfoo.a' if name == 'static-skips-script' else ('libordinary.a' if name in ['exact-archive', 'static-scope'] else 'libordinary.so')
+    assert str(named / expected_input) in mapping.read_text(), mapping
+    assert 'ordinary_symbol' in mapping.read_text(), mapping
+    assert str(alternate_rt) not in mapping.read_text(), mapping
+    named_results['accepted'].append({'name': name, 'result': result})
+    (named / 'results.json').write_text(json.dumps(named_results, indent=2))
+for n, selectors in enumerate([
+    ['-L' + str(named), '-lfoo'],
+    ['-L', str(named), '-l:libfoo.so'],
+    ['-L' + str(named), '-l', 'foo'],
+    ['-Wl,-L,' + str(named), '-Wl,-lfoo'],
+    ['-L' + str(named), '-Wl,-l,foo'],
+    ['-Xlinker', '-L', '-Xlinker', str(named), '-Xlinker', '-lfoo'],
+    ['-L' + str(named), '-Xlinker', '-l', '-Xlinker', 'foo'],
+    ['-L' + str(named), '-Wl,--library=foo'],
+]):
+    output = named / f'refused-{n}.elf'
+    diagnostic = run([new_bin / 'libc-cc', obj, *selectors, '-lc', '-o', output], env, expect_error=True)
+    assert 'opaque named linker input' in diagnostic, diagnostic
+    assert not output.exists(), output
+    named_results['refused'].append({'selectors': selectors, 'diagnostic': diagnostic})
+    (named / 'results.json').write_text(json.dumps(named_results, indent=2))
+# Exercise the Rust linker entrypoint directly as well as libc-cc.
+linker_output = named / 'linker-control.elf'
+run([new_bin / 'libc-linker', '-shared', '-nostdlib', obj, use_obj, '-L' + str(named), '-lordinary', '-lc', '-lrt', '-o', linker_output], env)
+linker_result = inspect(linker_output)
+assert all((c, 'GLIBC_2.17', 'libc.so.6') in linker_result['imports'] for c in clocks), linker_result
+diagnostic = run([new_bin / 'libc-linker', '-shared', '-nostdlib', obj, '-L' + str(named), '-lfoo', '-lc', '-o', named / 'linker-refused.elf'], env, expect_error=True)
+assert 'opaque named linker input' in diagnostic, diagnostic
+named_results['linker_entrypoint'] = {'accepted': linker_result, 'refused': diagnostic}
+(named / 'results.json').write_text(json.dumps(named_results, indent=2))
+print('PASS named ELF/archive controls, static scope and eight named-script refusals', flush=True)
+
 host_glibc = run(['getconf', 'GNU_LIBC_VERSION']).strip().split()[1]
 gcc_runtime = str(Path(run(['gcc', '-print-file-name=crtbeginS.o']).strip()).parent)
-host_config = run([new_bin / 'cargo-libc', 'env', '--sysroot', '/', '--gcc-runtime', gcc_runtime, '--glibc', host_glibc, '--cc', '/usr/bin/clang-18', '--format', 'cargo'])
+host_config = run([new_bin / 'cargo-libc', 'env', '--sysroot', '/', '--gcc-runtime', gcc_runtime, '--glibc', host_glibc, '--cc', trace_cc, '--format', 'cargo'])
 (evidence / 'host-sysroot.toml').write_text(host_config)
 host_env = base.copy()
 host_env.update(tomllib.loads(host_config)['env'])
@@ -158,6 +249,11 @@ host_result = inspect(host_elf)
 for c in clocks:
     assert (c, 'GLIBC_2.17', 'libc.so.6') in host_result['imports'], host_result
 (evidence / 'host-sysroot.json').write_text(json.dumps(host_result, indent=2))
+math_source = evidence / 'host-sysroot-math.c'
+math_source.write_text('#include <math.h>\n#include <stdlib.h>\ndouble (*volatile fn)(double)=cos; int main(void){void *p=malloc(3); free(p); return fn(0.0)>2;}\n')
+math_elf = evidence / 'host-sysroot-math.elf'
+run([new_bin / 'libc-cc', '-fno-builtin', math_source, '-lm', '-lc', '-lgcc_s', '-Wl,-Map=' + str(evidence / 'host-sysroot-math.map'), '-o', math_elf], host_env)
+(evidence / 'host-sysroot-math.json').write_text(json.dumps(inspect(math_elf), indent=2))
 
 # Same helper paths, same descriptor, same target dir; only the installed tool
 # and its generated target profile change. Never clean the target directory.
@@ -191,7 +287,7 @@ for variant, binary in [('old', old_bin), ('new', new_bin)]:
     env['CARGO_TARGET_DIR'] = str(evidence / 'same-target-dir')
     env['PATH'] = str(active) + os.pathsep + env['PATH']
     # Shell exports and TOML both carry precisely the same private selection.
-    shell = run([active / 'cargo-libc', 'env', '--glibc', '2.22', '--provider', descriptor, '--cc', '/usr/bin/clang-18', '--format', 'sh'])
+    shell = run([active / 'cargo-libc', 'env', '--glibc', '2.22', '--provider', descriptor, '--cc', trace_cc, '--format', 'sh'])
     (evidence / (variant + '.sh')).write_text(shell)
     (evidence / (variant + '.toml')).write_text(text)
     shell_file = evidence / (variant + '.sh')
@@ -214,5 +310,5 @@ for c in clocks:
 assert ('clock_gettime', 'GLIBC_2.2.5', 'librt.so.1') in upgrade['new']['imports'], upgrade
 assert {x for x in upgrade['old']['imports'] if x[0] not in clocks} == {x for x in upgrade['new']['imports'] if x[0] not in clocks}, upgrade
 (evidence / 'upgrade.json').write_text(json.dumps(upgrade, indent=2))
-(evidence / 'results.json').write_text(json.dumps({'native_cases': rows, 'upgrade': upgrade, 'limits': ['No clock-setting fixture executed', 'No tier 3 qualification', 'Container preparation not exercised by this script; selected provider ELF path is shared']}, indent=2))
+(evidence / 'results.json').write_text(json.dumps({'native_cases': rows, 'named_inputs': named_results, 'upgrade': upgrade, 'limits': ['No clock-setting fixture executed', 'No tier 3 qualification', 'Container preparation not exercised by this script; selected provider ELF path is shared']}, indent=2))
 print(f'PASS {len(rows)} C/ELF comparisons, Cargo mixed calls, same-directory upgrade and shell/TOML selection', flush=True)

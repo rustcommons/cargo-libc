@@ -111,6 +111,43 @@ impl Profile {
         }
     }
 
+    /// Inspect the completed driver command, including implicit C libraries.
+    /// `-###` suppresses execution; the real invocation retains its arguments,
+    /// environment, library order and input-state controls unchanged.
+    pub(crate) fn validate_command(
+        &self,
+        command: &Command,
+        linker: &Path,
+        sysroot: &Path,
+    ) -> Result<(), String> {
+        let mut trace = Command::new(command.get_program());
+        trace.args(command.get_args()).arg("-###");
+        if let Some(cwd) = command.get_current_dir() {
+            trace.current_dir(cwd);
+        }
+        for (key, value) in command.get_envs() {
+            match value {
+                Some(value) => {
+                    trace.env(key, value);
+                }
+                None => {
+                    trace.env_remove(key);
+                }
+            }
+        }
+        let output = trace
+            .output()
+            .map_err(|e| format!("cannot probe completed Clang link inputs: {e}"))?;
+        if !output.status.success() {
+            return Err(format!(
+                "Clang cannot expose the completed target link: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            ));
+        }
+        let effective = crate::clock_named::trace_command(&output.stderr, linker)?;
+        crate::clock_named::validate(self, &effective[1..], sysroot)
+    }
+
     /// Only substitutes an identity-checked RT file, at the same argument slot.
     /// Opaque response files and scripts are refused until their bounded input
     /// validation is implemented; they must not bypass the selected profile.
@@ -205,6 +242,9 @@ impl Profile {
                 "-o",
                 "-L",
                 "--library-path",
+                "-l",
+                "--library",
+                "-a",
                 "-soname",
                 "--soname",
                 "-h",
@@ -339,7 +379,7 @@ fn split_forwarded(arg: &OsStr) -> Result<Vec<OsString>, String> {
 /// Classify format before allowing an input through. No SONAME is a normal DSO
 /// case, not proof of malformed glibc evidence. Unknown text may be a GNU INPUT
 /// script regardless of its filename, so it cannot silently pass as a DSO.
-fn input_soname(path: &Path, driver_input: bool) -> Result<Option<String>, String> {
+pub(crate) fn input_soname(path: &Path, driver_input: bool) -> Result<Option<String>, String> {
     let read = |limit| {
         let mut data = Vec::new();
         fs::File::open(path)
@@ -617,6 +657,113 @@ mod tests {
             forwarded,
         ];
         assert_eq!(profile.link_args(args.clone()).unwrap(), args);
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn effective_named_inputs_reject_scripts_and_preserve_provable_dependencies() {
+        let files = Files::new();
+        let named = files.0.join("named");
+        fs::create_dir(&named).unwrap();
+        let libc = files.0.join("libc.so.6");
+        fs::write(&libc, dso(Some("libc.so.6"))).unwrap();
+        let rt = files.0.join("librt.so.1");
+        fs::write(&rt, dso(Some("librt.so.1"))).unwrap();
+        let overlay = files.0.join("overlay");
+        fs::create_dir(&overlay).unwrap();
+        fs::write(overlay.join("librt.so"), dso(Some("librt.so.1"))).unwrap();
+        let profile = Profile {
+            libraries: Libraries {
+                libc: fs::canonicalize(&libc).unwrap(),
+                rt: fs::canonicalize(&rt).unwrap(),
+            },
+            overlay: Some(overlay.clone()),
+            identity: "test".into(),
+        };
+        fs::write(named.join("libordinary.so"), dso(None)).unwrap();
+        fs::write(named.join("libordinary.a"), b"!<arch>\n").unwrap();
+        fs::write(
+            named.join("libfoo.so"),
+            format!("INPUT ( {} )\n", rt.display()),
+        )
+        .unwrap();
+        let prefix = vec![
+            OsString::from(format!("-L{}", overlay.display())),
+            OsString::from(format!("-L{}", named.display())),
+        ];
+        let check = |tail: &[&str]| {
+            let mut args = prefix.clone();
+            args.extend(tail.iter().map(OsString::from));
+            crate::clock_named::validate(&profile, &args, Path::new("/"))
+        };
+        for selector in [
+            vec!["-lfoo"],
+            vec!["-l:libfoo.so"],
+            vec!["-l", "foo"],
+            vec!["--library=foo"],
+        ] {
+            assert!(check(&selector)
+                .unwrap_err()
+                .contains("opaque named linker input"));
+        }
+        for args in [
+            vec!["-lordinary"],
+            vec!["-l:libordinary.a"],
+            vec!["-Bstatic", "-lordinary", "-Bdynamic", "-lrt"],
+            vec![
+                "--push-state",
+                "-Bstatic",
+                "-lordinary",
+                "--pop-state",
+                "-lrt",
+            ],
+        ] {
+            check(&args).unwrap();
+        }
+        // All -L paths are global even when written after the library selector.
+        crate::clock_named::validate(
+            &profile,
+            &["-lordinary".into(), prefix[1].clone()],
+            Path::new("/"),
+        )
+        .unwrap();
+        // Static state restored by pop must not accidentally select the .so.
+        fs::write(named.join("libordinary.a"), b"INPUT ( unqualified )").unwrap();
+        assert!(check(&[
+            "-Bstatic",
+            "--push-state",
+            "-Bdynamic",
+            "-lordinary",
+            "--pop-state",
+            "-lordinary"
+        ])
+        .is_err());
+        // Only the bounded known system wrappers get interpreted; RT leaves
+        // outside the overlay fail even under a standard wrapper filename.
+        fs::write(
+            named.join("libc.so"),
+            format!(
+                "/* GNU ld script */\nOUTPUT_FORMAT(elf64-x86-64)\nGROUP ( {} )\n",
+                libc.display()
+            ),
+        )
+        .unwrap();
+        check(&["-lc"]).unwrap();
+        fs::write(
+            named.join("libc.so"),
+            format!(
+                "GROUP ( {} AS_NEEDED ( {} ) )\n",
+                libc.display(),
+                rt.display()
+            ),
+        )
+        .unwrap();
+        assert!(check(&["-lc"])
+            .unwrap_err()
+            .contains("outside the chosen clock overlay"));
+        assert!(check(&["-ldefinitely-unresolved"])
+            .unwrap_err()
+            .contains("implicit linker-default fallback"));
     }
 
     #[test]

@@ -39,6 +39,19 @@ $CARGO_LIBC_PROVIDER_GCC), offline, and verifies them against the qualified buil
 it refuses rather than use objects that differ. container runs the pinned
 container build (podman or docker).
 
+CLOCK LINKING
+Target links prefer libc's GLIBC_2.17 defaults for clock_gettime, clock_getres,
+clock_settime, clock_nanosleep and clock_getcpuclockid. The producer derives a
+read-only librt overlay, retaining explicit legacy versions and other RT APIs.
+This applies to Rust/C links and generated plain-Cargo settings. Libraries,
+groups and as-needed state are not reordered; unwinder/libgcc_s policy is unchanged.
+There is no clock option and no forced librt dependency. Selected target ELF
+inputs must be verifiable: unresolved or escaping paths, alternate RT DSOs and
+opaque linker-input scripts/response files are refused without host fallback.
+Regenerate saved settings with cargo libc env after upgrading. The profile and
+both input hashes enter Cargo's fingerprint; inspect only reports an existing
+artifact and cannot change its binding. See docs/USER-GUIDE.md#clock-linking.
+
 BUILD / DOCTOR OPTIONS
   --provider-mode M  source (default) or container, for the automatic provider
                      (also CARGO_LIBC_PROVIDER_MODE); prebuilt awaits a legal review
@@ -84,7 +97,9 @@ Cargo configuration file (--format cargo, for --config FILE). It includes the
 libc-runner target runner (with --distro/--kernel/--runner/--image) and the C
 compiler wrappers. The versioned target suffix is cargo-libc syntax, not a
 stock Cargo target. Generated paths are machine-specific; regenerate on each
-machine. Plain Cargo does not inspect build outputs; use inspect separately.
+machine and after upgrading the tool or provider. Private clock paths and content
+identity are generated target configuration, not policy options. Plain Cargo does
+not inspect build outputs; use inspect separately.
 
 doctor with --distro or --kernel also checks both runners: it installs the
 filter and runs /bin/sh under it, and starts `true` in the image under the

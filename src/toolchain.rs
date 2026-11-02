@@ -1098,6 +1098,11 @@ pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
         }
     }
     selection.finish(&mut cmd, true);
+    selection.clock_profile.validate_command(
+        &cmd,
+        Path::new(&selection.ld),
+        Path::new(&selection.sysroot),
+    )?;
     let status = cmd
         .status()
         .map_err(|e| format!("cannot launch Clang driver: {e}"))?;
@@ -1114,6 +1119,7 @@ pub(crate) fn target_compiler(
     let selection = Selection::from_environment("this compiler wrapper")?;
     let mut cmd = Command::new(&selection.cc);
     let link = matches!(action, Action::Link { .. } | Action::Relocatable);
+    let final_link = matches!(action, Action::Link { .. });
     let args = if matches!(action, Action::Link { .. }) {
         selection.clock_profile.link_args(args)?
     } else {
@@ -1131,6 +1137,13 @@ pub(crate) fn target_compiler(
         }
     }
     selection.finish(&mut cmd, link);
+    if final_link {
+        selection.clock_profile.validate_command(
+            &cmd,
+            Path::new(&selection.ld),
+            Path::new(&selection.sysroot),
+        )?;
+    }
     Ok(cmd)
 }
 
