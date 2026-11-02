@@ -27,7 +27,7 @@ vcs = '.cargo_vcs_info.json'
 assert json.loads(old[vcs])['git']['sha1'] == '889515b191ead51303b1321de858ec4e2209722c'
 assert set(new) - set(old) - {vcs} == {'src/clock.rs', 'src/clock_named.rs'}
 assert not (set(old) - set(new) - {vcs})
-allowed_changes = {'Cargo.toml', 'Cargo.toml.orig', 'Cargo.lock', vcs,
+allowed_changes = {'Cargo.toml', 'Cargo.toml.orig', 'Cargo.lock', 'README.md', vcs,
                    'src/cli.rs', 'src/elf.rs', 'src/lib.rs', 'src/report.rs',
                    'src/simulate.rs', 'src/toolchain.rs'}
 changed = {name for name in old.keys() & new.keys() if old[name] != new[name]}
@@ -63,6 +63,12 @@ for name in ['src/report.rs', 'src/simulate.rs']:
 readme = new['README.md'].decode()
 assert '[Release policy and records](https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md)' in readme
 assert 'Current release:' not in readme
+assert 'early release (0.2)' not in readme
+assert readme.index('## Installation') < readme.index('## What it does')
+assert 'src/clock.rs' in readme and 'src/clock_named.rs' in readme
+assert '[Clock linking](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#clock-linking)' in readme
+for clock in ['clock_gettime', 'clock_getres', 'clock_settime', 'clock_nanosleep', 'clock_getcpuclockid']:
+    assert clock in readme, clock
 record = {'baseline': 'official cargo-libc 0.2.4', 'candidate': 'cargo-libc 0.3.0',
           'changed': sorted(changed - {vcs}), 'added': sorted(set(new) - set(old) - {vcs}),
           'provider_link_and_unwinder_body_unchanged': True, 'other_registry_lock_entries_unchanged': True,
