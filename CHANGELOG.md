@@ -5,7 +5,8 @@ User-facing changes in `cargo-libc`. Versions follow the repository's
 Dates below are original crates.io publication dates (UTC). Notes reconstructed
 on 2026-11-02 were not present in historical tags; see the
 [history audit](docs/releases/HISTORY.md) for provenance and evidence gaps.
-GitHub Release backfill remains pending review/publication.
+GitHub Release backfill is complete for all eight existing tags; see the
+[completion evidence](docs/releases/HISTORY.md#completed-backfill).
 
 ## [Unreleased]
 
