@@ -5,18 +5,66 @@ cargo-libc. Versions are independent of the five-crate
 [linux-abi-tools workspace](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/RELEASING.md)
 and of glibc data/source packages.
 
+## User-facing release documentation
+
+Maintain the root [changelog](../CHANGELOG.md), with Unreleased entries for
+noteworthy user-visible work and dated summaries of shipped versions. Commit
+user-facing notes in `docs/releases/vX.Y.Z.md` before a release: Changes, Upgrade,
+Validation and limits, Links. Use absolute links in note bodies because the same
+reviewed files become [GitHub Releases](https://github.com/rustcommons/cargo-libc/releases).
+Detailed qualification reports below are evidence, not substitutes for release notes.
+
+The exact [AGENTS release rule](../AGENTS.md#release-documentation) applies.
+Software release completion requires agreement among immutable source tag,
+registry package, changelog/notes, docs and applicable gates, including the live
+GitHub Release text/tag/links. GitHub notes provide documentation and source/registry
+links; distribution remains crates.io, with no new binary attachments authorized.
+
+The [release-documentation workflow](../.github/workflows/release-docs.yml) runs
+the stdlib-only [checker](../scripts/check-release-docs.py), covering current
+manifest-version/changelog/note structure locally and exact live note bodies in
+published mode. Run it before routine merges and completion. Bootstrap exception:
+review local checker and syntax evidence first; register the workflow through a
+normal reviewed merge, then require a green dispatch before completing bootstrap
+or publishing notes. A first-dispatch 404 before main registration is expected,
+not a successful check.
+
+Historical backfill: [all eight notes](releases/HISTORY.md) are reconstructed
+from existing tags, archives and evidence. They did not exist at old tags; link
+to main or the new documentation commit, never a nonexistent old changelog.
+Changelog dates are original registry UTC dates; GitHub publication timestamps are
+the later backfill date. Original records/archives/tags stay unchanged. At this
+candidate, GitHub publication and hosted bootstrap remain pending review GO.
+After merge and green docs CI, create existing-tag Releases in ascending order
+from reviewed notes with `--verify-tag`, older versions `--latest=false`, newest
+stable latest. Then check all live bodies/latest with:
+
+```sh
+python3 scripts/check-release-docs.py --repo rustcommons/cargo-libc
+python3 scripts/check-release-docs.py --repo rustcommons/cargo-libc --published
+```
+
+The second command intentionally fails while GitHub Releases are missing; it
+must not be described as passed merely because local structure passes. No crate
+publication, tag movement or new runtime validation is part of backfilling notes.
+The [0.4.0 unwinder plan](UNWINDER-0.4.0-PLAN.md) is a proposal, not shipped scope.
+
 ## Release records
 
-Latest verified published release: **0.3.0** (2026-11-02). Update this maintained index as verification completes; packaged
+Latest verified registry/source release: **0.3.0** (2026-11-02).
+GitHub Release documentation completion is pending the backfill above. Update this maintained index as verification completes; packaged
 READMEs link here without calling a pinned historical version current.
 
-| Version | Date | State and evidence |
+| Version / user notes | Original UTC date | Registry/source state and evidence |
 | --- | --- | --- |
-| [0.3.0](RELEASE-0.3.0.md) | 2026-11-02 | Published and verified; source/tag `a70ce9ffac6be8611b66a2829fefb3093cb41ce6`; five-clock profile, archive/docs.rs and clean published-install run 41382187049 passed; explicit coverage limits retained. |
-| [0.2.4](RELEASE-0.2.4.md) | 2026-11-01 | Published and verified; source/tag `889515b191ead51303b1321de858ec4e2209722c`; archive, actual README render and published-install run 41276430527 passed. |
-| [0.2.3](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |
-| [0.2.2](RELEASE-0.2.2.md) | 2026-11-01 | Published and verified; source/tag `b87563c6be6faf89ac26055f88fb520991125b8b`. |
-| [0.2.1](RELEASE-0.2.1.md) | 2026-10-31 | Published and verified; source/tag `767c16aef0e49c37018b3907be480363dfdb9175`. |
+| [0.3.0](releases/v0.3.0.md) · [evidence](RELEASE-0.3.0.md) | 2026-11-02 | Published and verified; source/tag `a70ce9ffac6be8611b66a2829fefb3093cb41ce6`; five-clock profile, archive/docs.rs and clean published-install run 41382187049 passed; explicit coverage limits retained. |
+| [0.2.4](releases/v0.2.4.md) · [evidence](RELEASE-0.2.4.md) | 2026-11-01 | Published and verified; source/tag `889515b191ead51303b1321de858ec4e2209722c`; archive, actual README render and published-install run 41276430527 passed. |
+| [0.2.3](releases/v0.2.3.md) · [evidence](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |
+| [0.2.2](releases/v0.2.2.md) · [evidence](RELEASE-0.2.2.md) | 2026-11-01 | Published and verified; source/tag `b87563c6be6faf89ac26055f88fb520991125b8b`. |
+| [0.2.1](releases/v0.2.1.md) · [evidence](RELEASE-0.2.1.md) | 2026-10-31 | Published and verified; source/tag `767c16aef0e49c37018b3907be480363dfdb9175`. |
+| [0.2.0](releases/v0.2.0.md) | 2026-10-14 | Published; documented entry-point API; exact tag/archive and historical gaps in the notes. |
+| [0.1.1](releases/v0.1.1.md) | 2026-10-13 | Published; provider-backed shared libraries/Python extensions; original evidence is attributed, not newly rerun. |
+| [0.1.0](releases/v0.1.0.md) | 2026-10-13 | Published; first Cargo integration; exact archive/source identity and historical gaps in the notes. |
 
 ## Choosing a version
 
@@ -99,7 +147,8 @@ an existing registry archive.
 
 ## Preparing and publishing
 
-1. Record approved scope, compatibility review, version choice and release notes.
+1. Record approved scope, compatibility review, version choice, changelog entry
+   and versioned user-facing notes; pass the release-documentation check.
    Obtain explicit user authorization for publication; existing authorization for
    the same release remains valid and does not require repeated approval.
 2. Publish required producer versions first. Verify registry/index availability,
@@ -130,6 +179,10 @@ an existing registry archive.
    provide the existing sequence; review their version-specific arguments before
    each release (installed mode currently targets 0.3.0). Record verified outcomes
    and remaining coverage gaps in the release record and roadmap.
+7. Publish reviewed GitHub Release notes at the exact existing source tag and
+   verify live text, links and latest status with release-documentation CI. No
+   binary attachments without separate authorization; a crate upload/tag alone
+   does not complete release documentation.
 
 If a gate fails, stop the affected next step and correct or document the failure;
 do not bypass a failed gate to claim completion. If publication returns an

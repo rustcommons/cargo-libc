@@ -3,8 +3,9 @@
 The sections below preserve dated outcomes for their named revisions, beginning
 with migration validation on 2026-10-09. Statements about future work, pending
 checks and dependency versions are historical, not current release status.
-Current baseline: [published 0.2.2](docs/RELEASE-0.2.2.md), including registry-only
-run 41268879926 and published-install run 41269812853 (2026-11-01). See the
+Current release navigation: [release policy and records](docs/RELEASING.md),
+[changelog](CHANGELOG.md) and [user-facing notes](docs/releases/HISTORY.md).
+The 0.2.2 registry/install results below remain historical evidence. See the
 [requirements index](docs/REQUIREMENTS.md) for current coverage and gaps.
 
 Migration validated 2026-10-09. The original prototype's report is preserved unchanged in

@@ -1,0 +1,45 @@
+[
+  {
+    "argv": [
+      "rustup",
+      "run",
+      "1.90.0",
+      "rustc",
+      "/tmp/rustcommons-unwind-plan-ih26pxfd/main.rs",
+      "-C",
+      "link-self-contained=+unwind",
+      "-o",
+      "/tmp/rustcommons-unwind-plan-ih26pxfd/unwind-probe"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "error: only `-C link-self-contained` values `y`/`yes`/`on`/`n`/`no`/`off`/`-linker` are stable, the `-Z unstable-options` flag must also be passed to use the unstable values\n\n"
+  },
+  {
+    "argv": [
+      "gcc",
+      "-print-file-name=libgcc.a"
+    ],
+    "exit": 0,
+    "stdout": "/usr/lib/gcc/x86_64-linux-gnu/13/libgcc.a\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "gcc",
+      "-print-file-name=libgcc_eh.a"
+    ],
+    "exit": 0,
+    "stdout": "/usr/lib/gcc/x86_64-linux-gnu/13/libgcc_eh.a\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "gcc",
+      "-print-file-name=libgcc_s.so.1"
+    ],
+    "exit": 0,
+    "stdout": "/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/libgcc_s.so.1\n",
+    "stderr": ""
+  }
+]
