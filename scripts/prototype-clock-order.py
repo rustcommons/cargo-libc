@@ -71,8 +71,9 @@ for name,extra,options,unit in [
  if name=='response':
   rsp=root/'caller.rsp';rsp.write_text(' '.join(shlex.quote(x) for x in driver_args));driver_args=['@'+str(rsp)]
  trace=run([bin_dir/'libc-cc',*driver_args],env=trace_env)
+ (evidence/(name+'-clang-trace.txt')).write_text(trace.stderr)
  commands=[shlex.split(line) for line in trace.stderr.splitlines() if line.lstrip().startswith('"')]
- ld=next(args for args in commands if pathlib.Path(args[0]).name.startswith('ld'))
+ ld=next(args for args in commands if pathlib.Path(args[0]).name.endswith(('ld','ld.bfd','ld.gold','ld.lld')))
  before=root/(name+'-before');after=root/(name+'-after')
  # Compare the actual Clang-produced ld command, including implicit/default libc.
  run(ld)
