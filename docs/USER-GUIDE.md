@@ -12,6 +12,7 @@ your tests under a simulation of the target's kernel.
 - [Quick start](#quick-start)
 - [Choosing a target](#choosing-a-target)
 - [Providers](#providers)
+- [Clock linking](#clock-linking)
 - [Commands](#commands)
 - [C dependencies](#c-dependencies)
 - [Testing tiers](#testing-tiers)
@@ -163,6 +164,38 @@ Provider descriptors and build inputs are trusted local configuration, not
 authenticated SDKs. Only use trusted container images: the container runner
 forwards `CARGO*` and `RUST*` environment variables, which can include registry
 credentials. Do not expose secrets through test output or untrusted images.
+
+## Clock linking
+
+Starting with the 0.3.0 candidate, ordinary references to `clock_gettime`,
+`clock_getres`, `clock_settime`, `clock_nanosleep` and `clock_getcpuclockid`
+select libc's GLIBC_2.17 defaults. There is no clock flag or opt-out. This changes
+the older 2.17–2.29 profiles where putting librt first selected its older defaults.
+Explicit legacy symbol versions remain available, and actual RT APIs such as
+`timer_create` keep their selected target definitions.
+
+The producer validates the selected target libc/librt and caches a read-only RT
+copy with just those five aliases made nondefault. Target links search this
+overlay first. Original provider/sysroot files, symbol names and code stay
+unchanged. The helper does not reorder libraries, groups or linker state, change
+the unwinder/libgcc_s policy, or force as-needed. For example, `--no-as-needed`
+can retain librt in DT_NEEDED while clocks' version-needed owner is libc.
+
+Automatic source/container providers and explicit v1 providers use their selected
+stub paths. Full sysroots require actual target ELFs discovered with the chosen
+Clang/GCC configuration and contained in that sysroot; an escaping symlink or
+unresolved library is an error, with no host fallback. Matching full-path RT
+inputs are replaced with the overlay at the same position. Ambiguous alternate
+RT inputs, opaque linker-input scripts and response files are currently refused.
+This does not extend static-runtime support or make link stubs usable at runtime.
+
+Regenerate saved shell/TOML configuration with `cargo libc env` after upgrading.
+Its private derived paths and content identity belong to the selected target,
+not user policy switches. The profile ID and both original library hashes enter
+Cargo's fingerprint so the upgrade relinks in an existing target directory;
+other SDK files are not thereby fully content-hashed. See the
+[0.3.0 candidate record](RELEASE-0.3.0.md) for exact tested refs, pending gates
+and coverage limits. Version 0.3.0 is not yet published.
 
 ## Commands
 

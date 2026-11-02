@@ -2,8 +2,9 @@
 
 ## Scope and sources
 
-This index records confirmed constraints for cargo-libc 0.2.4, with runtime/API
-behavior unchanged from 0.2.3/0.2.2, not a backlog or universal compatibility claim. Documentation audit: 2026-11-01, baseline main
+This index retains the published 0.2.4 baseline and records the approved 0.3.0
+clock-profile candidate separately; it is not a backlog or universal compatibility claim.
+Published 0.2.4 runtime/API behavior is unchanged from 0.2.3/0.2.2. Documentation audit: 2026-11-01, baseline main
 `1ca27da9086ebf6cf19a6f2c0e858108b38cac46`; current immutable released source/tag:
 `889515b191ead51303b1321de858ec4e2209722c` / `v0.2.4`. The original 0.2.2 source
 `b87563c6be6faf89ac26055f88fb520991125b8b` and evidence remain unchanged.
@@ -45,6 +46,8 @@ Evidence shorthand used below:
 - **Audit:** explicit source/document/workflow inspection on 2026-11-01 at the
   baseline above. This does not imply an execution test or new native qualification.
 
+- **S30:** [0.3.0 source candidate](RELEASE-0.3.0.md), Cargo `8e2a7d47529bc940673d6ec3e6e8325ffac7089d`, producer `1b3b51c8afad88e05b0dc238c15f5ee879f94184`; [run 41371076867](https://github.com/rustcommons/cargo-libc/actions/runs/41371076867) canceled while queued after a shell-format harness correction. That producer is now review-blocked (PT_LOAD overlap/rename race); corrected-ref native evidence is pending and no final gate accepts it. Local Rust 1.90 focused clock tests/Clippy passed with the initial disposable root-only source patch; this is not registry/package or final-release evidence.
+
 ## Requirements
 
 | ID | Requirement and source | Implementation / documentation | Verification evidence | Status and gaps |
@@ -57,7 +60,7 @@ Evidence shorthand used below:
 | CL-REQ-006 | Delegate automatic provider preparation/cache to libc-abi-tools; explicit provider and sysroot/GCC runtime are alternate input routes. [AGENTS](../AGENTS.md#scope-and-implementation); [guide providers](USER-GUIDE.md#providers). | `Selection::resolve` in cli.rs; provider loading/input probes in toolchain.rs. | R22 provider/reuse and host-sysroot smoke; parser `provider_selection_is_explicit_and_excludes_sysroot_options`. | Verified; source-provider 2.17/2.28 and host sysroot, not all input routes/releases. |
 | CL-REQ-007 | Exact requested provider selection; never silently fall back after refusal. [AGENTS](../AGENTS.md#scope-and-implementation); F26. | provider.rs `validate_selection`; cli.rs mode selection delegates to producer. | R22 `selects_each_supported_release_without_fallback` and provider mismatch/too-new-symbol smoke; Audit of mode error propagation. | Verified; source selection/refusal fixtures, not arbitrary third-party provider validation. |
 | CL-REQ-008 | Treat v1 descriptors as trusted local inputs; validate six fields, bounded UTF-8, absolute contained paths, required files and exact header version. Do not claim authenticated SDK integrity. [Provider contract](PROVIDER-CONTRACT.md). | provider.rs parsing/file checks, toolchain.rs probes; producer owns full ABI verification. | R22 `rejects_wrong_versions_and_ambiguous_descriptors`; Audit of canonical-path/file/header checks. | Implemented—partial verification; not authentication, relocation or complete content hashing. All external inputs remain trusted. |
-| CL-REQ-009 | Fingerprints/cache keys do not promise arbitrary in-place changes are detected; regenerate config after updates and clean/change target directory when inputs change in place. Provider version changes can require fresh preparation. [Guide](USER-GUIDE.md#providers); [release cache note](RELEASE-0.2.2.md#provider-cache-refresh). | toolchain.rs `profile_fingerprint`; published libc-abi-tools 0.3.3 `provider::prepare::common_inputs/source_inputs/container_hash`. | Audit of recorded producer source `d483fd5` and consumer fingerprint; R22 source-provider reuse. | Implemented—partial verification; no old-cache import/offline migration or concurrent replacement guarantee. |
+| CL-REQ-009 | Fingerprints/cache keys do not promise arbitrary in-place changes are detected; regenerate config after updates and clean/change target directory when inputs change in place. Provider version changes can require fresh preparation. [Guide](USER-GUIDE.md#providers); [release cache note](RELEASE-0.2.2.md#provider-cache-refresh). | toolchain.rs `profile_fingerprint`; published libc-abi-tools 0.3.3 provider preparation hashes; candidate `clock.rs` additionally records the producer profile and actual libc/RT hashes, not all SDK contents. | Audit of recorded producer source `d483fd5` and consumer fingerprint; R22 source-provider reuse. | Implemented—partial verification; no old-cache import/offline migration or concurrent replacement guarantee. |
 | CL-REQ-010 | C via cc/CMake uses target headers/link inputs while host C remains native; do not silently use host package libraries. [Guide: C dependencies](USER-GUIDE.md#c-dependencies). | cc.rs wrappers/toolchain helpers; `examples/c-deps`; F15/F18 historical proposals do not add broader adapters. | R22 `smoke-c-deps.sh` for 2.17/2.28; I22 installed C/CMake build/run/inspect. | Verified; pkg-config/bindgen/system-library integration and arbitrary build scripts are outside these fixtures. |
 | CL-REQ-011 | Refuse target C++ and static linking until corresponding target runtimes exist; allow native host C++. [AGENTS](../AGENTS.md#scope-and-implementation); [guide limits](USER-GUIDE.md#c-dependencies). | cc.rs language/link checks; `libc-cxx`. | R22 C++ refusal and unit argument checks; I22 installed target C++ refusal. | Verified; evidence is refusal, not target C++ support. |
 | CL-REQ-012 | `build` inspects the named Cargo-reported executable, including fresh artifacts; `install` checks every built executable after installation. [Guide build/install](USER-GUIDE.md#commands). | Cargo JSON reader [cargo_output.rs](../src/cargo_output.rs); toolchain.rs build/install/verify paths. | R22 portable Cargo JSON tests, provider reuse and command smoke. | Verified; build does not inspect every workspace output; failed install checks occur after installation and need user cleanup. |
@@ -75,6 +78,8 @@ Evidence shorthand used below:
 | CL-REQ-024 | Real old-system tier 3 qualification is deferred, not completed and not a routine-release blocker; new old-system claims require actual environment/workload evidence. [AGENTS validation](../AGENTS.md#validation); [roadmap](ROADMAP.md#deferred-qualification-and-infrastructure). | [Guide tiers](USER-GUIDE.md#testing-tiers), RELEASING policy. | Audit of adopted 2026-11-01 policy and release exclusions; no real old-system run is claimed. | Deferred; unavailable infrastructure/evidence remains an explicit gap. |
 | CL-REQ-025 | Keep prebuilt mode unavailable pending legal review. [Roadmap decision](ROADMAP.md#maintainer-decisions); [guide providers](USER-GUIDE.md#providers). | cli.rs mode delegates refusal to libc-abi-tools; [architecture](../ARCHITECTURE.md#provider-and-sysroot-inputs). | Audit of producer 0.3.3 prepare mode refusal and maintained guide; no prebuilt publication/qualification in R22. | Deferred; legal clearance and a separately approved implementation remain required. |
 | CL-REQ-026 | Maintain setup-first README, authoritative guides, stable trace IDs, identifiable historical evidence and immutable package snapshots. [AGENTS documentation rules](../AGENTS.md#documentation-and-requirements-traceability). | This index/map and linked maintained guides; published README/API docs remain immutable snapshots. | Audit 2026-11-01: source/command/link/render/diff checks; shared convention page HTTP 200 and Contents API blob `1b659ff536d43bcae5b09626069e89488058ba6f` verified against central merge `c8a0b9c01aae5657dd0ef649bd37b18d81919ce5`. | Verified; bounded documentation audit only, no package release or universal behavior verification implied. |
+
+| CL-REQ-027 | Prefer libc defaults for all five clock functions without a public clock setting; retain explicit legacy versions, genuine RT APIs, linker order/state and unwinder behavior. Approved 0.3.0 scope in [candidate record](RELEASE-0.3.0.md); [guide](USER-GUIDE.md#clock-linking). | [clock.rs](../src/clock.rs) delegates the read-only ELF copy/cache to producer `LibcClocksV1`; target prefix, controlled in-place RT substitution, generated identity and fingerprint in toolchain.rs. Raw data, user files and descriptor v1 are unchanged. | S30 focused tests/source inspection; native mixed-reference/state/RT/same-directory-upgrade run pending. Rejected reordering evidence is retained in [evals](evals/2026-11-02-clock-linking.md). | Implemented—partial verification; no published registry candidate yet. Opaque response/input scripts refuse; container preparation, complete sysroot input closure and final package/install gates remain bounded gaps. |
 
 ## Documentation map
 
@@ -105,9 +110,11 @@ Evidence shorthand used below:
 
 | [RELEASE-0.2.4](RELEASE-0.2.4.md) | Current published release evidence | Minimal version-neutral README navigation fix; R24/I24, official archive/tag and actual docs.rs render verified; no runtime/dependency change. |
 
+| [RELEASE-0.3.0](RELEASE-0.3.0.md), [clock investigation](evals/2026-11-02-clock-linking.md) | Candidate scope / dated investigation | CL-REQ-006–010/020/022–024/027; keep retired prototype failures and pending source/registry/native boundaries explicit. |
+
 ## Maintenance
 
-Keep `CL-REQ-001` through `CL-REQ-026` stable. Add new IDs without renumbering,
+Keep `CL-REQ-001` through `CL-REQ-027` stable. Add new IDs without renumbering,
 reusing or converting unapproved F/E proposals into requirements. When behavior,
 scope, CLI, prerequisites or policy changes, update the affected row, authoritative
 guide, implementation reference and named evidence/gap together. `Verified` means

@@ -595,6 +595,7 @@ mod tests {
 
     fn needs(entries: &[(&str, &str, bool)]) -> ElfInfo {
         ElfInfo {
+            soname: None,
             machine: 62,
             interpreter: None,
             needed: Vec::new(),

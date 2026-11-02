@@ -113,10 +113,33 @@ mode, the glibc selection is a checked ceiling, not a mechanism for downgrading
 that filesystem's interfaces.
 
 Provider paths and selection enter Cargo's fingerprints, but this is not a hash
-of every input. Changing files in place requires a clean build or new target
-directory. Descriptors are trusted local inputs, not authenticated, relocatable
+of every input. The clock profile below hashes its selected libc/RT pair; other
+files changed in place still require a clean build or new target directory.
+Descriptors are trusted local inputs, not authenticated, relocatable
 SDK manifests. Full ABI validation and provider provenance belong to the producer;
 the consumer checks descriptor paths, required files and header versions.
+
+### Derived clock profile (0.3.0 candidate)
+
+The target-only settings in the flow above include `LibcClocksV1`, delegated to
+`libc-abi-tools`' existing provider layer. Cargo resolves contained target libc/RT
+ELFs from the selected provider or full sysroot. The producer validates the pair
+and atomically caches a read-only RT copy, changing only the five clock version
+default bits; a compliant pair needs no overlay. Raw ABI/source records, user
+inputs and descriptor v1 are unchanged.
+
+`src/clock.rs` carries the returned overlay and both input hashes through the
+configuration, helper environment and Cargo fingerprint, together with an
+internal policy-version salt. Target link commands prefix the RT-only search
+directory and substitute identity-matched full-path RT inputs in place. Host
+units remain native. Library ordering, groups, as-needed state, non-clock RT APIs
+and unwinder inputs retain their existing roles. Opaque inputs are refused rather
+than silently bypassing the policy; this is not a general linker-script rewriter.
+
+The [candidate record](docs/RELEASE-0.3.0.md) and
+[investigation](docs/evals/2026-11-02-clock-linking.md) distinguish native gates,
+pending registry/package adoption and unqualified input/provider forms. This is
+not a published release or a broader old-system compatibility claim.
 
 ### Data, source and licensing boundaries
 
