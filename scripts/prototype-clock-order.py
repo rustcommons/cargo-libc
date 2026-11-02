@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Disposable native ELF experiment; not a product argument transformer."""
-import json, os, pathlib, re, shlex, subprocess, sys, tempfile
+import json, os, pathlib, re, shlex, shutil, subprocess, sys, tempfile
 bin_dir=pathlib.Path(sys.argv[1]).resolve(); evidence=pathlib.Path(sys.argv[2]);evidence.mkdir(parents=True,exist_ok=True)
 clang='/usr/bin/clang-18'
 def run(args, **kw):
@@ -40,7 +40,7 @@ def symbols(path):
   if match and file:versions[int(match[2])]=[file,match[1]]
  result={}
  for line in run(['readelf','--dyn-syms','--wide',path]).stdout.splitlines():
-  match=re.search(r'\bUND\s+(\S+)\s+\((\d+)\)',line)
+  match=re.search(r'\s(\S+@\S+)\s+\((\d+)\)',line)
   if match:
    name=match[1].split('@',1)[0];result.setdefault(name,[]).append(versions[int(match[2])])
  return result
@@ -76,7 +76,12 @@ for name,extra,options,unit in [
  ld=next(args for args in commands if pathlib.Path(args[0]).name.endswith(('ld','ld.bfd','ld.gold','ld.lld')))
  before=root/(name+'-before');after=root/(name+'-after')
  # Compare the actual Clang-produced ld command, including implicit/default libc.
+ case_dir=evidence/name;case_dir.mkdir(exist_ok=True)
+ shutil.copy2(obj,case_dir/'input.o');shutil.copy2(src,case_dir/'input.c')
+ (case_dir/'input-readelf.txt').write_text(run(['readelf','--wide','--symbols','--relocs','--version-info',obj]).stdout)
  run(ld)
+ shutil.copy2(before,case_dir/'before.elf')
+ (case_dir/'before-readelf.txt').write_text(run(['readelf','--wide','--dyn-syms','--symbols','--relocs','--version-info','--dynamic',before]).stdout)
  old=symbols(before)
  new=ld.copy();rt=str(stubs/'librt.so.1') if name=='fullpath' else '-lrt'
  pos=new.index(rt);anchor=new.index('-lc')
@@ -87,7 +92,11 @@ for name,extra,options,unit in [
    moving=['--push-state',state,*moving,'--pop-state']
   anchor=new.index('-lc');new[anchor+1:anchor+1]=moving
  new[new.index('-o')+1]=str(after)
- run(new);now=symbols(after)
+ run(new)
+ shutil.copy2(after,case_dir/'after.elf')
+ (case_dir/'after-readelf.txt').write_text(run(['readelf','--wide','--dyn-syms','--symbols','--relocs','--version-info','--dynamic',after]).stdout)
+ now=symbols(after)
+ (case_dir/'comparison.json').write_text(json.dumps({'before':old,'after':now,'before_ld':ld,'after_ld':new},indent=2)+'\n')
  assert {k:v for k,v in old.items() if k not in clocks}=={k:v for k,v in now.items() if k not in clocks},name
  for symbol in clocks:
   ordinary=[v for v in now[symbol] if v[1]!='GLIBC_2.2.5']
