@@ -782,7 +782,8 @@ mod tests {
         let rt = rt.to_str().unwrap();
         let replacement = files
             .0
-            .join("derived/librt.so.1")
+            .join("derived")
+            .join("librt.so.1")
             .to_str()
             .unwrap()
             .to_owned();
