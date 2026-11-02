@@ -1,0 +1,136 @@
+{
+  "verified_date": "2026-11-02",
+  "release_commit": "a70ce9ffac6be8611b66a2829fefb3093cb41ce6",
+  "archive": {
+    "version": "0.3.0",
+    "checksum": "96201f1b35c093b3ed77867995bc688336fc2cbb5a43f6d471a9e13b9ab3f5c2",
+    "files": 25,
+    "vcs": {
+      "git": {
+        "sha1": "a70ce9ffac6be8611b66a2829fefb3093cb41ce6"
+      },
+      "path_in_vcs": ""
+    },
+    "yanked": false,
+    "source_readme_lock_equal_release": true
+  },
+  "published_install": {
+    "run": 41382187049,
+    "result": "success",
+    "artifact_id": 13113820827,
+    "artifact_zip_sha256": "6b7ac45166c50cd115a004aceb8f59eac38f98c22ece3462aa4f9b57f7645b85"
+  },
+  "readme_url": "https://docs.rs/crate/cargo-libc/0.3.0",
+  "api_url": "https://docs.rs/cargo-libc/0.3.0/cargo_libc/",
+  "readme_links": [
+    {
+      "text": "Install",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#install"
+    },
+    {
+      "text": "user guide",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md"
+    },
+    {
+      "text": "Clock linking",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#clock-linking"
+    },
+    {
+      "text": "Python extensions",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#python-extensions-maturin"
+    },
+    {
+      "text": "CI definition",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/.github/workflows/ci.yml"
+    },
+    {
+      "text": "release and versioning policy",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md"
+    },
+    {
+      "text": "VALIDATION.md",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/VALIDATION.md"
+    },
+    {
+      "text": "Limits",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md#limits"
+    },
+    {
+      "text": "roadmap",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/ROADMAP.md"
+    },
+    {
+      "text": "Release policy and records",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md"
+    },
+    {
+      "text": "requirements and documentation index",
+      "href": "https://github.com/rustcommons/cargo-libc/blob/main/docs/REQUIREMENTS.md"
+    }
+  ],
+  "images": [
+    {
+      "src": "https://raw.githubusercontent.com/rustcommons/cargo-libc/main/docs/assets/banner.svg",
+      "complete": true,
+      "width": 1200
+    },
+    {
+      "src": "https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml/badge.svg",
+      "complete": true,
+      "width": 90
+    },
+    {
+      "src": "https://img.shields.io/badge/Rust-1.90%2B-orange",
+      "complete": true,
+      "width": 78
+    },
+    {
+      "src": "https://img.shields.io/badge/license-MIT-blue",
+      "complete": true,
+      "width": 78
+    },
+    {
+      "src": "https://img.shields.io/crates/v/cargo-libc",
+      "complete": true,
+      "width": 102
+    },
+    {
+      "src": "https://img.shields.io/docsrs/cargo-libc",
+      "complete": true,
+      "width": 86
+    }
+  ],
+  "github_http_statuses": [
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/REQUIREMENTS.md",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/docs/ROADMAP.md",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/VALIDATION.md",
+      "status": 200
+    },
+    {
+      "url": "https://github.com/rustcommons/cargo-libc/blob/main/.github/workflows/ci.yml",
+      "status": 200
+    }
+  ],
+  "browser_checks": {
+    "readme_and_api_rendered": true,
+    "user_guide_clock_anchor_rendered": true,
+    "release_policy_records_rendered": true,
+    "readme_version_neutral_status": true
+  },
+  "limits": "Published installed smoke/streams supplement unchanged-source native/consumer evidence; no new tier 3 or general dependency-closure qualification."
+}

@@ -20,8 +20,8 @@ limits belong in the [user guide](docs/USER-GUIDE.md), and open work in the
 
 Solid arrows show implemented control/data flow for Cargo commands. The dotted
 `env` edge exports settings; it does not perform a build or post-build inspection.
-The clock-profile path is part of the 0.3.0 candidate; its native qualification
-and release status remain separate in the [candidate record](docs/RELEASE-0.3.0.md).
+The clock-profile path is part of 0.3.0; its native qualification
+and release status remain separate in the [release record](docs/RELEASE-0.3.0.md).
 
 ```mermaid
 flowchart TB
@@ -125,7 +125,7 @@ Descriptors are trusted local inputs, not authenticated, relocatable
 SDK manifests. Full ABI validation and provider provenance belong to the producer;
 the consumer checks descriptor paths, required files and header versions.
 
-### Derived clock profile (0.3.0 candidate)
+### Derived clock profile (0.3.0)
 
 The target-only settings in the flow above include `LibcClocksV1`, delegated to
 `libc-abi-tools`' existing provider layer. Cargo resolves contained target libc/RT
@@ -164,10 +164,10 @@ This does not hash every SDK file or retrofit already-built binaries. Provider
 preparation/cache operations still belong to the producer; the derived overlay
 is a separate content-addressed entry, not a rewritten/exported v1 provider.
 
-The [candidate record](docs/RELEASE-0.3.0.md) and
+The [release record](docs/RELEASE-0.3.0.md) and
 [investigation](docs/evals/2026-11-02-clock-linking.md) distinguish native gates,
-pending registry/package adoption and unqualified input/provider forms. This is
-not a published release or a broader old-system compatibility claim.
+registry/package/publication evidence and unqualified input/provider forms. This
+is not a broader old-system compatibility claim.
 
 ### Data, source and licensing boundaries
 

@@ -22,6 +22,11 @@ README release navigation, archive/tag/docs.rs actual rendering and clean
 published locked installation. [Release status and records](RELEASING.md#release-records)
 are maintained independently of immutable package snapshots.
 
+[cargo-libc 0.3.0](RELEASE-0.3.0.md) is published and verified: producer-owned
+five-clock default, registry/native/consumer qualification, exact archive/tag,
+actual docs.rs rendering and clean published locked installation. Strict Zig
+unwinder equivalence and actual old-system qualification remain outside that evidence.
+
 ## Release policy adopted
 
 - [x] [Release and versioning policy](RELEASING.md), adopted 2026-11-01.
@@ -56,11 +61,10 @@ packaging as a primary role.
 
 ## Providers and artifact checks
 
-- [ ] **Approved 0.3.0 clock default:** producer-owned read-only RT overlay for
+- [x] **Released 0.3.0 clock default:** producer-owned read-only RT overlay for
   the five libc clock defaults, retaining explicit versions, library order and
-  caller linker state. [Candidate scope and gates](RELEASE-0.3.0.md): producer
-  published and registry/native/consumer/package gates passed; final narrow
-  review, merge and cargo-libc publication remain.
+  caller linker state. [Release scope and gates](RELEASE-0.3.0.md): registry/native/consumer/package
+  and published-install gates passed; immutable archive/tag verified.
   No clock option, unwinder change or raw ABI/source-data change is included.
 
 - [ ] Resolve providers through an authenticated inventory (relocatable SDKs, or the

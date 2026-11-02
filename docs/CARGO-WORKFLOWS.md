@@ -29,7 +29,7 @@ arguments or relocation model. `install` works like `build` without
 configuration for plain Cargo ([user guide](USER-GUIDE.md#plain-cargo-and-ci)). `scripts/smoke-commands.sh`
 covers all five with automatic providers in CI.
 
-## Clock defaults and saved configuration (0.3.0 candidate)
+## Clock defaults and saved configuration (0.3.0)
 
 Every supported target link uses the same five-function
 [clock default](USER-GUIDE.md#clock-linking), whether started by managed Cargo
@@ -40,7 +40,7 @@ complete configuration and regenerate it after upgrading or changing selected
 inputs. The internal fingerprint salt and actual libc/RT hashes distinguish the
 new policy at unchanged helper paths; no manual target-directory cleaning should
 be needed for that upgrade. The exact same-directory regression remains a
-[candidate gate](RELEASE-0.3.0.md), not evidence supplied by this text.
+[recorded gate](RELEASE-0.3.0.md), not evidence supplied by this text.
 
 The helper prefixes an RT-only overlay and replaces matching full-path RT inputs
 at the same argument slot. It does not move library arguments or change groups,

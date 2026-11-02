@@ -235,3 +235,14 @@ rerun; general dependency closure and actual old-system tier 3 remain unqualifie
 Prebuilt-provider legal gates are unchanged. Final narrow review, normal merge
 and sole-coordinator cargo-libc publication are pending; no published 0.3.0
 archive or tag is claimed here.
+
+
+## Publication resolution — 2026-11-02
+
+The candidate above merged normally and was published as 0.3.0 from
+`a70ce9ffac6be8611b66a2829fefb3093cb41ce6`. Official archive/VCS/checksum,
+actual docs.rs README/API/navigation, published-install run 41382187049 and the
+immutable exact `v0.3.0` tag are verified in the
+[release record](../RELEASE-0.3.0.md#publication-and-installed-verification).
+This resolves the preceding pending publication statements without rewriting
+historical failures or broadening the recorded runtime/closure/legal limits.
