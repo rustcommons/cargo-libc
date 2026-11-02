@@ -1,7 +1,7 @@
 # Roadmap
 
 Open work and adopted policy decisions. What cargo-libc does today is in the [user guide](USER-GUIDE.md), and
-current release evidence is in [RELEASE-0.2.2.md](RELEASE-0.2.2.md).
+current release evidence is in the [release index](RELEASING.md#release-records).
 [VALIDATION.md](../VALIDATION.md) retains historical results; the
 [requirements index](REQUIREMENTS.md) maps confirmed constraints and gaps. Candidate features are
 inventoried in the [feature review](FEATURE-REVIEW.md); listing one there is not
@@ -55,6 +55,12 @@ packaging as a primary role.
   new CI platform, user hardware, funding or delivery is committed.
 
 ## Providers and artifact checks
+
+- [ ] **Approved 0.3.0 clock default:** producer-owned read-only RT overlay for
+  the five libc clock defaults, retaining explicit versions, library order and
+  caller linker state. [Candidate scope and gates](RELEASE-0.3.0.md); source
+  qualification precedes producer publication and real registry adoption.
+  No clock option, unwinder change or raw ABI/source-data change is included.
 
 - [ ] Resolve providers through an authenticated inventory (relocatable SDKs, or the
   `prebuilt` binaries after the legal review), with immutable package identity; the

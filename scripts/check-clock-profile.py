@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import shlex
 import subprocess
 import sys
 import tomllib
@@ -97,8 +98,20 @@ cases = [
     ('xlinker-fullpath', simple, ['-Xlinker', rt, '-lc']),
     ('exact-name', simple, ['-l:librt.so.1', '-lc']),
 ]
+# Keep the GNU LLD frontend explicit despite toolchain executable canonicalization.
+# Existing Rust toolchains supply rust-lld if a separate system LLD is absent.
+lld_binary = Path('/usr/bin/ld.lld-18')
+if not lld_binary.exists():
+    sysroot = Path(run(['rustc', '--print', 'sysroot']).strip())
+    host = next(line[6:] for line in run(['rustc', '-vV']).splitlines() if line.startswith('host: '))
+    lld_binary = sysroot / 'lib/rustlib' / host / 'bin/rust-lld'
+assert lld_binary.is_file(), f'Existing Rust toolchain has no LLD: {lld_binary}'
+lld = evidence / 'ld.lld-driver'
+lld.write_text('#!/bin/sh\nexec ' + shlex.quote(str(lld_binary)) + ' -flavor gnu "$@"\n')
+lld.chmod(0o755)
+run([lld_binary, '-flavor', 'gnu', '--version'])
 rows = []
-for linker in ['/usr/bin/ld.bfd', '/usr/bin/ld.lld-18']:
+for linker in ['/usr/bin/ld.bfd', str(lld)]:
     selected = cases if linker.endswith('ld.bfd') else [c for c in cases if c[0] in ['all-five', 'mixed-address', 'mixed-calls', 'timer']]
     new_env, _ = config(new_bin, ['--provider', str(descriptor), '--ld', linker])
     old_env, _ = config(old_bin, ['--provider', str(descriptor), '--ld', linker])
@@ -129,6 +142,22 @@ for linker in ['/usr/bin/ld.bfd', '/usr/bin/ld.lld-18']:
         assert all(not v.startswith('GLIBC_') or tuple(map(int, v[6:].split('.'))) <= (2, 22) for _, v, _ in after), results
         rows.append({'name': name, 'linker': linker, 'results': results})
         print(f'PASS {Path(linker).name}: {name}', flush=True)
+
+host_glibc = run(['getconf', 'GNU_LIBC_VERSION']).strip().split()[1]
+gcc_runtime = str(Path(run(['gcc', '-print-file-name=crtbeginS.o']).strip()).parent)
+host_config = run([new_bin / 'cargo-libc', 'env', '--sysroot', '/', '--gcc-runtime', gcc_runtime, '--glibc', host_glibc, '--cc', '/usr/bin/clang-18', '--format', 'cargo'])
+(evidence / 'host-sysroot.toml').write_text(host_config)
+host_env = base.copy()
+host_env.update(tomllib.loads(host_config)['env'])
+host_env['CARGO_CFG_CARGO_LIBC_PROFILE'] = 'clock-host-sysroot'
+host_source = evidence / 'host-sysroot.c'
+host_source.write_text(simple)
+host_elf = evidence / 'host-sysroot.elf'
+run([new_bin / 'libc-cc', host_source, '-lrt', '-o', host_elf], host_env)
+host_result = inspect(host_elf)
+for c in clocks:
+    assert (c, 'GLIBC_2.17', 'libc.so.6') in host_result['imports'], host_result
+(evidence / 'host-sysroot.json').write_text(json.dumps(host_result, indent=2))
 
 # Same helper paths, same descriptor, same target dir; only the installed tool
 # and its generated target profile change. Never clean the target directory.
@@ -162,7 +191,7 @@ for variant, binary in [('old', old_bin), ('new', new_bin)]:
     env['CARGO_TARGET_DIR'] = str(evidence / 'same-target-dir')
     env['PATH'] = str(active) + os.pathsep + env['PATH']
     # Shell exports and TOML both carry precisely the same private selection.
-    shell = run([active / 'cargo-libc', 'env', '--glibc', '2.22', '--provider', descriptor, '--cc', '/usr/bin/clang-18', '--format', 'shell'])
+    shell = run([active / 'cargo-libc', 'env', '--glibc', '2.22', '--provider', descriptor, '--cc', '/usr/bin/clang-18', '--format', 'sh'])
     (evidence / (variant + '.sh')).write_text(shell)
     (evidence / (variant + '.toml')).write_text(text)
     shell_file = evidence / (variant + '.sh')
