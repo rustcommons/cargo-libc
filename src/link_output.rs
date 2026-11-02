@@ -40,7 +40,6 @@ pub(crate) fn classify(args: &[OsString]) -> Result<Output, String> {
         overrides_shared: false,
     };
     let mut value = false;
-    let mut operands_only = false;
     let mut partial = false;
     let mut dynamic_mode = false;
     let mut saw_shared = false;
@@ -49,12 +48,9 @@ pub(crate) fn classify(args: &[OsString]) -> Result<Output, String> {
             value = false;
             continue;
         }
-        if operands_only {
-            continue;
-        }
         let b = arg.as_encoded_bytes();
         match b {
-            b"--" => operands_only = true,
+            b"--" => return Err("end-of-options marker is not supported in completed linker commands; use explicit ./ paths for dash-prefixed filenames".into()),
             b"-shared" | b"--shared" | b"-Bshareable" => {
                 dynamic_mode = true;
                 saw_shared = true;
@@ -79,7 +75,7 @@ pub(crate) fn classify(args: &[OsString]) -> Result<Output, String> {
                     overrides_shared: saw_shared,
                 };
             }
-            b"-r" | b"--relocatable" | b"-Ur" => {
+            b"-r" | b"--relocatable" | b"-Ur" | b"-i" => {
                 partial = true;
                 output = Output {
                     kind: Kind::Relocatable,
@@ -94,7 +90,8 @@ pub(crate) fn classify(args: &[OsString]) -> Result<Output, String> {
                 );
             }
             _ if crate::clock_named::takes_value(b) => value = true,
-            _ => {}
+            _ if !b.starts_with(b"-") || crate::clock_named::known_option(b) => {}
+            _ => return Err(format!("unsupported completed linker option {:?}; its operand arity is not qualified", arg)),
         }
     }
     if value {
@@ -144,6 +141,66 @@ mod tests {
                 }
             );
         }
+    }
+    #[test]
+    fn every_declared_value_option_consumes_mode_looking_operands() {
+        for option in crate::clock_named::VALUE_OPTIONS {
+            for value in ["-shared", "-r", "-pie", "--", "--unknown"] {
+                let output = classify(&args(&["-pie", option, value, "input.o"])).unwrap();
+                assert_eq!(output.kind, Kind::Executable, "{option} {value}");
+                assert!(output.pie, "{option} {value}");
+            }
+            assert!(classify(&args(&[option])).is_err(), "{option}");
+            assert!(classify(&args(&[&format!("{option}=-shared"), "input.o"])).is_ok());
+        }
+    }
+    #[test]
+    fn optional_equals_values_do_not_consume_the_next_mode() {
+        for option in [
+            "--build-id",
+            "--demangle",
+            "--sort-common",
+            "--unique",
+            "--split-by-file",
+            "--split-by-reloc",
+            "--verbose",
+        ] {
+            assert_eq!(
+                classify(&args(&[option, "-shared", "input.o"]))
+                    .unwrap()
+                    .kind,
+                Kind::Shared
+            );
+            assert_eq!(
+                classify(&args(&[&format!("{option}=-shared"), "input.o"]))
+                    .unwrap()
+                    .kind,
+                Kind::Executable
+            );
+        }
+        let error = classify(&args(&["--unknown-output", "-shared"])).unwrap_err();
+        assert!(error.contains("--unknown-output") && error.contains("arity"));
+    }
+    #[test]
+    fn unknown_and_end_of_options_syntax_refuses_without_guessing() {
+        for values in [
+            vec!["--unknown", "-shared"],
+            vec!["--unknown=-r", "-shared"],
+            vec!["--", "-shared"],
+            vec!["-T", "-shared"],
+            vec!["--script=custom", "-pie"],
+            vec!["-out-implib", "-shared"],
+            vec!["-output", "-shared"],
+            vec!["-fPIC", "-shared"],
+        ] {
+            assert!(classify(&args(&values)).is_err(), "{values:?}");
+        }
+        assert_eq!(
+            classify(&args(&["./-shared", "--as-needed", "-Lfoo", "-lbar"]))
+                .unwrap()
+                .kind,
+            Kind::Executable
+        );
     }
     #[test]
     fn actual_linker_mode_order_is_preserved() {
@@ -246,6 +303,27 @@ mod tests {
         );
         let cases: &[NativeCase] = &[
             ("nonpie", &["-no-pie"], Kind::Executable, false, None),
+            (
+                "out-implib-shared",
+                &["-no-pie", "-Wl,--out-implib", "-fPIC", "-Wl,-shared"],
+                Kind::Executable,
+                false,
+                None,
+            ),
+            (
+                "xlinker-out-implib-r",
+                &[
+                    "-no-pie",
+                    "-Xlinker",
+                    "--out-implib",
+                    "-fPIC",
+                    "-Xlinker",
+                    "-r",
+                ],
+                Kind::Executable,
+                false,
+                None,
+            ),
             ("pie", &["-pie"], Kind::Executable, true, None),
             ("shared", &["-shared"], Kind::Shared, false, None),
             (
@@ -349,7 +427,7 @@ mod tests {
                 assert!(paths.is_empty(), "{binary:?}: {paths:?}");
             }
         }
-        for (family, compiler) in [("clang", clang), ("gcc-reference", gcc)] {
+        for (family, compiler) in [("clang", clang.clone()), ("gcc-reference", gcc)] {
             let version = Command::new(&compiler).arg("--version").output().unwrap();
             fs::write(root.join(format!("{family}-version.txt")), version.stdout).unwrap();
             let obj = root.join(format!("{family}.o"));
@@ -378,12 +456,14 @@ mod tests {
                     )
                 };
                 command
+                    .current_dir(&root)
                     .arg(&obj)
                     .args(flags)
                     .arg(linker_arg)
                     .arg("-o")
                     .arg(&binary);
                 let trace = Command::new(&compiler)
+                    .current_dir(&root)
                     .args(command.get_args())
                     .arg("-###")
                     .output()
@@ -490,6 +570,80 @@ mod tests {
                 }
             }
         }
-        fs::write(root.join("PASS.txt"), "26 Clang/GCC-reference ELF/RUNPATH controls and Clang classification/startup assertions passed\n").unwrap();
+        // Real stable-rustc default/system links, not hand-maintained flag
+        // approximations. Capture the exact Clang stream while still performing
+        // each original link; classification must neither rewrite nor reject it.
+        use std::os::unix::fs::PermissionsExt;
+        let wrapper = root.join("capture-clang");
+        fs::write(&wrapper, "#!/bin/sh\n\"$CLASSIFY_CLANG\" -### \"$@\" 2> \"$CLASSIFY_TRACE\" || exit $?\nexec \"$CLASSIFY_CLANG\" \"$@\"\n").unwrap();
+        fs::set_permissions(&wrapper, fs::Permissions::from_mode(0o700)).unwrap();
+        fs::write(root.join("rust-main.rs"), "fn main() {}\n").unwrap();
+        fs::write(
+            root.join("rust-lib.rs"),
+            "#[no_mangle] pub extern \"C\" fn answer() -> i32 { 42 }\n",
+        )
+        .unwrap();
+        for (name, crate_type, source, extra, kind, pie) in [
+            (
+                "rust-pie",
+                "bin",
+                "rust-main.rs",
+                None,
+                Kind::Executable,
+                true,
+            ),
+            (
+                "rust-nonpie",
+                "bin",
+                "rust-main.rs",
+                Some("link-arg=-no-pie"),
+                Kind::Executable,
+                false,
+            ),
+            (
+                "rust-cdylib",
+                "cdylib",
+                "rust-lib.rs",
+                None,
+                Kind::Shared,
+                false,
+            ),
+        ] {
+            let binary = root.join(format!("{name}.elf"));
+            let trace_path = root.join(format!("{name}.trace.txt"));
+            let mut command = Command::new(env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()));
+            command
+                .current_dir(&root)
+                .env("CLASSIFY_CLANG", &clang)
+                .env("CLASSIFY_TRACE", &trace_path)
+                .args(["--edition=2021", "--crate-type", crate_type, "-C"])
+                .arg(format!("linker={}", wrapper.display()))
+                .arg("-C")
+                .arg(format!("link-arg=-fuse-ld={}", linker.display()))
+                .arg(root.join(source))
+                .arg("-o")
+                .arg(&binary);
+            if let Some(extra) = extra {
+                command.arg("-C").arg(extra);
+            }
+            let result = command.output().unwrap();
+            fs::write(root.join(format!("{name}.stdout")), &result.stdout).unwrap();
+            fs::write(root.join(format!("{name}.stderr")), &result.stderr).unwrap();
+            assert!(result.status.success(), "actual rustc system link {name}");
+            let trace = fs::read(trace_path).unwrap();
+            let effective = crate::clock_named::trace_command(&trace, &linker).unwrap();
+            let before = effective.clone();
+            let actual = classify(&effective[1..]).unwrap();
+            fs::write(
+                root.join(format!("{name}.effective.txt")),
+                format!("{effective:#?}\n{actual:?}\n"),
+            )
+            .unwrap();
+            assert_eq!(effective, before);
+            assert_eq!(actual.kind, kind, "{name}");
+            assert_eq!(actual.pie, pie, "{name}");
+            elf(&root.join(name), &binary, kind, pie, None);
+        }
+        fs::write(root.join("PASS.txt"), "30 Clang/GCC-reference ELF/RUNPATH controls plus 3 actual stable-rustc system links and classification/startup assertions passed\n").unwrap();
     }
 }
