@@ -91,7 +91,7 @@ pub(crate) enum Action {
 }
 
 /// Driver options whose value is the next argument.
-const SEPARATE_VALUE: &[&str] = &[
+pub(crate) const SEPARATE_VALUE: &[&str] = &[
     "-o",
     "-I",
     "-L",
@@ -122,8 +122,6 @@ const SEPARATE_VALUE: &[&str] = &[
 
 pub(crate) fn classify(args: &[OsString]) -> Result<Action, String> {
     let mut inputs = 0;
-    let mut shared = false;
-    let mut relocatable = false;
     let mut compile = false;
     let mut i = 0;
     while i < args.len() {
@@ -137,8 +135,6 @@ pub(crate) fn classify(args: &[OsString]) -> Result<Action, String> {
                     "static linking is not supported: providers have no static glibc".into(),
                 )
             }
-            "-shared" => shared = true,
-            "-r" => relocatable = true,
             _ if arg.starts_with("-print-") || arg.starts_with("--print-") => {
                 return Ok(Action::Query)
             }
@@ -153,10 +149,12 @@ pub(crate) fn classify(args: &[OsString]) -> Result<Action, String> {
         Action::Query
     } else if compile {
         Action::Compile
-    } else if relocatable {
-        Action::Relocatable
     } else {
-        Action::Link { shared }
+        match crate::link_output::classify(args)? {
+            crate::link_output::Kind::Executable => Action::Link { shared: false },
+            crate::link_output::Kind::Shared => Action::Link { shared: true },
+            crate::link_output::Kind::Relocatable => Action::Relocatable,
+        }
     })
 }
 

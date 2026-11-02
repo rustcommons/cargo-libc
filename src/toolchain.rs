@@ -1056,18 +1056,18 @@ fn provider_link(
 /// (a `cdylib` or `dylib`), and the arguments without `-pie`. Rust code is
 /// position-independent, so executables still link as non-PIE with the
 /// provider's `crt1.o`.
-fn provider_link_args(args: impl Iterator<Item = OsString>) -> (bool, Vec<OsString>) {
-    let mut shared = false;
+fn provider_link_args(
+    args: impl Iterator<Item = OsString>,
+) -> Result<(bool, Vec<OsString>), String> {
+    let args: Vec<_> = args.collect();
+    let shared = crate::link_output::classify(&args)? == crate::link_output::Kind::Shared;
     let mut kept = Vec::new();
     for arg in args {
-        if arg == "-shared" {
-            shared = true;
-        }
         if arg != "-pie" {
             kept.push(arg);
         }
     }
-    (shared, kept)
+    Ok((shared, kept))
 }
 
 /// The `libc-linker` entry point: links a target unit with Clang and the selected
@@ -1090,7 +1090,7 @@ pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
     selection.clock_profile.prefix(&mut cmd);
     match &selection.provider {
         Some(provider) => {
-            let (shared, args) = provider_link_args(args.into_iter());
+            let (shared, args) = provider_link_args(args.into_iter())?;
             provider_link(&mut cmd, provider, args, false, shared)
         }
         None => {
@@ -1206,11 +1206,12 @@ mod tests {
     #[test]
     fn provider_links_tell_shared_libraries_and_drop_pie() {
         let args = |list: &[&str]| list.iter().map(OsString::from).collect::<Vec<_>>();
-        let (shared, kept) = provider_link_args(args(&["a.o", "-pie", "-o", "app"]).into_iter());
+        let (shared, kept) =
+            provider_link_args(args(&["a.o", "-pie", "-o", "app"]).into_iter()).unwrap();
         assert!(!shared);
         assert_eq!(kept, args(&["a.o", "-o", "app"]));
         let (shared, kept) =
-            provider_link_args(args(&["a.o", "-shared", "-o", "lib.so"]).into_iter());
+            provider_link_args(args(&["a.o", "-shared", "-o", "lib.so"]).into_iter()).unwrap();
         assert!(shared);
         assert_eq!(kept, args(&["a.o", "-shared", "-o", "lib.so"]));
     }

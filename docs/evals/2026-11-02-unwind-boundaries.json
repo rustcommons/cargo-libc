@@ -1,0 +1,125 @@
+{
+  "date": "2026-11-02",
+  "context": {
+    "machine": "aarch64",
+    "platform": "Linux-7.0.0-1011-aws-aarch64-with-glibc2.36",
+    "repository_head": "bcd20d5634d201ccd18590c0b1e29cba305f69b2",
+    "driver_sha256": "2cea724c72df8a51f89519ca21e5ba1d8e662d7af46b05dfdcd2a0f695c8d156",
+    "worktree_dirty": true,
+    "scope": "Native baseline + synthetic archive export/interposition; no LLVM runtime selected"
+  },
+  "results": {
+    "cases": [
+      {
+        "case": "exported-static",
+        "stdout": "exec=7 dso=7\n",
+        "pass": true,
+        "scope": "Synthetic marker ownership; not cross-DSO unwind ABI proof"
+      },
+      {
+        "case": "hidden-static",
+        "stdout": "exec=7 dso=11\n",
+        "pass": true,
+        "scope": "Synthetic marker ownership; not cross-DSO unwind ABI proof"
+      },
+      {
+        "case": "hidden-no-as-needed",
+        "stdout": "exec=7 dso=11\n",
+        "pass": true,
+        "scope": "Synthetic marker ownership; not cross-DSO unwind ABI proof"
+      },
+      {
+        "case": "panic-plain",
+        "exit": 0,
+        "loaded_files": [
+          "/tmp/cargo-libc-unwind-boundaries-20261102-ready/panic-probe",
+          "/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1",
+          "/usr/lib/aarch64-linux-gnu/libc.so.6",
+          "/usr/lib/aarch64-linux-gnu/libgcc_s.so.1"
+        ],
+        "pass": true,
+        "scope": "Stable native Rust baseline, not LLVM candidate"
+      },
+      {
+        "case": "panic-catch",
+        "exit": 0,
+        "loaded_files": [
+          "/tmp/cargo-libc-unwind-boundaries-20261102-ready/panic-probe",
+          "/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1",
+          "/usr/lib/aarch64-linux-gnu/libc.so.6",
+          "/usr/lib/aarch64-linux-gnu/libgcc_s.so.1"
+        ],
+        "pass": true,
+        "scope": "Stable native Rust baseline, not LLVM candidate"
+      },
+      {
+        "case": "panic-nested",
+        "exit": 0,
+        "loaded_files": [
+          "/tmp/cargo-libc-unwind-boundaries-20261102-ready/panic-probe",
+          "/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1",
+          "/usr/lib/aarch64-linux-gnu/libc.so.6",
+          "/usr/lib/aarch64-linux-gnu/libgcc_s.so.1"
+        ],
+        "pass": true,
+        "scope": "Stable native Rust baseline, not LLVM candidate"
+      },
+      {
+        "case": "panic-thread",
+        "exit": 0,
+        "loaded_files": [
+          "/tmp/cargo-libc-unwind-boundaries-20261102-ready/panic-probe",
+          "/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1",
+          "/usr/lib/aarch64-linux-gnu/libc.so.6",
+          "/usr/lib/aarch64-linux-gnu/libgcc_s.so.1"
+        ],
+        "pass": true,
+        "scope": "Stable native Rust baseline, not LLVM candidate"
+      },
+      {
+        "case": "panic-backtrace",
+        "exit": 0,
+        "loaded_files": [
+          "/tmp/cargo-libc-unwind-boundaries-20261102-ready/panic-probe",
+          "/usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1",
+          "/usr/lib/aarch64-linux-gnu/libc.so.6",
+          "/usr/lib/aarch64-linux-gnu/libgcc_s.so.1"
+        ],
+        "pass": true,
+        "scope": "Stable native Rust baseline, not LLVM candidate"
+      },
+      {
+        "case": "panic-uncaught",
+        "exit": 101,
+        "loaded_files": [],
+        "pass": true,
+        "scope": "Stable native Rust baseline, not LLVM candidate"
+      }
+    ],
+    "completed": true,
+    "failure": null,
+    "limits": "No static LLVM archive, cargo-libc candidate, x86-64 target, C-unwind context crossing or PyO3 qualification is established by these host probes."
+  },
+  "output_kinds": {
+    "final_executables": 2,
+    "shared_outputs": 2,
+    "rlib_linker_calls": 0,
+    "staticlib_linker_calls": 0,
+    "scope": "Actual stable rustc driver commands; no LLVM policy injected"
+  },
+  "rustc": "rustc 1.90.0 (1159e78c4 2025-09-14)\nbinary: rustc\ncommit-hash: 1159e78c4747b02ef996e55082b704c09b970588\ncommit-date: 2025-09-14\nhost: aarch64-unknown-linux-gnu\nrelease: 1.90.0\nLLVM version: 20.1.8\n",
+  "cc": "gcc (Debian 12.2.0-14+deb12u1) 12.2.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "raw_evidence_directory": "/tmp/cargo-libc-unwind-boundaries-20261102-ready",
+  "manifest_sha256": "9d23462e4723469d0368f224e1e3d4e03e4450cc32d91716f98e8139952ead01",
+  "native_cleanup_undefined": [
+    "may_unwind",
+    "_Unwind_Resume",
+    "__gcc_personality_v0"
+  ],
+  "source_checks": {
+    "toolchain": "Rust 1.90 aarch64 host",
+    "focused_tests": "4 link_output + 2 cc + 1 provider dispatch, passed",
+    "clippy": "all-targets --locked --offline -D warnings, passed"
+  },
+  "limits": "No actual LLVM runtime, x86-64 policy, DSO context/personality, producer adapter or data qualification; synthetic marker is not an unwind ABI fixture."
+}

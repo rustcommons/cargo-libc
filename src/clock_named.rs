@@ -105,7 +105,7 @@ fn rooted(path: &OsStr, root: &Path) -> Result<PathBuf, String> {
     })
 }
 
-fn takes_value(b: &[u8]) -> bool {
+pub(crate) fn takes_value(b: &[u8]) -> bool {
     matches!(
         b,
         b"-o"

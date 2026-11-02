@@ -39,6 +39,7 @@ pub mod cli;
 mod clock;
 mod clock_named;
 mod elf;
+mod link_output;
 mod output;
 mod provider;
 mod report;

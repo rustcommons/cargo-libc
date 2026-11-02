@@ -358,7 +358,7 @@ impl Profile {
 }
 
 /// Split only the compiler's comma forwarding syntax, retaining OS bytes.
-fn split_forwarded(arg: &OsStr) -> Result<Vec<OsString>, String> {
+pub(crate) fn split_forwarded(arg: &OsStr) -> Result<Vec<OsString>, String> {
     #[cfg(unix)]
     {
         use std::os::unix::ffi::OsStringExt;

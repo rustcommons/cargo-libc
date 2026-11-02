@@ -230,6 +230,21 @@ old-cache import or offline migration is promised. See the
 [0.3.0 release record](RELEASE-0.3.0.md) for exact tested refs, publication evidence
 and coverage limits.
 
+## Executable unwinder development (not released)
+
+Authorized 0.4.0 work will use validated static LLVM libunwind for supported final
+standalone target executables while keeping panic=unwind and dynamic glibc. Current
+published 0.3.0 still uses its existing runtime. Shared libraries/Python extensions,
+CMake shared targets, host tools and shared intermediate libraries must retain
+prior behavior; no user opt-in mode or blanket static-runtime setting is planned.
+
+The runtime adapter and valid cross-DSO coexistence are not qualified yet. Native
+libc APIs or intentionally loaded DSOs may still legitimately load GCC; eventual
+claims will name tested workloads, not every possible process API. See the
+[integration design](UNWINDER-0.4.0-PLAN.md) and permanent
+[release/glibc-bundle checklist](UNWINDER-RELEASE-CHECKLIST.md) for exact boundaries,
+required tests and open evidence. No install/version migration is prescribed yet.
+
 ## Commands
 
 The Cargo commands (`build`, `check`, `clippy`, `doc`, `rustc`, `test`, `run` and
