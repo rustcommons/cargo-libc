@@ -80,4 +80,3 @@ GitHub Release backfill remains pending review/publication.
 - First crates.io release: managed glibc 2.17–2.44 builds on x86-64 Linux, provider/sysroot selection, ELF inspection, Cargo workflow, target C wrappers and kernel simulation with native host tools preserved.
 
 [Release notes](docs/releases/v0.1.0.md) · [Source tag](https://github.com/rustcommons/cargo-libc/tree/v0.1.0)
-
