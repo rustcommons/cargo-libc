@@ -4,8 +4,9 @@ This audit accompanies the new [changelog](../../CHANGELOG.md) and user-facing
 [versioned notes](v0.3.0.md); detailed release records remain validation evidence.
 All eight existing tags correspond to non-yanked `cargo-libc` registry versions.
 Dates are original registry publication dates in UTC, not the date a GitHub Release
-will be backfilled. GitHub Releases were absent when inspected on 2026-11-02.
-Publication remains pending review; no new tag/version or crate upload is needed.
+was backfilled. GitHub Releases were absent at the initial 2026-11-02 inspection.
+The [completion record](#completed-backfill) below supersedes the initial pending
+state; no new tag/version or crate upload was needed.
 
 ## Immutable identities
 
@@ -52,7 +53,7 @@ No tag, source, lock or runtime data is changed by this audit.
   unresolved, and the 0.3.0 strict consumer libgcc_s/non-clock gap remains. None is
   resolved by changelog coverage or GitHub Release publication.
 
-## Bootstrap and publication still pending
+## Initial bootstrap and publication procedure
 
 The shared local release-doc checker, syntax/link/render/diff checks establish
 candidate documentation consistency. A first workflow dispatch may return 404
@@ -62,3 +63,14 @@ publishing notes for existing tags in ascending version order. Use reviewed note
 files, `--verify-tag`, `--latest=false` for older releases and newest stable latest.
 No binary assets or crates.io publication are part of that work. Check live body,
 tag, links and latest status with the checker's published mode afterwards.
+
+## Completed backfill
+
+Reviewed documentation merged normally as `9925f61cbad125588a8af9727fd10ba5dc55ee9a`.
+[Bootstrap run 41387805648](https://github.com/rustcommons/cargo-libc/actions/runs/41387805648)
+passed before publication. All eight existing-tag GitHub Releases now contain the
+exact committed notes, v0.3.0 is latest, and no uploaded assets were added.
+[Full published verification 41387908379](https://github.com/rustcommons/cargo-libc/actions/runs/41387908379)
+passed the actual live-body/history/latest step. Source tags, registry archives,
+versions, dependencies and lockfiles remain unchanged. Historical evidence gaps
+above and the proposed-only 0.4.0 unwinder scope remain unchanged.
