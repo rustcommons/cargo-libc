@@ -46,7 +46,7 @@ Evidence shorthand used below:
 - **Audit:** explicit source/document/workflow inspection on 2026-11-01 at the
   baseline above. This does not imply an execution test or new native qualification.
 
-- **S30:** [0.3.0 source candidate](RELEASE-0.3.0.md), Cargo `8e2a7d47529bc940673d6ec3e6e8325ffac7089d`, producer `1b3b51c8afad88e05b0dc238c15f5ee879f94184`; [run 41371076867](https://github.com/rustcommons/cargo-libc/actions/runs/41371076867) canceled while queued after a shell-format harness correction; replacement/standalone native evidence pending. Local Rust 1.90 focused clock tests/Clippy passed with a disposable root-only source patch; this is not registry/package evidence.
+- **S30:** [0.3.0 source candidate](RELEASE-0.3.0.md), Cargo `8e2a7d47529bc940673d6ec3e6e8325ffac7089d`, producer `1b3b51c8afad88e05b0dc238c15f5ee879f94184`; [run 41371076867](https://github.com/rustcommons/cargo-libc/actions/runs/41371076867) canceled while queued after a shell-format harness correction. That producer is now review-blocked (PT_LOAD overlap/rename race); corrected-ref native evidence is pending and no final gate accepts it. Local Rust 1.90 focused clock tests/Clippy passed with the initial disposable root-only source patch; this is not registry/package or final-release evidence.
 
 ## Requirements
 

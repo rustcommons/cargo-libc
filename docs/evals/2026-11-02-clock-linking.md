@@ -175,6 +175,23 @@ approved file is unchanged. This syntax check does not establish consumer result
 
 ## Remaining gates
 
+Producer review update: `1b3b51c8afad88e05b0dc238c15f5ee879f94184` is blocked
+on partial PT_LOAD overlap validation and an empty-destination rename race. Its
+initial local adapter compilation/tests do not count as final release gates.
+The unchanged API awaits a corrected reviewed producer ref. The standalone driver
+now takes an explicit fifth expected-SHA argument, checks the producer checkout
+and refuses that known-blocked ref. The hosted source entrypoint refuses it too.
+No native rerun or registry/checksum fabrication accompanies this script change.
+
+Patch preflight: the exact extracted Python blocks from Cargo `9fb9d38` and the
+revised driver both successfully patched real copied production manifests and
+parsed with `tomllib`, including producer paths with spaces, quotes and a
+backslash. The earlier block's Python newline escapes already produced actual
+newlines; no literal-backslash TOML failure was reproduced. The revised block
+uses an explicit multiline literal and self-validates the root-only patch and
+unchanged dependencies before writing. `bash -n`, actionlint and diff checks
+cover the driver/entrypoint edits; no unrelated Rust/native suite was rerun.
+
 Do not introduce a production ordering mechanism. Integrate the producer's
 derived profile, verify mixed explicit versions and define explicit-provider and
 full-sysroot boundaries before implementing and reviewing the supported default.

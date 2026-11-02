@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 # Disposable source qualification, usable on a native x86-64 Linux host or WSL.
-# Usage: qualify-clock-source.sh CHECKOUT PRODUCER_CHECKOUT OLD_INSTALL_ROOT EVIDENCE
+# Usage: qualify-clock-source.sh CHECKOUT PRODUCER_CHECKOUT OLD_INSTALL_ROOT EVIDENCE EXPECTED_PRODUCER_SHA
 set -euo pipefail
 checkout=$(realpath "${1:?checkout}")
 producer=$(realpath "${2:?producer checkout}")
 old_root=$(realpath -m "${3:?old installation root}")
 evidence=$(realpath -m "${4:?fresh evidence directory}")
+expected_producer=${5:?exact independently reviewed producer SHA}
+[[ "$expected_producer" =~ ^[0-9a-f]{40}$ ]] || { echo 'Expected producer ref must be a full commit SHA' >&2; exit 1; }
+if [ "$expected_producer" = 1b3b51c8afad88e05b0dc238c15f5ee879f94184 ]; then
+  echo 'Producer 1b3b51c8 is review-blocked; use the corrected reviewed ref, not release gates on that source.' >&2
+  exit 1
+fi
 export CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=2
 test "$(uname -m)" = x86_64
-test "$(git -C "$producer" rev-parse HEAD)" = 1b3b51c8afad88e05b0dc238c15f5ee879f94184
+test "$(git -C "$producer" rev-parse HEAD)" = "$expected_producer"
+git -C "$producer" diff --quiet HEAD --
 for tool in cargo rustc python3 clang-18 gcc ld.bfd readelf; do
   command -v "$tool" >/dev/null || { echo "Missing existing native qualification tool: $tool" >&2; exit 1; }
 done
@@ -26,10 +33,21 @@ git -C "$checkout" archive HEAD | tar -x -C "$evidence/consumer"
   ld.bfd --version
 } > "$evidence/refs-tools.txt"
 python3 - "$evidence/consumer/Cargo.toml" "$producer" <<'PY'
-import json,sys
+import json,sys,tomllib
 from pathlib import Path
 p=Path(sys.argv[1])
-p.write_text(p.read_text()+'\n[patch.crates-io]\nlibc-abi-tools = { path = '+json.dumps(sys.argv[2])+' }\n')
+original=p.read_text()
+before=tomllib.loads(original)
+assert not before.get('patch') and not before.get('replace'), 'production manifest must not contain source overrides'
+patch=f'''
+[patch.crates-io]
+libc-abi-tools = {{ path = {json.dumps(sys.argv[2])} }}
+'''
+text=original+patch
+after=tomllib.loads(text)
+assert after['patch']['crates-io']=={'libc-abi-tools':{'path':sys.argv[2]}}
+assert after['dependencies']==before['dependencies']
+p.write_text(text)
 PY
 cd "$evidence/consumer"
 {

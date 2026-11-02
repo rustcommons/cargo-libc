@@ -38,8 +38,13 @@ Glibc inputs remain 0.1.2/0.1.1 with their existing registry checksums.
 
 The [dated investigation](evals/2026-11-02-clock-linking.md) preserves rejected
 ordering prototypes and their real mixed-version alias failure. The source gate
-uses exact producer `1b3b51c8afad88e05b0dc238c15f5ee879f94184`, patching only
-the root libc package in a disposable consumer. Native cases save objects,
+initially integrated producer `1b3b51c8afad88e05b0dc238c15f5ee879f94184` in a
+disposable root-only source consumer. That producer is independently review-blocked
+for partial PT_LOAD overlap validation and an empty-destination rename race;
+no results on it count as final release gates. A corrected reviewed ref is pending,
+with the same agreed API. The standalone source driver requires that exact ref as
+its fifth argument and checks it against a clean producer checkout. It validates
+the appended disposable patch with `tomllib` before Cargo runs. Native cases save objects,
 before/after ELFs, complete readelf evidence and command results before assertions.
 This first gate covers source/explicit providers, GNU ld/LLD, C and Cargo mixed
 references, RT APIs, linker state, full paths, environment roundtrips and a

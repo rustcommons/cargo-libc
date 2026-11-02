@@ -32,6 +32,10 @@ jobs:
         if: inputs.integration_mode == 'source'
         run: |
           [[ "$CANDIDATE_REF" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          if [ "$CANDIDATE_REF" = 1b3b51c8afad88e05b0dc238c15f5ee879f94184 ]; then
+            echo 'Producer ref is review-blocked; supply the corrected reviewed ref.' >&2
+            exit 1
+          fi
       - uses: actions/checkout@v4
         if: inputs.integration_mode == 'source'
         with:
