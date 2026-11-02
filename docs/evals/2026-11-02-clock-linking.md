@@ -39,6 +39,14 @@ substitution, symlink containment and fail-closed adapter behavior;
 `cargo clippy --all-targets --locked --offline -- -D warnings` and formatting
 checks pass. These are host/scaffold checks, not producer ELF or native release
 qualification. No full release suite has been run for this incomplete adapter.
+The subsequent input-classification correction uses the existing bounded generic
+program-header ELF inspector with optional `DT_SONAME`, rather than the strict
+glibc export-evidence loader. Valid DSOs without SONAME are accepted; text linker
+inputs are classified by format, not filename extension. Caller OS strings are
+retained, including non-UTF-8 Unix paths through direct and compiler-forwarded
+arguments. Six focused clock tests and sixteen ELF-inspector tests pass on Rust
+1.90, including sectionless DSO fixtures with/without SONAME and arbitrary-name
+RT/script inputs. These fixtures do not replace real native DSO/linker gates.
 
 ## Assumptions and decisions
 

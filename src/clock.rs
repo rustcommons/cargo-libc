@@ -2,7 +2,7 @@
 //! and the content-addressed overlay cache; this module never modifies a DSO.
 use crate::provider::Provider;
 use std::{
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     fs,
     io::Read,
     path::{Path, PathBuf},
@@ -125,54 +125,46 @@ impl Profile {
                 value_for_driver_option = false;
                 continue;
             }
-            let text = arg
-                .to_str()
-                .ok_or("target linker arguments must be UTF-8 for clock-profile validation")?;
+            let text = arg.to_str();
             if forwarded_operand {
-                result.push(
-                    self.link_operand(text, &mut value_for_linker_option)?
-                        .into(),
-                );
+                result.push(self.link_operand(&arg, &mut value_for_linker_option, false)?);
                 forwarded_operand = false;
-            } else if text == "-Xlinker" {
+            } else if text == Some("-Xlinker") {
                 result.push(arg);
                 forwarded_operand = true;
-            // These operands are not linker inputs (notably an output lib.so).
-            } else if [
-                "-o",
-                "-L",
-                "-I",
-                "-isystem",
-                "-include",
-                "-isysroot",
-                "-x",
-                "-MF",
-                "-MT",
-                "-MQ",
-                "-D",
-                "-U",
-            ]
-            .contains(&text)
-            {
+            } else if text.is_some_and(|text| {
+                [
+                    "-o",
+                    "-L",
+                    "-I",
+                    "-isystem",
+                    "-include",
+                    "-isysroot",
+                    "-x",
+                    "-MF",
+                    "-MT",
+                    "-MQ",
+                    "-D",
+                    "-U",
+                ]
+                .contains(&text)
+            }) {
                 result.push(arg);
                 value_for_driver_option = true;
-            } else if let Some(forwarded) = text.strip_prefix("-Wl,") {
-                let values = forwarded
-                    .split(',')
-                    .map(|value| -> Result<String, String> {
-                        let replacement = self.link_operand(value, &mut value_for_linker_option)?;
-                        if replacement.contains(',') {
-                            return Err("clock overlay path cannot contain a comma when forwarded with -Wl; select a cache path without commas".into());
-                        }
-                        Ok(replacement)
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
-                result.push(format!("-Wl,{}", values.join(",")).into());
+            } else if arg.as_encoded_bytes().starts_with(b"-Wl,") {
+                let mut forwarded = OsString::from("-Wl");
+                for value in split_forwarded(&arg)? {
+                    let replacement =
+                        self.link_operand(&value, &mut value_for_linker_option, false)?;
+                    if replacement.as_encoded_bytes().contains(&b',') {
+                        return Err("clock overlay path cannot contain a comma when forwarded with -Wl; select a cache path without commas".into());
+                    }
+                    forwarded.push(",");
+                    forwarded.push(replacement);
+                }
+                result.push(forwarded);
             } else {
-                result.push(
-                    self.link_operand(text, &mut value_for_linker_option)?
-                        .into(),
-                );
+                result.push(self.link_operand(&arg, &mut value_for_linker_option, true)?);
             }
         }
         if forwarded_operand || value_for_linker_option || value_for_driver_option {
@@ -183,85 +175,72 @@ impl Profile {
         Ok(result)
     }
 
-    fn link_operand(&self, value: &str, option_value: &mut bool) -> Result<String, String> {
+    fn link_operand(
+        &self,
+        value: &OsStr,
+        option_value: &mut bool,
+        driver_input: bool,
+    ) -> Result<OsString, String> {
         if *option_value {
             *option_value = false;
-            return Ok(value.into());
+            return Ok(value.to_owned());
         }
-        if [
-            "-o",
-            "-L",
-            "--library-path",
-            "-soname",
-            "--soname",
-            "-h",
-            "--dynamic-linker",
-            "-rpath",
-            "--rpath",
-            "-rpath-link",
-            "-z",
-            "-u",
-            "--undefined",
-            "-e",
-            "--entry",
-            "--defsym",
-        ]
-        .contains(&value)
-        {
+        let bytes = value.as_encoded_bytes();
+        let text = value.to_str();
+        if text.is_some_and(|text| {
+            [
+                "-o",
+                "-L",
+                "--library-path",
+                "-soname",
+                "--soname",
+                "-h",
+                "--dynamic-linker",
+                "-rpath",
+                "--rpath",
+                "-rpath-link",
+                "-z",
+                "-u",
+                "--undefined",
+                "-e",
+                "--entry",
+                "--defsym",
+            ]
+            .contains(&text)
+        }) {
             *option_value = true;
-            return Ok(value.into());
+            return Ok(value.to_owned());
         }
-        if value.starts_with('@')
-            || value == "-T"
-            || value.starts_with("-T")
-            || value == "--script"
-            || value.starts_with("--script=")
+        if bytes.starts_with(b"@")
+            || bytes.starts_with(b"-T")
+            || bytes == b"--script"
+            || bytes.starts_with(b"--script=")
         {
             return Err(format!("cannot verify clock policy through opaque linker input {value:?}; use direct target ELF/library arguments until bounded response/script handling is available"));
         }
-        if value
-            .strip_prefix("-l:")
-            .is_some_and(|name| name.contains('/'))
-        {
+        if bytes.starts_with(b"-l:") && bytes.contains(&b'/') {
             return Err(format!("ambiguous library-name path {value:?}; pass the selected target RT ELF as a direct path for identity-checked substitution"));
         }
-        if value.starts_with('-') {
-            return Ok(value.into());
+        if bytes.starts_with(b"-") {
+            return Ok(value.to_owned());
         }
         let path = Path::new(value);
         if !path.is_file() {
-            return Ok(value.into());
+            return Ok(value.to_owned());
         }
         let canonical = fs::canonicalize(path)
             .map_err(|e| format!("cannot identify linker input {value:?}: {e}"))?;
         if canonical == self.libraries.rt {
-            return self.overlay.as_ref().map_or_else(
-                || Ok(value.into()),
-                |overlay| {
-                    let replacement = overlay.join("librt.so.1");
-                    crate::toolchain::text_path(&replacement).map(str::to_owned)
-                },
-            );
+            return Ok(self.overlay.as_ref().map_or_else(
+                || value.to_owned(),
+                |overlay| overlay.join("librt.so.1").into_os_string(),
+            ));
         }
-        let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
-        let mut header = Vec::new();
-        fs::File::open(&canonical)
-            .and_then(|file| file.take(18).read_to_end(&mut header))
-            .map_err(|e| format!("cannot inspect linker input {value:?}: {e}"))?;
-        let dynamic_elf = header.len() == 18
-            && &header[..6] == b"\x7fELF\x02\x01"
-            && u16::from_le_bytes([header[16], header[17]]) == 3;
-        if name.ends_with(".ld") || name.ends_with(".lds") {
-            return Err(format!("cannot verify clock policy through linker script {value:?}; use direct target ELF/library arguments"));
+        let soname = input_soname(&canonical, driver_input)?;
+        if soname.as_deref() == Some("librt.so.1") {
+            return Err(format!("explicit RT input {value:?} is not the selected target librt {}; select a matching provider/sysroot instead of bypassing its clock profile", self.libraries.rt.display()));
         }
-        if dynamic_elf || name.ends_with(".so") || name.contains(".so.") {
-            let metadata = libc_abi_tools::elf::Metadata::load(&canonical)
-                .map_err(|e| format!("cannot verify explicit shared-library input {value:?}: {e}; linker scripts and ambiguous RT inputs are unsupported"))?;
-            if metadata.soname == "librt.so.1" {
-                return Err(format!("explicit RT input {value:?} is not the selected target librt {}; select a matching provider/sysroot instead of bypassing its clock profile", self.libraries.rt.display()));
-            }
-        }
-        Ok(value.into())
+        Ok(value.to_owned())
     }
 
     pub(crate) fn variables(&self) -> Vec<(&'static str, OsString)> {
@@ -323,6 +302,81 @@ impl Profile {
         }
         Ok(profile)
     }
+}
+
+/// Split only the compiler's comma forwarding syntax, retaining OS bytes.
+fn split_forwarded(arg: &OsStr) -> Result<Vec<OsString>, String> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStringExt;
+        Ok(arg.as_encoded_bytes()[4..]
+            .split(|&b| b == b',')
+            .map(|part| OsString::from_vec(part.to_vec()))
+            .collect())
+    }
+    #[cfg(not(unix))]
+    {
+        let text = arg
+            .to_str()
+            .ok_or("non-Unicode -Wl forwarding is unsupported on this host")?;
+        Ok(text[4..].split(',').map(OsString::from).collect())
+    }
+}
+
+/// Classify format before allowing an input through. No SONAME is a normal DSO
+/// case, not proof of malformed glibc evidence. Unknown text may be a GNU INPUT
+/// script regardless of its filename, so it cannot silently pass as a DSO.
+fn input_soname(path: &Path, driver_input: bool) -> Result<Option<String>, String> {
+    let read = |limit| {
+        let mut data = Vec::new();
+        fs::File::open(path)
+            .and_then(|file| file.take(limit).read_to_end(&mut data))
+            .map_err(|e| format!("cannot inspect linker input {}: {e}", path.display()))?;
+        Ok::<_, String>(data)
+    };
+    let header = read(20)?;
+    if header.starts_with(b"!<arch>\n")
+        || header.starts_with(b"!<thin>\n")
+        || header.starts_with(b"BC\xc0\xde")
+        || header.starts_with(b"\xde\xc0\x17\x0b")
+    {
+        return Ok(None);
+    }
+    if header.starts_with(b"\x7fELF") {
+        if header.len() < 20
+            || &header[4..7] != b"\x02\x01\x01"
+            || u16::from_le_bytes([header[18], header[19]]) != 62
+        {
+            return Err(format!(
+                "unsupported target ELF input {}: expected ELF64 little-endian x86-64",
+                path.display()
+            ));
+        }
+        if u16::from_le_bytes([header[16], header[17]]) == 1 {
+            return Ok(None);
+        }
+        const LIMIT: u64 = 64 * 1024 * 1024;
+        let data = read(LIMIT + 1)?;
+        if data.len() as u64 > LIMIT {
+            return Err(format!(
+                "shared input {} exceeds the 64 MiB clock-classification limit",
+                path.display()
+            ));
+        }
+        return crate::elf::inspect(&data)
+            .map(|info| info.soname)
+            .map_err(|e| format!("cannot classify ELF input {}: {e}", path.display()));
+    }
+    // Clang compiles these direct driver inputs; forwarded inputs go straight
+    // to ld and must never receive this source-file exception.
+    if driver_input
+        && path
+            .extension()
+            .is_some_and(|e| ["c", "i", "s", "S"].iter().any(|v| e == *v))
+    {
+        return Ok(None);
+    }
+    Err(format!("cannot verify clock policy through opaque input {}; its format is not ELF/archive/bitcode (a GNU linker script can have any extension); use direct target ELF/library inputs", path.display()))
 }
 
 struct Prepared {
@@ -400,6 +454,113 @@ mod tests {
         fn drop(&mut self) {
             let _ = fs::remove_dir_all(&self.0);
         }
+    }
+
+    // Sectionless ET_DYN with optional SONAME: the same shape used by the
+    // generic program-header inspector, with no glibc version/export evidence.
+    fn dso(soname: Option<&str>) -> Vec<u8> {
+        let mut bytes = vec![0u8; 512];
+        bytes[..7].copy_from_slice(b"\x7fELF\x02\x01\x01");
+        let put16 = |b: &mut [u8], p, n: u16| b[p..p + 2].copy_from_slice(&n.to_le_bytes());
+        let put64 = |b: &mut [u8], p, n: u64| b[p..p + 8].copy_from_slice(&n.to_le_bytes());
+        put16(&mut bytes, 16, 3);
+        put16(&mut bytes, 18, 62);
+        bytes[20..24].copy_from_slice(&1u32.to_le_bytes());
+        put64(&mut bytes, 32, 64);
+        put16(&mut bytes, 52, 64);
+        put16(&mut bytes, 54, 56);
+        put16(&mut bytes, 56, 2);
+        for (at, kind, offset, size) in [(64, 1u32, 0, 512), (120, 2, 256, 64)] {
+            bytes[at..at + 4].copy_from_slice(&kind.to_le_bytes());
+            put64(&mut bytes, at + 8, offset);
+            put64(&mut bytes, at + 16, offset);
+            put64(&mut bytes, at + 32, size);
+            put64(&mut bytes, at + 40, size);
+        }
+        let mut strings = vec![0];
+        if let Some(name) = soname {
+            strings.extend_from_slice(name.as_bytes());
+            strings.push(0);
+        }
+        bytes[384..384 + strings.len()].copy_from_slice(&strings);
+        for (i, (tag, value)) in [
+            (5, 384),
+            (10, strings.len() as u64),
+            (if soname.is_some() { 14 } else { 0 }, 1),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            put64(&mut bytes, 256 + i * 16, tag);
+            put64(&mut bytes, 264 + i * 16, value);
+        }
+        bytes
+    }
+
+    #[test]
+    fn generic_dso_without_soname_passes_but_disguised_rt_and_text_do_not() {
+        let files = Files::new();
+        let profile = Profile {
+            libraries: Libraries {
+                libc: files.0.join("libc.so.6"),
+                rt: files.0.join("selected-rt"),
+            },
+            overlay: None,
+            identity: "test".into(),
+        };
+        let input = files.0.join("ordinary.so");
+        fs::write(&input, dso(None)).unwrap();
+        let args = vec![input.as_os_str().to_owned()];
+        assert_eq!(profile.link_args(args.clone()).unwrap(), args);
+        fs::write(&input, dso(Some("libordinary.so.1"))).unwrap();
+        assert_eq!(profile.link_args(args.clone()).unwrap(), args);
+        let disguised = files.0.join("not-a-library-extension.data");
+        fs::write(&disguised, dso(Some("librt.so.1"))).unwrap();
+        assert!(profile
+            .link_args(vec![disguised.as_os_str().to_owned()])
+            .unwrap_err()
+            .contains("not the selected target librt"));
+        fs::write(&disguised, b"INPUT(/other/librt.so.1)\n").unwrap();
+        assert!(profile
+            .link_args(vec![disguised.as_os_str().to_owned()])
+            .unwrap_err()
+            .contains("opaque input"));
+        let source = files.0.join("unit.c");
+        fs::write(&source, b"int main(void) { return 0; }\n").unwrap();
+        assert!(profile
+            .link_args(vec![source.as_os_str().to_owned()])
+            .is_ok());
+        assert!(profile
+            .link_args(vec!["-Xlinker".into(), source.into_os_string()])
+            .is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn non_utf8_native_dso_paths_survive_direct_and_forwarded_arguments() {
+        use std::os::unix::ffi::OsStringExt;
+        let files = Files::new();
+        let input = files
+            .0
+            .join(OsString::from_vec(b"ordinary-\xff.so".to_vec()));
+        fs::write(&input, dso(None)).unwrap();
+        let profile = Profile {
+            libraries: Libraries {
+                libc: files.0.join("libc.so.6"),
+                rt: files.0.join("librt.so.1"),
+            },
+            overlay: None,
+            identity: "test".into(),
+        };
+        let mut forwarded = OsString::from("-Wl,");
+        forwarded.push(&input);
+        let args = vec![
+            input.as_os_str().to_owned(),
+            "-Xlinker".into(),
+            input.into_os_string(),
+            forwarded,
+        ];
+        assert_eq!(profile.link_args(args.clone()).unwrap(), args);
     }
 
     #[test]
