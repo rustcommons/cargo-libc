@@ -33,8 +33,9 @@ Historical backfill: [all eight notes](releases/HISTORY.md) are reconstructed
 from existing tags, archives and evidence. They did not exist at old tags; link
 to main or the new documentation commit, never a nonexistent old changelog.
 Changelog dates are original registry UTC dates; GitHub publication timestamps are
-the later backfill date. Original records/archives/tags stay unchanged. At this
-candidate, GitHub publication and hosted bootstrap remain pending review GO.
+the later backfill date. Original records/archives/tags stay unchanged. The
+[completed backfill](releases/HISTORY.md#completed-backfill) records the successful
+bootstrap and full live verification; the following procedure remains the rule.
 After merge and green docs CI, create existing-tag Releases in ascending order
 from reviewed notes with `--verify-tag`, older versions `--latest=false`, newest
 stable latest. Then check all live bodies/latest with:
@@ -52,7 +53,8 @@ The [0.4.0 unwinder plan](UNWINDER-0.4.0-PLAN.md) is a proposal, not shipped sco
 ## Release records
 
 Latest verified registry/source release: **0.3.0** (2026-11-02).
-GitHub Release documentation completion is pending the backfill above. Update this maintained index as verification completes; packaged
+GitHub Release documentation is complete for all eight existing versions; see the
+[backfill completion evidence](releases/HISTORY.md#completed-backfill). Packaged
 READMEs link here without calling a pinned historical version current.
 
 | Version / user notes | Original UTC date | Registry/source state and evidence |
