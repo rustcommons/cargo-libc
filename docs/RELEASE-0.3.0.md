@@ -1,8 +1,8 @@
-# cargo-libc 0.3.0 — qualified release candidate
+# cargo-libc 0.3.0
 
-Not published. Substantive pre-publication gates are complete; final narrow
-review, normal merge and sole-coordinator publication remain. No release tag or
-official cargo-libc 0.3.0 archive is claimed by this record.
+Published and verified, 2026-11-02. Release source and immutable tag `v0.3.0`:
+`a70ce9ffac6be8611b66a2829fefb3093cb41ce6`. The qualification sections below
+retain their exact pre-publication candidate refs; publication evidence follows.
 
 ## Behavior and migration
 
@@ -111,17 +111,58 @@ registry lock entries match official 0.2.4. The documented source changes are
 limited to the clock profile/validation, fingerprint/config plumbing and related
 help/metadata/tests; no general ABI-data or unwinder change is included.
 
-## Remaining release steps and limits
+## Publication and installed verification
 
-Await final narrow review and normal merge; confirm the merged package tree
-matches the qualified candidate. The coordinator alone publishes from that clean
-merged commit. Afterwards verify official checksum/non-yanked/VCS identity,
-docs.rs and actual README navigation/render, exact immutable tag, and the existing
-published 0.3.0 clean-install workflow; record those results separately.
+PR #10 merged normally at `a70ce9ffac6be8611b66a2829fefb3093cb41ce6`, preserving
+reviewed commits. Its tree equals approved `24f77e94838187425c559ad3a332910041dd8862`;
+package inputs equal `84cc60ee4a60517f160b8003e502768575d39af7`, and workflow/scripts
+equal approved `4ad06e5e2402a550eabdae2980a3e3517497a6bf`. Rust 1.90 clean-merge
+`cargo package --locked` and the existing source/payload audit passed before the
+coordinator alone published.
+
+The official registry archive is non-yanked, contains 25 files, and has SHA-256
+`96201f1b35c093b3ed77867995bc688336fc2cbb5a43f6d471a9e13b9ab3f5c2`.
+Its VCS record is clean at the exact release commit. Downloaded source, original
+manifest, lock, README and legal files match that commit; the normalized manifest
+and seven-package registry graph pass the existing package audit. Candidate
+archive hashes above are distinct and are not official publication checksums.
+
+[Published-install run 41382187049](https://github.com/rustcommons/cargo-libc/actions/runs/41382187049)
+passed at the exact release ref on Ubuntu 24.04 x86-64 / Rust 1.90 / Clang 18.
+The unchanged installed mode uses a fresh Cargo home and
+`cargo install cargo-libc --version 0.3.0 --locked`. Saved evidence confirms the
+expected root 0.4.0, three tools 0.3.3 and glibc inputs 0.1.2/0.1.1; all five
+executables, provider stdout/closed-pipe errors, source-provider C/CMake,
+host/target separation, C++ refusal, inspection, native stdin/JSON/status and
+Docker/Podman run/test spaced-environment/exit-7 checks passed. It does not rerun
+the complete clock or consumer matrices; their unchanged-source evidence above
+continues to apply.
+
+Artifact `published-install-41382187049` (ID `13113820827`) was downloaded and
+its exact ref/success markers audited. ZIP SHA-256
+`6b7ac45166c50cd115a004aceb8f59eac38f98c22ece3462aa4f9b57f7645b85`
+matches GitHub's artifact digest. Only the installed job ran in this dispatch;
+other manual modes were correctly skipped.
+
+The actual [docs.rs README](https://docs.rs/crate/cargo-libc/0.3.0) and
+[API page](https://docs.rs/cargo-libc/0.3.0/cargo_libc/) render the released version.
+The README has the neutral status, all-five clock guide link, release-policy
+navigation and both source-map modules; its banner and five badges load. Actual
+README navigation targets for the user guide/clock anchor and release index render
+on GitHub, and all six linked repository documents return HTTP 200 in-browser.
+[Render and archive proof](assets/release-0.3.0/verification.json) and
+[README preview](assets/release-0.3.0/docsrs-readme.png) retain bounded evidence.
+
+After these checks passed, annotated tag `v0.3.0` was created and pushed at
+`a70ce9ffac6be8611b66a2829fefb3093cb41ce6`; it must never move. Subsequent excluded
+bookkeeping does not change the immutable package or release source.
+
+## Coverage limits
 
 Tier 3 real old-system execution stays deferred. Modern-kernel containers/local
 simulation do not establish actual SLES/kernel or universal ABI compatibility.
-Container execution/IO has registry evidence; consumer clock integration with
-container-provider preparation was not separately rerun. No broader native
-adapter, arbitrary script/response language or runtime dependency-closure claim
-is made. Prebuilt-provider legal gates are unchanged.
+Container execution/IO has registry and published-install evidence; clock
+integration with container-provider preparation was not separately rerun. No
+broader native adapter, arbitrary script/response language or runtime dependency-
+closure claim is made. The consumer strict unwinder/non-clock gap remains as
+recorded above. Prebuilt-provider legal gates are unchanged.

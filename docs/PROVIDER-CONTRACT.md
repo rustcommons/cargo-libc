@@ -11,7 +11,7 @@ descriptor. It supports x86_64 Linux dynamically linked non-PIE Rust executables
 Rust shared libraries (`cdylib`, linked without `crt1.o` and with GCC's
 `crtbeginS.o`/`crtendS.o`; Rust code is position-independent in both cases), and exactly one glibc release from 2.17 through 2.44, every release in the pinned ABI lists (the `RELEASES` list in `src/provider.rs`). It is not an authenticated or relocatable release SDK.
 The six-field v1 format is unchanged; existing 2.17 descriptors retain that format.
-The 0.3.0 candidate additionally validates the selected libc/RT ELFs for the
+Version 0.3.0 additionally validates the selected libc/RT ELFs for the
 [clock profile](USER-GUIDE.md#clock-linking), so a descriptor passing the six-field
 parser alone does not guarantee acceptance of its library contents.
 
@@ -71,7 +71,7 @@ It does not revalidate full ABI membership or hash every provider file on every
 build. For the clock profile, the producer validates and hashes the selected
 `libc.so.6`/`librt.so.1` pair and owns the read-only derived RT cache.
 
-### Derived RT selection in the 0.3.0 candidate
+### Derived RT selection in 0.3.0
 
 The descriptor continues to name the original, faithful provider stubs. Do not
 change its `stubs` field or overwrite the original RT DSO to opt into the clock
@@ -92,7 +92,7 @@ producer API accepts safely discovered full-sysroot ELF pairs, with no host
 fallback or mutation of user files. Cache corruption or unqualified inputs fail
 without reverting to the original default bindings. A compliant pair creates no
 overlay and does not force librt into the link. This adds no field to descriptor
-v1 and no user clock option. See the [candidate record](RELEASE-0.3.0.md) for
+v1 and no user clock option. See the [release record](RELEASE-0.3.0.md) for
 named passing execution/registry gates and remaining scope limits rather than
 inferring qualification from format support.
 

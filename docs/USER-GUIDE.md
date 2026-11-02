@@ -167,7 +167,7 @@ credentials. Do not expose secrets through test output or untrusted images.
 
 ## Clock linking
 
-Starting with the 0.3.0 candidate, ordinary references to `clock_gettime`,
+Starting with 0.3.0, ordinary references to `clock_gettime`,
 `clock_getres`, `clock_settime`, `clock_nanosleep` and `clock_getcpuclockid`
 select libc's GLIBC_2.17 defaults. There is no clock flag or opt-out. This changes
 the older 2.17–2.29 profiles where putting librt first selected its older defaults.
@@ -227,8 +227,8 @@ A changed, missing or mismatched exported identity is an error; regenerate the
 configuration instead of editing its private fields. Existing provider caches
 still have their version-keyed preparation behavior described above. No automatic
 old-cache import or offline migration is promised. See the
-[0.3.0 candidate record](RELEASE-0.3.0.md) for exact tested refs, remaining release steps
-and coverage limits. Version 0.3.0 is not yet published.
+[0.3.0 release record](RELEASE-0.3.0.md) for exact tested refs, publication evidence
+and coverage limits.
 
 ## Commands
 
