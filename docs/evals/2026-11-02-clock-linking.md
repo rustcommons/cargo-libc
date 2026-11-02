@@ -6,6 +6,18 @@ The proposed 0.3.0 default prefers libc for `clock_gettime`, `clock_getres`,
 user option or environment policy switch. No product implementation, version
 bump, provider-data change or unwinder change is included in this investigation.
 
+**Architecture decision, 2026-11-02:** production argument reordering is
+abandoned. The subsequent coordinating Linux diagnostic reports loss of mixed
+ordinary/legacy versions under GNU ld in all four tested call/address forms,
+including the strong-libc variant. Making the five librt clock aliases
+compatibility-only preserves both versions under GNU ld and LLD. The approved
+direction is an explicit derived profile in the existing producer builder/render
+and cache API, not a raw ABI-data edit or Cargo-side provider implementation.
+The exact producer API/ref and consumer integration are pending; this report does
+not claim those new profile gates passed. The disposable ordering script and
+workflow mode are retired; their immutable sources and failed-run evidence remain
+linked below.
+
 ## Assumptions and decisions
 
 | Question | Evidence and current limit |
@@ -32,7 +44,7 @@ Tested repository ref: `4842118cbbea0c71e47ba21876f400d084e1c53b`.
 **failed** the retained mixed-version assertion after fourteen passing cases.
 Runner: Ubuntu 24.04 x86-64, Clang 18.1.3, GNU `ld.bfd`, glibc 2.22 source
 provider, unchanged registry dependency graph. The checked-in
-[`scripts/prototype-clock-order.py`](../../scripts/prototype-clock-order.py)
+[`scripts/prototype-clock-order.py` at the tested ref](https://github.com/rustcommons/cargo-libc/blob/4842118cbbea0c71e47ba21876f400d084e1c53b/scripts/prototype-clock-order.py)
 compiles real C objects with `libc-cc`, captures Clang's completed provider link
 command through a tracing compiler proxy, and executes that command before and
 after a disposable ordering change. It is not the product argument transformer.
@@ -133,9 +145,14 @@ approved file is unchanged. This syntax check does not establish consumer result
 
 ## Remaining gates
 
-Do not commit or release an unsafe ordering mechanism. Resolve mixed explicit
-versions, define safe input/state boundaries and full-sysroot behavior, then
-implement and review the supported default. Required later evidence includes
+Do not introduce a production ordering mechanism. Integrate the producer's
+derived profile, verify mixed explicit versions and define explicit-provider and
+full-sysroot boundaries before implementing and reviewing the supported default.
+Automatic source/container preparation must request the profile with its cache
+identity; no silent fallback to an old provider is permitted. The proposed
+explicit-input boundary is to diagnose affected unprofiled providers/sysroots,
+rather than mutate caller files or silently retain old defaults; that boundary
+still awaits a coordinating decision. Required later evidence includes
 all five clocks, legacy-only and mixed-version forms, actual RT APIs, unchanged
 unwinder/non-clock binding, host isolation, both plain-Cargo configuration formats,
 same-target-directory upgrade relinking, affected provider/C/container paths,
