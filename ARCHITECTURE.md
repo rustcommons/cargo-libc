@@ -173,7 +173,12 @@ is not a broader old-system compatibility claim.
 
 The 0.4.0 path is under development, **not active LLVM selection yet**. The first
 consumer increment classifies each final link through `src/link_output.rs` and
-shares that decision between Rust provider startup dispatch and target C actions.
+shares that decision between Rust/C startup dispatch. It consumes the completed
+Clang linker command via the existing trace parser, not a mixed driver/forwarded
+argument stream. Provider/sysroot startup choice is aligned and the final command
+kind revalidated; ambiguous or unsupported overrides refuse.
+[Focused native controls](docs/evals/2026-11-02-link-output-classification.md)
+check actual ELF kind/PIE/RUNPATH and preserve shared/partial startup boundaries.
 Library suffixes and Cargo subcommands do not choose a workspace-wide runtime.
 rlib/staticlib/object code receives no new runtime compilation flags.
 

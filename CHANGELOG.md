@@ -10,6 +10,13 @@ GitHub Release backfill is complete for all eight existing tags; see the
 
 ## [Unreleased]
 
+### Development fixes
+
+- Classify final link outputs from the completed Clang linker stream, preserving
+  mode-looking RUNPATH values and actual PIE precedence. Align shared/partial
+  startup inputs and refuse unsupported ambiguous overrides; LLVM runtime and
+  flag/default direction remain paused.
+
 ### Documentation
 
 - Add this changelog, versioned user-facing notes for all eight existing tags,

@@ -119,33 +119,10 @@ impl Profile {
         command: &Command,
         linker: &Path,
         sysroot: &Path,
-    ) -> Result<(), String> {
-        let mut trace = Command::new(command.get_program());
-        trace.args(command.get_args()).arg("-###");
-        if let Some(cwd) = command.get_current_dir() {
-            trace.current_dir(cwd);
-        }
-        for (key, value) in command.get_envs() {
-            match value {
-                Some(value) => {
-                    trace.env(key, value);
-                }
-                None => {
-                    trace.env_remove(key);
-                }
-            }
-        }
-        let output = trace
-            .output()
-            .map_err(|e| format!("cannot probe completed Clang link inputs: {e}"))?;
-        if !output.status.success() {
-            return Err(format!(
-                "Clang cannot expose the completed target link: {}",
-                String::from_utf8_lossy(&output.stderr).trim()
-            ));
-        }
-        let effective = crate::clock_named::trace_command(&output.stderr, linker)?;
-        crate::clock_named::validate(self, &effective[1..], sysroot)
+    ) -> Result<crate::link_output::Output, String> {
+        let effective = crate::clock_named::completed_command(command, linker)?;
+        crate::clock_named::validate(self, &effective[1..], sysroot)?;
+        crate::link_output::classify(&effective[1..])
     }
 
     /// Only substitutes an identity-checked RT file, at the same argument slot.
@@ -358,7 +335,7 @@ impl Profile {
 }
 
 /// Split only the compiler's comma forwarding syntax, retaining OS bytes.
-pub(crate) fn split_forwarded(arg: &OsStr) -> Result<Vec<OsString>, String> {
+fn split_forwarded(arg: &OsStr) -> Result<Vec<OsString>, String> {
     #[cfg(unix)]
     {
         use std::os::unix::ffi::OsStringExt;

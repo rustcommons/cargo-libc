@@ -83,15 +83,13 @@ pub(crate) enum Action {
     Query,
     /// Compile only (`-c`, `-S`, `-fsyntax-only`): no target link inputs are added.
     Compile,
-    Link {
-        shared: bool,
-    },
-    /// `-r` partial links take no startup files or libraries.
-    Relocatable,
+    /// A driver invocation that may link; its completed Clang command chooses
+    /// executable/shared/relocatable kind later, never this phase classifier.
+    Link,
 }
 
 /// Driver options whose value is the next argument.
-pub(crate) const SEPARATE_VALUE: &[&str] = &[
+const SEPARATE_VALUE: &[&str] = &[
     "-o",
     "-I",
     "-L",
@@ -150,11 +148,7 @@ pub(crate) fn classify(args: &[OsString]) -> Result<Action, String> {
     } else if compile {
         Action::Compile
     } else {
-        match crate::link_output::classify(args)? {
-            crate::link_output::Kind::Executable => Action::Link { shared: false },
-            crate::link_output::Kind::Shared => Action::Link { shared: true },
-            crate::link_output::Kind::Relocatable => Action::Relocatable,
-        }
+        Action::Link
     })
 }
 
@@ -282,19 +276,19 @@ mod tests {
         }
         assert_eq!(
             classify(&args(&["a.o", "-o", "cmTC_1"])).unwrap(),
-            Action::Link { shared: false }
+            Action::Link
         );
         assert_eq!(
             classify(&args(&["-shared", "a.o", "-o", "liba.so"])).unwrap(),
-            Action::Link { shared: true }
+            Action::Link
         );
         assert_eq!(
             classify(&args(&["@objects.rsp", "-o", "app"])).unwrap(),
-            Action::Link { shared: false }
+            Action::Link
         );
         assert_eq!(
             classify(&args(&["-r", "a.o", "-o", "b.o"])).unwrap(),
-            Action::Relocatable
+            Action::Link
         );
         assert!(classify(&args(&["-static", "a.o"])).is_err());
     }

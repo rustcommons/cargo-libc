@@ -17,9 +17,11 @@ concrete native helper/context solution. Broad Rust export remains diagnostic on
 ## Concrete consumer integration
 
 Classify the final link, not the Cargo command, filename suffix or an entire
-workspace. The first source increment shares `link_output::classify` between
-Rust provider dispatch and target C classification; it reads direct/forwarded
-controls and preserves argument bytes. This increment does **not** yet select an
+workspace. The current source shares `link_output::classify` between Rust/C helper dispatch,
+using only the completed Clang linker stream. Driver-only controls never consume
+pending linker operands. Kind is probed before startup assembly and rechecked
+afterwards; caller argument bytes are retained. See the
+[focused classification correction](evals/2026-11-02-link-output-classification.md). This increment does **not** yet select an
 LLVM archive. Final completed-Clang command verification must confirm the chosen
 kind before the runtime policy executes.
 
@@ -169,6 +171,8 @@ No raw ABI/source-data change or producer-wide lockstep bump is assumed; a new
 producer minor is needed only for the new public helper API actually used.
 
 Tier 3 old-system execution and prebuilt legal clearance remain explicit gaps.
-Current development evidence and remaining blockers are in the
+The runtime direction is on hold pending the user decision; this independent
+classification fix does not select a default or implement a mode. Current
+development evidence and remaining blockers are in the
 [dated probe record](evals/2026-11-02-unwind-boundaries.md); they are not a completed
 0.4.0 qualification or universal DSO/FFI compatibility claim.

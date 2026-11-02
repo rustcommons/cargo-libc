@@ -7,7 +7,38 @@ use std::{
     fs,
     io::Read,
     path::{Path, PathBuf},
+    process::Command,
 };
+
+/// Ask Clang for its completed linker invocation without executing it. Preserve
+/// arguments, environment removals and cwd; do not reconstruct a driver stream.
+pub(crate) fn completed_command(command: &Command, linker: &Path) -> Result<Vec<OsString>, String> {
+    let mut trace = Command::new(command.get_program());
+    trace.args(command.get_args()).arg("-###");
+    if let Some(cwd) = command.get_current_dir() {
+        trace.current_dir(cwd);
+    }
+    for (key, value) in command.get_envs() {
+        match value {
+            Some(value) => {
+                trace.env(key, value);
+            }
+            None => {
+                trace.env_remove(key);
+            }
+        }
+    }
+    let output = trace
+        .output()
+        .map_err(|e| format!("cannot probe completed Clang link: {e}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "Clang cannot expose the completed target link: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    trace_command(&output.stderr, linker)
+}
 
 fn os(bytes: &[u8]) -> Result<OsString, String> {
     #[cfg(unix)]
@@ -109,6 +140,12 @@ pub(crate) fn takes_value(b: &[u8]) -> bool {
     matches!(
         b,
         b"-o"
+            | b"-R"
+            | b"-I"
+            | b"--just-symbols"
+            | b"--oformat"
+            | b"--format"
+            | b"-b"
             | b"-L"
             | b"--library-path"
             | b"-l"
@@ -472,6 +509,12 @@ pub(crate) fn validate(profile: &Profile, args: &[OsString], root: &Path) -> Res
                 search.library(name, static_only, 0)?;
             }
             b"-o"
+            | b"-R"
+            | b"-I"
+            | b"--just-symbols"
+            | b"--oformat"
+            | b"--format"
+            | b"-b"
             | b"-L"
             | b"--library-path"
             | b"-m"

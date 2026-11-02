@@ -64,6 +64,10 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
 
 ## Executable unwinder development
 
+Direction-dependent runtime/default/flag work is on hold pending the user decision.
+Independent classification, evidence and checklist fixes remain authorized; the
+prior LLVM-default goal below is not permission to wire it during this hold.
+
 - Implement the authorized 0.4.0 default with validated static LLVM libunwind only
   for supported final target executables; retain panic=unwind and dynamic glibc.
   Do not use nightly, raise Rust 1.90, substitute panic=abort/crt-static, select

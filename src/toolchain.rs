@@ -990,6 +990,78 @@ impl Selection {
         })
     }
 
+    /// Probe output before choosing CRT/default libraries. Only Clang may
+    /// consume driver controls: pending linker operands must survive them.
+    fn link_output(&self, args: &[OsString]) -> Result<crate::link_output::Output, String> {
+        let mut probe = Command::new(&self.cc);
+        self.clock_profile.prefix(&mut probe);
+        if self.provider.is_some() {
+            probe.arg("-nostdlib");
+        }
+        probe.args(args);
+        // Provider executables have always been non-PIE. A forwarded linker
+        // -pie still reaches ld and must be diagnosed, never silently dropped.
+        if self.provider.is_some() {
+            probe.arg("-no-pie");
+        }
+        self.finish(&mut probe, true);
+        let effective = crate::clock_named::completed_command(&probe, Path::new(&self.ld))?;
+        let output = crate::link_output::classify(&effective[1..])?;
+        output.validate_startup_policy(self.provider.is_some())?;
+        Ok(output)
+    }
+
+    fn link_command(
+        &self,
+        args: Vec<OsString>,
+        default_libraries: bool,
+    ) -> Result<Command, String> {
+        use crate::link_output::Kind;
+        let output = self.link_output(&args)?;
+        let final_link = output.kind != Kind::Relocatable;
+        let args = if final_link {
+            self.clock_profile.link_args(args)?
+        } else {
+            args
+        };
+        let mut cmd = Command::new(&self.cc);
+        if final_link {
+            self.clock_profile.prefix(&mut cmd);
+        }
+        match (&self.provider, output.kind) {
+            (Some(provider), Kind::Executable | Kind::Shared) => {
+                provider_link(
+                    &mut cmd,
+                    provider,
+                    args,
+                    default_libraries,
+                    output.kind == Kind::Shared,
+                );
+            }
+            _ => {
+                cmd.args(args);
+            }
+        }
+        // Match compiler startup/default-library selection to the actual final
+        // kind, including forwarded controls. Caller linker tokens stay intact.
+        crate::link_output::align_driver_startup(&mut cmd, output);
+        self.finish(&mut cmd, true);
+        let actual = if final_link {
+            self.clock_profile.validate_command(
+                &cmd,
+                Path::new(&self.ld),
+                Path::new(&self.sysroot),
+            )?
+        } else {
+            let effective = crate::clock_named::completed_command(&cmd, Path::new(&self.ld))?;
+            crate::link_output::classify(&effective[1..])?
+        };
+        if actual != output {
+            return Err(format!("completed linker output changed during provider/clock assembly: {output:?} -> {actual:?}; conflicting output controls are unsupported"));
+        }
+        Ok(cmd)
+    }
+
     /// Fixed profile selections; they come last, after the caller's arguments.
     fn finish(&self, cmd: &mut Command, link: bool) {
         cmd.arg(format!("--target={TARGET}"));
@@ -1020,9 +1092,6 @@ fn provider_link(
         ("crtbegin.o", "crtend.o")
     };
     cmd.arg("-nostdlib");
-    if !shared {
-        cmd.arg("-no-pie");
-    }
     if let Some(path) = env::var_os("CARGO_LIBC_PROVIDER_LINK_MAP") {
         cmd.arg(prefixed_path("-Wl,-Map=", Path::new(&path)));
     }
@@ -1048,33 +1117,17 @@ fn provider_link(
     cmd.arg(provider.gcc_startup.join(end));
     cmd.arg(provider.sysroot.join("usr/lib64/crtn.o"));
     if !shared {
+        cmd.arg("-no-pie");
         cmd.arg(format!("-Wl,--dynamic-linker={LOADER}"));
     }
-}
-
-/// rustc's arguments for a provider link: whether it links a shared library
-/// (a `cdylib` or `dylib`), and the arguments without `-pie`. Rust code is
-/// position-independent, so executables still link as non-PIE with the
-/// provider's `crt1.o`.
-fn provider_link_args(
-    args: impl Iterator<Item = OsString>,
-) -> Result<(bool, Vec<OsString>), String> {
-    let args: Vec<_> = args.collect();
-    let shared = crate::link_output::classify(&args)? == crate::link_output::Kind::Shared;
-    let mut kept = Vec::new();
-    for arg in args {
-        if arg != "-pie" {
-            kept.push(arg);
-        }
-    }
-    Ok((shared, kept))
 }
 
 /// The `libc-linker` entry point: links a target unit with Clang and the selected
 /// sysroot or provider. `args` are rustc's linker arguments. With a provider it adds
 /// the release's startup objects, stubs and loader; for shared libraries
 /// (`-shared`, such as Python extensions) it uses the shared startup objects and no
-/// loader, and it drops rustc's `-pie`. Returns the linker's exit code.
+/// loader, and provider executables override the driver’s default PIE. Forwarded PIE
+/// controls are diagnosed rather than dropped. Returns the linker's exit code.
 ///
 /// The selection comes from the `CARGO_LIBC_*` environment variables that
 /// `cargo libc` or `cargo libc env` sets in the target rustflags.
@@ -1085,24 +1138,7 @@ fn provider_link_args(
 /// be started.
 pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
     let selection = Selection::from_environment("this helper")?;
-    let args = selection.clock_profile.link_args(args.collect())?;
-    let mut cmd = Command::new(&selection.cc);
-    selection.clock_profile.prefix(&mut cmd);
-    match &selection.provider {
-        Some(provider) => {
-            let (shared, args) = provider_link_args(args.into_iter())?;
-            provider_link(&mut cmd, provider, args, false, shared)
-        }
-        None => {
-            cmd.args(args);
-        }
-    }
-    selection.finish(&mut cmd, true);
-    selection.clock_profile.validate_command(
-        &cmd,
-        Path::new(&selection.ld),
-        Path::new(&selection.sysroot),
-    )?;
+    let mut cmd = selection.link_command(args.collect(), false)?;
     let status = cmd
         .status()
         .map_err(|e| format!("cannot launch Clang driver: {e}"))?;
@@ -1115,35 +1151,13 @@ pub(crate) fn target_compiler(
     action: crate::cc::Action,
     args: Vec<OsString>,
 ) -> Result<Command, String> {
-    use crate::cc::Action;
     let selection = Selection::from_environment("this compiler wrapper")?;
+    if action == crate::cc::Action::Link {
+        return selection.link_command(args, true);
+    }
     let mut cmd = Command::new(&selection.cc);
-    let link = matches!(action, Action::Link { .. } | Action::Relocatable);
-    let final_link = matches!(action, Action::Link { .. });
-    let args = if matches!(action, Action::Link { .. }) {
-        selection.clock_profile.link_args(args)?
-    } else {
-        args
-    };
-    if matches!(action, Action::Link { .. }) {
-        selection.clock_profile.prefix(&mut cmd);
-    }
-    match (&selection.provider, action) {
-        (Some(provider), Action::Link { shared }) => {
-            provider_link(&mut cmd, provider, args, true, shared)
-        }
-        _ => {
-            cmd.args(args);
-        }
-    }
-    selection.finish(&mut cmd, link);
-    if final_link {
-        selection.clock_profile.validate_command(
-            &cmd,
-            Path::new(&selection.ld),
-            Path::new(&selection.sysroot),
-        )?;
-    }
+    cmd.args(args);
+    selection.finish(&mut cmd, false);
     Ok(cmd)
 }
 
@@ -1204,16 +1218,69 @@ mod tests {
     }
 
     #[test]
-    fn provider_links_tell_shared_libraries_and_drop_pie() {
-        let args = |list: &[&str]| list.iter().map(OsString::from).collect::<Vec<_>>();
-        let (shared, kept) =
-            provider_link_args(args(&["a.o", "-pie", "-o", "app"]).into_iter()).unwrap();
-        assert!(!shared);
-        assert_eq!(kept, args(&["a.o", "-o", "app"]));
-        let (shared, kept) =
-            provider_link_args(args(&["a.o", "-shared", "-o", "lib.so"]).into_iter()).unwrap();
-        assert!(shared);
-        assert_eq!(kept, args(&["a.o", "-shared", "-o", "lib.so"]));
+    fn provider_startup_matches_final_kind_and_preserves_pie_operands() {
+        let provider = crate::provider::Provider {
+            release: "2.22".parse().unwrap(),
+            sysroot: "/provider".into(),
+            stubs: "/stubs".into(),
+            gcc_startup: "/gcc".into(),
+            compiler_runtime: "/runtime".into(),
+            descriptor: String::new(),
+        };
+        for shared in [false, true] {
+            let mut cmd = Command::new("clang");
+            provider_link(
+                &mut cmd,
+                &provider,
+                ["a.o", "-pie", "-o", "-pie"].map(OsString::from),
+                false,
+                shared,
+            );
+            crate::link_output::align_driver_startup(
+                &mut cmd,
+                crate::link_output::Output {
+                    kind: if shared {
+                        crate::link_output::Kind::Shared
+                    } else {
+                        crate::link_output::Kind::Executable
+                    },
+                    pie: false,
+                    overrides_shared: false,
+                },
+            );
+            let args: Vec<_> = cmd.get_args().collect();
+            assert_eq!(args.contains(&std::ffi::OsStr::new("-shared")), shared);
+            assert!(args.windows(2).any(|w| w == ["-o", "-pie"]));
+            assert_eq!(
+                args.contains(&std::ffi::OsStr::new("/provider/usr/lib64/crt1.o")),
+                !shared
+            );
+            assert_eq!(
+                args.contains(&std::ffi::OsStr::new("/gcc/crtbeginS.o")),
+                shared
+            );
+            assert_eq!(
+                args.contains(&std::ffi::OsStr::new("/gcc/crtbegin.o")),
+                !shared
+            );
+            if !shared {
+                let last_no_pie = args.iter().rposition(|a| *a == "-no-pie").unwrap();
+                assert!(last_no_pie > args.iter().position(|a| *a == "a.o").unwrap());
+            }
+        }
+        // Partial links bypass provider_link entirely. Their compiler driver
+        // sees -r so it does not inject executable CRT/default libraries.
+        let mut cmd = Command::new("clang");
+        cmd.arg("part.o");
+        crate::link_output::align_driver_startup(
+            &mut cmd,
+            crate::link_output::Output {
+                kind: crate::link_output::Kind::Relocatable,
+                pie: false,
+                overrides_shared: false,
+            },
+        );
+        assert_eq!(cmd.get_args().collect::<Vec<_>>(), ["part.o", "-r"]);
     }
 
     #[test]

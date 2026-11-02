@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-02",
+  "base_commit": "59006f559a2116c86b6b26f87a60187b4c9a270d",
+  "worktree_source_sha256": {
+    "src/cc.rs": "eda6e163fad3750e6483ca875d12cc6c94a0bb63f2d12479a90b9370cb0b09bd",
+    "src/clock.rs": "7b7a0a4a693c66b969e56f38cf0a40b08dc14d58a59872d5b8d91b9b795ac9fa",
+    "src/clock_named.rs": "ab19359b37d7c61ce083f246d6cd288f356c60c13aea9ca5e92fc1d7694fe6ff",
+    "src/link_output.rs": "1035f9d1cec603d5edd6a1bce4cd2313c431761120638f564b5452d087e3dc93",
+    "src/toolchain.rs": "d869b7629edc6a7965e4f4331cb09263c0b1b9e921dc0747e3ec32bc3e33fe9f"
+  },
+  "rustc": "rustc 1.90.0 (1159e78c4 2025-09-14)\nbinary: rustc\ncommit-hash: 1159e78c4747b02ef996e55082b704c09b970588\ncommit-date: 2025-09-14\nhost: aarch64-unknown-linux-gnu\nrelease: 1.90.0\nLLVM version: 20.1.8\n",
+  "clang": "Debian clang version 16.0.6 (15~deb12u1)\nTarget: aarch64-unknown-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin\n",
+  "gcc_reference": "gcc (Debian 12.2.0-14+deb12u1) 12.2.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "scope": "aarch64 native host SDK, Clang production-protocol classifier and GCC reference compilation only; no x86/provider/runtime qualification",
+  "native_result": "26 Clang/GCC-reference ELF/RUNPATH controls and Clang classification/startup assertions passed",
+  "focused_tests": "5 pure output tests + 1 provider startup + 2 cc phase tests + 8 clock/trace tests passed; explicit native test passed",
+  "clippy": "all-targets --locked --offline -- -D warnings passed",
+  "runtime_direction": "No LLVM adapter, default or public flag changes; product choice pending",
+  "failure_retained": "/tmp/cargo-classify-native-v1: initial GCC reference used unsupported absolute -fuse-ld path; fixture corrected to GCC linker-name spelling. Not a product failure.",
+  "evidence_directory": "/tmp/cargo-classify-native-frozen",
+  "linker_version": "GNU ld (GNU Binutils for Debian) 2.40\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis program is free software; you may redistribute it under the terms of\nthe GNU General Public License version 3 or (at your option) a later version.\nThis program has absolutely no warranty.\n",
+  "evidence_archive": "cargo-classification-native-frozen-20261102.tar.gz",
+  "evidence_sha256": "a0ee8060e2c69527b063835a6a6ce6fec0bec79bee218e1d7d7a085cf0ee8849"
+}
