@@ -27,6 +27,7 @@ const DESCRIPTOR_ENV: &str = "CARGO_LIBC_PROVIDER_DESCRIPTOR";
 #[derive(Clone, Debug)]
 pub(crate) struct Toolchain {
     pub(crate) provider: Option<crate::provider::Provider>,
+    clock_profile: Option<crate::clock::Profile>,
     pub(crate) sysroot: PathBuf,
     pub(crate) gcc_runtime: PathBuf,
     pub(crate) cc: PathBuf,
@@ -102,14 +103,16 @@ impl Toolchain {
         ] {
             text_path(path)?;
         }
-        Ok(Self {
+        Self {
             provider: Some(provider),
+            clock_profile: None,
             sysroot,
             gcc_runtime,
             cc,
             ld,
             ceiling,
-        })
+        }
+        .with_clock_profile()
     }
     pub(crate) fn new(
         sysroot: PathBuf,
@@ -138,14 +141,23 @@ impl Toolchain {
         for path in [&sysroot, &gcc_runtime, &cc, &ld] {
             text_path(path)?;
         }
-        Ok(Self {
+        Self {
             provider: None,
+            clock_profile: None,
             sysroot,
             gcc_runtime,
             cc,
             ld,
             ceiling,
-        })
+        }
+        .with_clock_profile()
+    }
+
+    fn with_clock_profile(mut self) -> Result<Self, String> {
+        let libraries =
+            crate::clock::discover(self.provider.as_ref(), &self.sysroot, || self.command())?;
+        self.clock_profile = Some(crate::clock::Profile::prepare(libraries)?);
+        Ok(self)
     }
 
     pub(crate) fn driver_args(&self) -> Vec<OsString> {
@@ -325,10 +337,12 @@ impl Toolchain {
 
     fn profile_fingerprint(&self) -> Result<String, String> {
         // FNV-1a is only a stable cache discriminator, not an integrity check.
-        // SDK/tool contents changed in place still require a clean rebuild.
+        // Clock inputs have producer content hashes below. Other SDK/tool
+        // contents changed in place still require a clean rebuild.
         let mut hash = 0xcbf29ce484222325u64;
         let ceiling = self.ceiling.to_string();
         for item in [
+            crate::clock::POLICY,
             text_path(&self.sysroot)?,
             text_path(&self.gcc_runtime)?,
             text_path(&self.cc)?,
@@ -342,6 +356,14 @@ impl Toolchain {
         if let Some(provider) = &self.provider {
             for byte in provider.descriptor.bytes() {
                 hash = (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3);
+            }
+        }
+        if let Some(profile) = &self.clock_profile {
+            for (_, value) in profile.variables() {
+                let value = value.to_str().ok_or("clock profile paths must be UTF-8")?;
+                for byte in value.bytes().chain(std::iter::once(0)) {
+                    hash = (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3);
+                }
             }
         }
         Ok(format!("{hash:016x}"))
@@ -358,11 +380,22 @@ impl Toolchain {
         if let Some(provider) = &self.provider {
             variables.push((DESCRIPTOR_ENV, provider.descriptor.clone().into()));
         }
+        if let Some(profile) = &self.clock_profile {
+            variables.extend(profile.variables());
+        }
         variables
     }
 
     pub(crate) fn set_environment(&self, cmd: &mut Command) {
         cmd.env_remove(DESCRIPTOR_ENV);
+        for key in [
+            crate::clock::LIBC_ENV,
+            crate::clock::RT_ENV,
+            crate::clock::OVERLAY_ENV,
+            crate::clock::IDENTITY_ENV,
+        ] {
+            cmd.env_remove(key);
+        }
         cmd.envs(self.variables());
     }
 }
@@ -923,6 +956,7 @@ struct Selection {
     gcc: OsString,
     ld: OsString,
     provider: Option<crate::provider::Provider>,
+    clock_profile: crate::clock::Profile,
 }
 
 impl Selection {
@@ -943,12 +977,16 @@ impl Selection {
                 Ok::<_, String>(provider)
             })
             .transpose()?;
+        let sysroot = required(SYSROOT_ENV)?;
+        let clock_profile =
+            crate::clock::Profile::from_environment(provider.as_ref(), Path::new(&sysroot))?;
         Ok(Self {
             cc: required(CC_ENV)?,
-            sysroot: required(SYSROOT_ENV)?,
+            sysroot,
             gcc: required(GCC_ENV)?,
             ld: required(LD_ENV)?,
             provider,
+            clock_profile,
         })
     }
 
@@ -1047,10 +1085,12 @@ fn provider_link_args(args: impl Iterator<Item = OsString>) -> (bool, Vec<OsStri
 /// be started.
 pub fn run_linker(args: impl Iterator<Item = OsString>) -> Result<i32, String> {
     let selection = Selection::from_environment("this helper")?;
+    let args = selection.clock_profile.link_args(args.collect())?;
     let mut cmd = Command::new(&selection.cc);
+    selection.clock_profile.prefix(&mut cmd);
     match &selection.provider {
         Some(provider) => {
-            let (shared, args) = provider_link_args(args);
+            let (shared, args) = provider_link_args(args.into_iter());
             provider_link(&mut cmd, provider, args, false, shared)
         }
         None => {
@@ -1074,6 +1114,14 @@ pub(crate) fn target_compiler(
     let selection = Selection::from_environment("this compiler wrapper")?;
     let mut cmd = Command::new(&selection.cc);
     let link = matches!(action, Action::Link { .. } | Action::Relocatable);
+    let args = if matches!(action, Action::Link { .. }) {
+        selection.clock_profile.link_args(args)?
+    } else {
+        args
+    };
+    if matches!(action, Action::Link { .. }) {
+        selection.clock_profile.prefix(&mut cmd);
+    }
     match (&selection.provider, action) {
         (Some(provider), Action::Link { shared }) => {
             provider_link(&mut cmd, provider, args, true, shared)
@@ -1206,6 +1254,7 @@ mod tests {
     fn path_with_spaces_is_one_driver_argument() {
         let cfg = Toolchain {
             provider: None,
+            clock_profile: None,
             sysroot: "/sdk root".into(),
             gcc_runtime: "/sdk root/gcc".into(),
             cc: "/usr/bin/clang".into(),

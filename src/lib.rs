@@ -36,6 +36,7 @@
 mod cargo_output;
 pub mod cc;
 pub mod cli;
+mod clock;
 mod elf;
 mod output;
 mod provider;

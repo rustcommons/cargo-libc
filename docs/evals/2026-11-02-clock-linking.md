@@ -18,6 +18,28 @@ not claim those new profile gates passed. The disposable ordering script and
 workflow mode are retired; their immutable sources and failed-run evidence remain
 linked below.
 
+**Overlay boundary refinement, 2026-11-02:** the approved consumer integration
+uses a producer-owned read-only copy of the selected RT ELF, changing only the
+five GNU version default bits after validating the libc/RT pair. The confirmed
+API is `provider::link_profile::prepare(libc, librt, cache_root,
+LinkProfile::LibcClocksV1) -> Result<Overlay, String>`, returning `search_dir`
+(optional), both raw input SHA-256 values and the profile ID. The producer owns
+ELF validation, derivation and atomic content-addressed cache creation. This
+applies to known automatic/explicit provider stubs and safely discovered full
+sysroot ELFs, without changing user files or descriptor v1. A prefix covers
+named RT libraries; controlled matching full-path RT inputs are substituted at
+the same position. Ambiguous inputs/scripts must not silently bypass policy.
+Consumer scaffolding uses a deliberately failing private adapter pending the
+exact producer ref; it is not an executable 0.3.0 candidate. Response/script
+handling and actual linker-selected sysroot closure remain bounded-verification
+work, not established support from the scaffold tests.
+Scaffold checks on 2026-11-02: Rust 1.90 `cargo test --lib clock:: --locked
+--offline` passes four tests for prefix/state preservation, in-place RT path
+substitution, symlink containment and fail-closed adapter behavior;
+`cargo clippy --all-targets --locked --offline -- -D warnings` and formatting
+checks pass. These are host/scaffold checks, not producer ELF or native release
+qualification. No full release suite has been run for this incomplete adapter.
+
 ## Assumptions and decisions
 
 | Question | Evidence and current limit |
