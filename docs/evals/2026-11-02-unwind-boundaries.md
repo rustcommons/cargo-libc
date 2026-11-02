@@ -120,3 +120,58 @@ Private-default wiring is paused. No full suite, runtime/consumer workflow or
 release action was dispatched for this evidence-only update. U10/U11/U12 remain
 blocked on a concrete binding design and fresh native proof; all other runtime,
 helper, floor, DSO/PyO3 and registry gates remain as listed in the checklist.
+
+
+## Corrected minimal exports and native C EH follow-up — 2026-11-02
+
+Both supplied packets were read-only audited, including their complete member
+hash manifests:
+
+| Proof packet | SHA-256 | Verified listed members |
+| --- | --- | --- |
+| `unwind040-native-minimal-followup-proof.tar.gz` | `b9c9434aae3fcdeace10a0869075b7d0560181996151c9771a07538bd6316031` | 192 |
+| `unwind040-native-c-eh-controls-proof.tar.gz` | `c6e1b66ef47aa5e1509b7553ecdb29e297c6e6d234ba7cd74cba62226bcfea46` | 31 |
+
+The [machine-readable audit](2026-11-02-unwind-minimal-and-c-eh.json) retains results,
+input identities, final linker selectors and the undefined/helper evidence. The
+[draft's durable fixtures](../../tests/fixtures/unwind-coexistence/README.md)
+retain the exact packet Rust bridge/host/minimal wrapper/runner and C worker
+source. The [parameterized C diagnostic](../../scripts/probe-native-c-unwind.py)
+reproduces both plain and `-fexceptions` builds with expected success assertions;
+known prototype failures remain failures, not optional green cases.
+
+The v2 linker wrapper fixes the initial label mismatch: it appends `-fuse-ld=bfd`
+or `-fuse-ld=lld` after inherited flags. On both actual selectors, the nonhidden
+archive with `--export-dynamic-symbol=_Unwind_*` passes U07/U10/U11; the resulting
+exported defined dynsym set contains exactly 18 `_Unwind_*` functions and no
+unrelated Rust exports in this build. This resolves the narrow-export Rust
+round-trip experiment, **not** complete helper/context/runtime qualification.
+Private/hidden negative controls still abort U10 and segfault U11 on both.
+The pattern selects more than the twelve Aero imports; it is not a promise that
+all possible helper/personality requirements are covered or future exports fixed.
+
+Plain native C controls (backtrace, pthread_exit, deferred cancel) pass 9/9 across
+GCC, hidden LLVM and minimal-export LLVM under actual BFD. With the **identical C
+source** compiled using `-fexceptions`, results differ:
+
+| Runtime diagnostic | Backtrace | C-worker pthread_exit | C-worker deferred cancel |
+| --- | --- | --- | --- |
+| GCC baseline | Exit 0 | Exit 0 | Exit 0 |
+| Private/hidden LLVM | Exit 0 | Exit 0 | SIGSEGV (-11) |
+| Minimal unwind-export LLVM | Exit 0 | SIGSEGV (-11) | SIGSEGV (-11) |
+
+The C EH object imports `_Unwind_Resume` and `__gcc_personality_v0` (among native
+helpers). The minimal executable retains libgcc_s NEEDED, and loader evidence
+binds `__gcc_personality_v0 [GCC_3.3.1]` to libgcc_s. Successful Rust round trips
+and complete name coverage for the twelve Aero imports therefore do **not**
+establish native C cleanup/personality support. These C worker stacks contain
+no Rust frame or callback; ordinary FFI misuse is not used to explain away the
+regression. Root cause/helper compatibility remains under investigation; do not
+claim it is fixed by the export pattern alone or blindly drop libgcc_s.
+
+These are native host-SDK mechanism results, not final cargo-libc adapter,
+provider/floor or package qualification. The C EH packet is BFD coverage, not an
+LLD EH pass. No new native runs, full suites or workflows were dispatched while
+recording it. Producer runtime-source/helper research remains incomplete; keep
+the executable LLVM default unwired until C compatibility has a concrete solution
+and the full checklist passes. Existing source classification is unchanged.

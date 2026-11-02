@@ -73,8 +73,10 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
   safety evidence; a measured regression needs an explicit decision. Preserve DSO
   artifact selection and valid behavior, not a promise that loaded unwind calls
   always bind GCC: qualified host LLVM interposition may change symbol ownership.
-  Hidden LLVM native round-trip failures block wiring; broad Rust symbol export
-  is diagnostic only until a bounded binding design is qualified.
+  Hidden LLVM native round-trip failures forbid a private default. Minimal unwind
+  exports pass bounded Rust cases but native C EH cleanup failures still block
+  LLVM-default wiring; source/helper/personality compatibility must be resolved.
+  Broad Rust symbol export is diagnostic only, never a substitute for these gates.
 - Keep runtime choice out of shared intermediate code. Preserve clocks, input
   order/groups/caller state and non-unwind compiler helpers; require complete
   symbol/personality support and content-aware config/relink identity.

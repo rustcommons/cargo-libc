@@ -28,8 +28,12 @@ shows hidden LLVM passing internal DSO catch but failing valid U10/U11 round tri
 Nonhidden+broad host export passes three prototype cases, with DSO/GCC versioned
 getters interposing on host LLVM, but broad Rust exports are unacceptable as policy.
 DSO artifact selection remains distinct from its actual host-process bindings.
-Private-default wiring, full suites and dispatch remain paused pending a concrete
-minimal-export/binding design; no runtime behavior has been changed here.
+The [corrected minimal-export follow-up](evals/2026-11-02-unwind-boundaries.md#corrected-minimal-exports-and-native-c-eh-follow-up--2026-11-02)
+passes Rust round trips on actual BFD/LLD with 18 unwind-only exports, but C
+-fexceptions cleanup fails (hidden cancel and minimal exit/cancel) while GCC
+baseline passes. __gcc_personality_v0 remains GCC-bound and libgcc_s is still
+NEEDED. Runtime-source/helper research is incomplete. LLVM-default wiring, full
+suites and dispatch remain paused pending a complete native C binding/helper design; no runtime behavior has been changed here.
 
 ## Pending qualification
 

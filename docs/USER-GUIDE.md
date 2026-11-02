@@ -241,8 +241,9 @@ Preserving a DSO artifact’s link inputs does not promise its loaded unwind sym
 always bind GCC: host-process LLVM interposition must be explicitly qualified.
 
 The runtime adapter and valid cross-DSO coexistence are not qualified yet.
-Initial native hidden-LLVM round trips fail; wiring is paused pending a bounded
-binding design. Broad export of unrelated Rust symbols is not the final policy. Native
+Hidden-LLVM round trips fail. Corrected minimal exports pass bounded Rust cases,
+but native C exception-cleanup controls still crash; wiring stays paused pending
+a complete helper/context design. Broad export of unrelated Rust symbols is not the final policy. Native
 libc APIs or intentionally loaded DSOs may still legitimately load GCC; eventual
 claims will name tested workloads, not every possible process API. See the
 [integration design](UNWINDER-0.4.0-PLAN.md) and permanent

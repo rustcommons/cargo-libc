@@ -7,9 +7,12 @@ glibc. This supersedes the earlier proposal's GCC-versus-LLVM and opt-in/default
 questions. No public runtime knob is planned. Product version and production lock
 remain unchanged until the exact implementation is reviewed and release-qualified.
 
-Private LLVM-default wiring is paused after the [initial native coexistence proof](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02).
-Hidden LLVM fails valid round trips; broad export is diagnostic only. No full-suite
-or consumer dispatch proceeds until a concrete, bounded symbol-binding design.
+LLVM-default wiring remains paused after native C EH failures. The
+[initial proof](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02)
+blocked hidden LLVM; the [corrected follow-up](evals/2026-11-02-unwind-boundaries.md#corrected-minimal-exports-and-native-c-eh-follow-up--2026-11-02)
+passes Rust round trips with narrow unwind exports on BFD/LLD but still crashes
+C `-fexceptions` cleanup paths. No full-suite/consumer dispatch proceeds before a
+concrete native helper/context solution. Broad Rust export remains diagnostic only.
 
 ## Concrete consumer integration
 
@@ -77,7 +80,12 @@ Aero is not the whole helper contract. Preserve non-unwind compiler helpers
 `-fexceptions`/cleanup can need `__gcc_personality_v0`; the producer's LLVM 23.1.4
 source investigation notes that its libunwind snapshot lacks Zig's vendored
 `gcc_personality_v0.c`. A qualified compiler-rt/personality or other supported
-helper strategy must be explicit. No blanket removal of `-lgcc`/`-lgcc_s`, guessed
+helper strategy must be explicit. Follow-up proof confirms the gap: plain C controls pass, while `-fexceptions`
+private cancellation and minimal-export exit/cancellation segfault. The C object
+needs `__gcc_personality_v0`, still supplied by libgcc_s; C stacks have no Rust
+frames. [Exact failed cases and fixtures](evals/2026-11-02-unwind-boundaries.md#corrected-minimal-exports-and-native-c-eh-follow-up--2026-11-02)
+are mandatory regressions, not optional controls. No blanket removal of
+`-lgcc`/`-lgcc_s`, guessed
 host helper archive or accidental dynamic fallback is acceptable. Unsupported
 explicit versioned/runtime overrides need a specific diagnostic, not rebinding.
 
@@ -109,9 +117,8 @@ demonstrates this blocker: GCC-runtime U07/U10/U11 all pass;
 hidden static LLVM passes U07 but aborts U10 and segfaults U11. Rebuilding a
 nonhidden archive and broadly exporting the host passes those three cases with
 versioned DSO/GCC getter calls interposed to host LLVM. Broad Rust/application
-symbol export is not an acceptable final policy. A narrow unwind-only export
-experiment is pending; no binding design is qualified yet. The DSO artifact can
-remain unchanged while its process bindings differ. The contract preserves valid
+symbol export is not an acceptable final policy. The corrected narrow-export experiment now passes U07/U10/U11 on BFD and LLD,
+but native C EH controls still fail; no complete binding/helper design is qualified. The DSO artifact can remain unchanged while its process bindings differ. The contract preserves valid
 observable unwind behavior, **not** an invariant that loaded DSOs always bind GCC.
 See the [verified proof and exact variants](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02).
 

@@ -7,7 +7,10 @@ probes do not make any pending case pass. The current published baseline is 0.3.
 [initial native proof](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02)
 shows hidden LLVM breaking U10/U11. That capture’s GNU label is inconsistent
 with retained `-fuse-ld=lld`/LLD ELF evidence; GNU qualification remains pending.
-Broad host export is diagnostic, not a final policy.
+Broad host export is diagnostic, not a final policy. Corrected narrow-export
+Rust round trips now pass actual BFD/LLD, but [native C EH follow-up](evals/2026-11-02-unwind-boundaries.md#corrected-minimal-exports-and-native-c-eh-follow-up--2026-11-02)
+fails cleanup/cancellation and keeps helper/personality resolution open. LLVM
+default wiring remains paused; the twelve Aero imports are not complete C support.
 
 ## When this gate applies
 
@@ -71,11 +74,11 @@ outputs and target floors 2.17/2.22; cover each additional claimed floor/route.
 | U07 | Native C host loads Rust cdylib; panic caught within DSO, translated to status and reusable. | Initial native GCC and LLVM variants pass internal catch; no full candidate/route/PyO3 qualification. No panic crosses ordinary C ABI. |
 | U08 | Two independent DSOs, both load orders and supported local/global visibility; repeated use and controlled unload. | Native coexistence driver pending exact archive/profile. |
 | U09 | Existing PyO3/maturin normal/error/panic conversion, repeated use, mixed bin+cdylib workspace with host build/proc-macro. | Existing Python workflow must be reused for regression; candidate not run. |
-| U10 | Executable catch -> cleanup-bearing DSO C-unwind bridge -> executable panic -> originating executable catch, with all guards. | Initial host-SDK hidden LLVM SIGABRT versus GCC pass; nonhidden+broad-export passes diagnostically. Narrow compatible binding pending; no foreign-runtime catch. |
-| U11 | DSO catch -> executable C-unwind bridge -> DSO panic -> originating DSO catch, all guards/continued use. | Initial host-SDK hidden LLVM SIGSEGV versus GCC pass; nonhidden+broad-export diagnostic passes. Narrow compatible binding pending. |
-| U12 | Diagnostic hidden vs exported policies with real GCC DSO/LLVM executable; personality/context ownership in both phases and deletion. | Real native proof now blocks hidden default; broad export passes three cases with host LLVM interposition, but exposes unrelated symbols. Narrow unwind export/context coverage pending. |
-| U13 | Supported native unwind metadata, glibc backtrace and C-only pthread_exit/deferred cancel controls; lazy-load ownership explained. | Native C control fixtures pending integration. No cancellation through Rust/ordinary C FFI; no target C++ support added. |
-| U14 | All twelve baseline unwind functions and actual i128/math/native compiler helpers; explicit versioned refs handled or refused intentionally. | Symbol inventory recorded in design; actual extraction/call/helper/floor tests pending. Never blanket-drop libgcc. |
+| U10 | Executable catch -> cleanup-bearing DSO C-unwind bridge -> executable panic -> originating executable catch, with all guards. | Hidden LLVM SIGABRT persists; corrected 18-unwind-export U07/U10/U11 pass BFD+LLD. Full candidate/context gates still pending; no foreign-runtime catch. |
+| U11 | DSO catch -> executable C-unwind bridge -> DSO panic -> originating DSO catch, all guards/continued use. | Hidden LLVM SIGSEGV persists; corrected 18-unwind-export round trip passes BFD+LLD. Native C compatibility remains blocked. |
+| U12 | Diagnostic hidden vs exported policies with real GCC DSO/LLVM executable; personality/context ownership in both phases and deletion. | Corrected narrow-export Rust proof passes on BFD/LLD without unrelated defined exports; hidden controls still fail. These passes do not waive native C helper/context failures. |
+| U13 | Supported native unwind metadata, glibc backtrace and C-only pthread_exit/deferred cancel controls; lazy-load ownership explained. | Durable native C fixture + parameterized driver now retain plain and -fexceptions controls. Plain 9/9 pass; EH hidden cancel/minimal exit+cancel segfault under BFD while baseline passes. Blocker, not expected-green failure. No cancellation through Rust; no C++ scope added. |
+| U14 | All twelve baseline unwind functions and actual i128/math/native compiler helpers; explicit versioned refs handled or refused intentionally. | Twelve-import inventory is insufficient: EH object needs __gcc_personality_v0, still GCC-bound with libgcc_s NEEDED in follow-up. Helper/context solution and actual full call/floor tests pending; no blanket libgcc drop. |
 | U15 | Five default libc clocks, mixed legacy/default references and genuine RT calls on GNU/LLD. | Existing clock driver/fixtures are reusable, not a fresh candidate pass; no clock-setting calls executed. |
 | U16 | Order/groups/repeated archives/whole-archive/static/dynamic/push-pop/as-needed and RT/script/response protections unchanged. | Classifier tests preserve args; complete executable runtime substitution/state/override checks pending. |
 | U17 | Source/container, explicit provider, full sysroot each use validated contained target archives and read-only inputs. | Root helper API/discovery and per-route native execution pending; no silent host/dynamic fallback. |
@@ -112,6 +115,13 @@ RUSTUP_TOOLCHAIN=1.90.0 python3 scripts/probe-unwind-boundaries.py \
   --rustc /home/joey/.cargo/bin/rustc --cc /usr/bin/clang-18 \
   --evidence /tmp/unwind-baseline-FRESH
 ```
+
+Durable [coexistence/C fixtures](../tests/fixtures/unwind-coexistence/README.md)
+and `scripts/probe-native-c-unwind.py` provide diagnostic commands for both C
+compile variants with archive hashes, explicit BFD/LLD, raw ELF/loader/failure
+capture. The copied minimal Rust wrapper explicitly selects the final linker.
+They remain prototype host-SDK diagnostics and must not run as broad matrices
+while runtime-source/helper research is unresolved.
 
 This is **not the candidate/data release gate**. It captures native output shapes,
 synthetic interposition, core panic/status and final loaded-library snapshots; it
