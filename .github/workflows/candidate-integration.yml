@@ -6,7 +6,7 @@ on:
       integration_mode:
         description: Source candidate, registry-only release validation, or published installation
         type: choice
-        options: [source, registry, installed, streams]
+        options: [source, registry, installed, streams, clock-prototype]
         default: source
       candidate_ref:
         description: Exact 40-character commit SHA in rustcommons/linux-abi-tools
@@ -336,3 +336,31 @@ jobs:
         with:
           name: run-streams-${{ github.run_id }}
           path: ${{ runner.temp }}/evidence
+
+  clock-prototype:
+    if: inputs.integration_mode == 'clock-prototype'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - name: Native prototype prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang-18 gcc binutils
+          cargo fetch --locked
+          cargo build --locked --offline
+      - name: Prototype final linker ordering without product changes
+        run: |
+          mkdir -p "$RUNNER_TEMP/clock-evidence"
+          set -o pipefail
+          python3 scripts/prototype-clock-order.py target/debug "$RUNNER_TEMP/clock-evidence" 2>&1 | tee "$RUNNER_TEMP/clock-evidence/prototype.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clock-prototype-${{ github.run_id }}
+          path: ${{ runner.temp }}/clock-evidence
