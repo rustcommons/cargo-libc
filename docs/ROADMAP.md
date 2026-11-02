@@ -27,6 +27,18 @@ five-clock default, registry/native/consumer qualification, exact archive/tag,
 actual docs.rs rendering and clean published locked installation. Strict Zig
 unwinder equivalence and actual old-system qualification remain outside that evidence.
 
+## Proposed next release investigation
+
+The [0.4.0 unwinder plan](UNWINDER-0.4.0-PLAN.md) proposes investigating removal
+of libgcc_s from standalone executable dependency closure while preserving
+panic=unwind and dynamic glibc. Compare selected GCC static archives with a
+validated LLVM alternative before a runtime design decision. Static opt-in versus standalone-executable default is a pending user decision;
+archive discovery/provenance/PIC, extension treatment and any producer API remain
+undecided. Rust 1.90 rejects the probed self-contained unwind flag; located GCC
+archives are not yet qualified. Existing clocks, host/target isolation and link state remain unchanged;
+there is no implementation or flag commitment. Shared libraries/PyO3 need separate
+regression and unwind treatment. No raw-data release or unrelated fix is assumed.
+
 ## Release policy adopted
 
 - [x] [Release and versioning policy](RELEASING.md), adopted 2026-11-01.
