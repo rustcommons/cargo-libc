@@ -2,14 +2,18 @@
 
 Maintained v1 consumer reference. For normal automatic provider/cache workflows,
 use the [user guide](USER-GUIDE.md#providers); the manual exporter examples below
-are producer development fixtures. Current release evidence and gaps are in
-[0.2.2](RELEASE-0.2.2.md) and the [requirements index](REQUIREMENTS.md).
+are producer development fixtures. Published releases and candidate status are in
+the [release index](RELEASING.md#release-records) and
+[requirements index](REQUIREMENTS.md).
 
 Version 1 connects generated link-only DSOs to Cargo through a trusted local
 descriptor. It supports x86_64 Linux dynamically linked non-PIE Rust executables,
 Rust shared libraries (`cdylib`, linked without `crt1.o` and with GCC's
 `crtbeginS.o`/`crtendS.o`; Rust code is position-independent in both cases), and exactly one glibc release from 2.17 through 2.44, every release in the pinned ABI lists (the `RELEASES` list in `src/provider.rs`). It is not an authenticated or relocatable release SDK.
-The six-field v1 format is unchanged; existing 2.17 descriptors remain valid.
+The six-field v1 format is unchanged; existing 2.17 descriptors retain that format.
+The 0.3.0 candidate additionally validates the selected libc/RT ELFs for the
+[clock profile](USER-GUIDE.md#clock-linking), so a descriptor passing the six-field
+parser alone does not guarantee acceptance of its library contents.
 
 The descriptor is UTF-8, at most 16 KiB, with LF endings and a final newline.
 The first line is `libc-abi-provider-v1`; six tab-separated key/value lines follow.
@@ -63,12 +67,41 @@ cargo libc build --provider /work/provider.txt --glibc 2.17 \
 fallback. Original sysroot mode remains available. The consumer validates paths,
 required files, and exact headers; explicitly selects CRT/nonshared files; searches
 stubs and the compatible unwinder first; and checks direct executable GLIBC requirements.
-It does not revalidate full ABI membership or hash contents on every build.
+It does not revalidate full ABI membership or hash every provider file on every
+build. For the clock profile, the producer validates and hashes the selected
+`libc.so.6`/`librt.so.1` pair and owns the read-only derived RT cache.
+
+### Derived RT selection in the 0.3.0 candidate
+
+The descriptor continues to name the original, faithful provider stubs. Do not
+change its `stubs` field or overwrite the original RT DSO to opt into the clock
+default. Cargo derives the private overlay from those selected ELFs and puts it
+before the provider directories for target links, including C's implicit default
+libc. The profile keeps all explicit old clock versions as nondefault aliases;
+ordinary calls use libc's GLIBC_2.17 definitions. Other RT exports, library order,
+groups, as-needed state and GCC/unwinder inputs retain their roles.
+
+Matching full-path RT arguments use the derived file at the same position.
+The completed Clang command supplies effective named-library search paths and
+static/dynamic state, including compiler-injected C libraries. Ordinary selected
+ELF/archive dependencies are accepted; unproven linker-default fallbacks refuse.
+Normal full-sysroot libc/libm/GCC wrapper scripts have bounded supported forms
+whose leaves are checked without rewriting the script or its order. Alternate
+RT DSOs and opaque custom input scripts/response files are refused. This same
+producer API accepts safely discovered full-sysroot ELF pairs, with no host
+fallback or mutation of user files. Cache corruption or unqualified inputs fail
+without reverting to the original default bindings. A compliant pair creates no
+overlay and does not force librt into the link. This adds no field to descriptor
+v1 and no user clock option. See the [candidate record](RELEASE-0.3.0.md) for
+named passing execution/registry gates and remaining scope limits rather than
+inferring qualification from format support.
 
 Explicit Cargo `--target` and encoded target Rust flags preserve host compilation
 of build scripts/procedural macros. Descriptor contents enter Cargo's fingerprint;
 changing input files in place still requires a fresh target directory or clean
-rebuild. C dependencies compiled by `cc` or CMake use `libc-cc`, which compiles
+rebuild for inputs outside the selected clock pair. That pair's raw hashes and
+the profile ID enter Cargo's fingerprint; generated shell/TOML settings must be
+regenerated after changes. C dependencies compiled by `cc` or CMake use `libc-cc`, which compiles
 with the provider's `usr/include` and links with the same startup objects, stubs,
 nonshared archives and compiler runtime as Rust (plus GCC's default `-lgcc`,
 `-lgcc_s` and `-lc`). Arbitrary native dependency overrides remain outside the

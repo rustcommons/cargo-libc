@@ -1,6 +1,9 @@
 # Clock linking investigation — 2026-11-02
 
-This is prerelease evidence, not a qualification or release announcement.
+This dated investigation preserves the initial prototypes and intermediate blockers.
+The [final resolution below](#final-resolution--2026-11-02) supersedes pending
+architecture/gate statements; failures and original observations remain historical.
+This is not a release announcement.
 The proposed 0.3.0 default prefers libc for `clock_gettime`, `clock_getres`,
 `clock_settime`, `clock_nanosleep` and `clock_getcpuclockid`. There is no proposed
 user option or environment policy switch. No product implementation, version
@@ -205,3 +208,30 @@ unwinder/non-clock binding, host isolation, both plain-Cargo configuration forma
 same-target-directory upgrade relinking, affected provider/C/container paths,
 the exact consumer comparison and the release policy's final package/install
 checks. Tier 3 remains deferred; prebuilt-provider legal gates are unchanged.
+
+
+## Final resolution — 2026-11-02
+
+The approved read-only producer overlay is implemented without argument reordering,
+public clock controls, raw-data edits or unwinder changes. The fixed producer
+`e857e43f113fd5fb02d0f2afff58b90fcfbd1ee6` supersedes blocked `1b3b51c8`;
+registry libc-abi-tools 0.4.0 has identical packaged source. Cargo's effective
+named-input validation supports bounded standard sysroot scripts while refusing
+opaque alternate-RT paths, rather than banning ordinary named libraries.
+
+The [0.3.0 candidate record](../RELEASE-0.3.0.md) contains the exact refs,
+checksums and audited artifacts: N30 composite Rust 1.90 native checks plus
+explicitly resumed phases, 68 named-input acceptances, full registry run
+41378810513, three-way consumer run 41378111334 and focused final README/package/
+clean-install run 41379965966 all passed. The original missing-Clippy stop is
+retained, not relabeled as a single successful driver. All five clocks, mixed
+legacy versions, real RT/state, same-target-directory upgrade and both generated
+config formats have named evidence; no clock-setting fixture was executed.
+
+The consumer's 182 behavior comparisons passed, but the original strict
+Zig/glibc-only comparator still fails because libgcc_s and pre-existing non-clock
+differences remain. Container-provider clock preparation was not separately
+rerun; general dependency closure and actual old-system tier 3 remain unqualified.
+Prebuilt-provider legal gates are unchanged. Final narrow review, normal merge
+and sole-coordinator cargo-libc publication are pending; no published 0.3.0
+archive or tag is claimed here.

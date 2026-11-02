@@ -20,17 +20,21 @@ limits belong in the [user guide](docs/USER-GUIDE.md), and open work in the
 
 Solid arrows show implemented control/data flow for Cargo commands. The dotted
 `env` edge exports settings; it does not perform a build or post-build inspection.
+The clock-profile path is part of the 0.3.0 candidate; its native qualification
+and release status remain separate in the [candidate record](docs/RELEASE-0.3.0.md).
 
 ```mermaid
 flowchart TB
     CLI["cargo libc<br/>build / env selection"]
     AUTO["libc-abi-tools<br/>prepare / reuse<br/>source / container"]
     INPUT["Trusted descriptor<br/>or sysroot + GCC"]
+    PROFILE["libc-abi-tools<br/>validate clock ELF pair<br/>cached RT overlay if needed"]
     CFG["Target-only settings"]
     CLI -->|automatic provider| AUTO
     CLI -->|explicit inputs| INPUT
-    AUTO --> CFG
-    INPUT --> CFG
+    AUTO --> PROFILE
+    INPUT --> PROFILE
+    PROFILE --> CFG
     CFG --> CARGO
     CFG -. "env: shell or TOML" .-> PLAIN["Plain Cargo<br/>or maturin"]
     PLAIN --> CARGO
@@ -64,9 +68,11 @@ No arrow represents delivery of those capabilities.
 
 Source backing: [selection/delegation](src/cli.rs),
 [Cargo settings, artifact checks and exports](src/toolchain.rs),
+[clock input discovery and producer delegation](src/clock.rs),
+[completed-link search/state validation](src/clock_named.rs),
 [host/target C dispatch](src/cc.rs), [ELF reporting](src/report.rs) and
 [runner checks/plans](src/simulate.rs). Relevant existing requirements are
-CL-REQ-003/005–008/010–013/015–017/020/024–025 in the
+CL-REQ-003/005–013/015–017/020/024–025/027 in the
 [trace index](docs/REQUIREMENTS.md#requirements). The diagram is an implementation
 map, not additional runtime qualification or a new contract.
 
@@ -125,8 +131,9 @@ The target-only settings in the flow above include `LibcClocksV1`, delegated to
 `libc-abi-tools`' existing provider layer. Cargo resolves contained target libc/RT
 ELFs from the selected provider or full sysroot. The producer validates the pair
 and atomically caches a read-only RT copy, changing only the five clock version
-default bits; a compliant pair needs no overlay. Raw ABI/source records, user
-inputs and descriptor v1 are unchanged.
+default bits; a compliant pair needs no overlay. The overlay exposes the same RT
+SONAME through `librt.so` and `librt.so.1`; it adds neither `-lrt` nor a runtime
+search path. Raw ABI/source records, user inputs and descriptor v1 are unchanged.
 
 `src/clock.rs` carries the returned overlay and both input hashes through the
 configuration, helper environment and Cargo fingerprint, together with an
@@ -135,6 +142,27 @@ directory and substitute identity-matched full-path RT inputs in place. Host
 units remain native. Library ordering, groups, as-needed state, non-clock RT APIs
 and unwinder inputs retain their existing roles. Opaque inputs are refused rather
 than silently bypassing the policy; this is not a general linker-script rewriter.
+`clock_named.rs` inspects a read-only `-###` trace of the fully assembled Clang
+command, so named-input checks include compiler-injected default libraries and
+effective provider/caller/GCC search paths. It tracks static/dynamic state and
+push/pop to classify the selected ELF/archive. Unverified linker-built-in fallback
+paths refuse. Standard libc/libm/GCC wrapper scripts have bounded supported
+forms; their selected leaves are checked without rewriting the scripts. Opaque
+custom scripts remain unsupported. The actual compiler invocation retains its
+original argument order and streams.
+Sysroot probes use the selected target Clang/GCC configuration and reject missing
+or escaping paths instead of substituting host libraries. Full-path replacement
+requires canonical equality with the selected original RT file. Generic target
+DSOs need not have a SONAME; input scripts are identified by format. Compiler
+forwarding and recognized section-placement operands keep their positions.
+
+Generated shell/TOML settings carry the derived input identity as private target
+configuration. The helpers verify it against freshly validated selected inputs;
+stale or missing configuration requires regeneration. The internal fingerprint
+salt separates the 0.3.0 policy from older tool outputs at unchanged helper paths.
+This does not hash every SDK file or retrofit already-built binaries. Provider
+preparation/cache operations still belong to the producer; the derived overlay
+is a separate content-addressed entry, not a rewritten/exported v1 provider.
 
 The [candidate record](docs/RELEASE-0.3.0.md) and
 [investigation](docs/evals/2026-11-02-clock-linking.md) distinguish native gates,

@@ -58,8 +58,9 @@ packaging as a primary role.
 
 - [ ] **Approved 0.3.0 clock default:** producer-owned read-only RT overlay for
   the five libc clock defaults, retaining explicit versions, library order and
-  caller linker state. [Candidate scope and gates](RELEASE-0.3.0.md); source
-  qualification precedes producer publication and real registry adoption.
+  caller linker state. [Candidate scope and gates](RELEASE-0.3.0.md): producer
+  published and registry/native/consumer/package gates passed; final narrow
+  review, merge and cargo-libc publication remain.
   No clock option, unwinder change or raw ABI/source-data change is included.
 
 - [ ] Resolve providers through an authenticated inventory (relocatable SDKs, or the

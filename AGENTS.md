@@ -34,6 +34,12 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
 - Provider preparation lives in `libc-abi-tools` (`provider::cli`); cargo-libc
   exposes it (`cargo libc provider`, automatic providers) and must not
   reimplement it. Never fall back silently from one provider mode to another.
+- The five-clock libc default belongs to the producer's derived link-profile API.
+  Keep original ABI/source inputs faithful, user DSOs read-only, and descriptor v1
+  unchanged. Preserve explicit old versions, real RT APIs, library order/groups,
+  caller as-needed state and the existing unwinder; there is no user clock mode.
+  Keep generated profile/content identity and Cargo relink fingerprints aligned
+  with the [clock boundaries](docs/USER-GUIDE.md#clock-linking).
 - [docs/USER-GUIDE.md](docs/USER-GUIDE.md) is the user documentation: keep commands,
   options, messages and limits in it in step with the code. The README is the front
   page and links to it.

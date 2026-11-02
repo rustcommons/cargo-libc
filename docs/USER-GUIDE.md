@@ -172,7 +172,9 @@ Starting with the 0.3.0 candidate, ordinary references to `clock_gettime`,
 select libc's GLIBC_2.17 defaults. There is no clock flag or opt-out. This changes
 the older 2.17–2.29 profiles where putting librt first selected its older defaults.
 Explicit legacy symbol versions remain available, and actual RT APIs such as
-`timer_create` keep their selected target definitions.
+`timer_create` keep their selected target definitions. The profile does not add
+`-lrt` or force a librt dependency on later glibc releases. It affects new target
+links, not the behavior of `inspect` on an already-built artifact.
 
 The producer validates the selected target libc/librt and caches a read-only RT
 copy with just those five aliases made nondefault. Target links search this
@@ -184,17 +186,48 @@ can retain librt in DT_NEEDED while clocks' version-needed owner is libc.
 Automatic source/container providers and explicit v1 providers use their selected
 stub paths. Full sysroots require actual target ELFs discovered with the chosen
 Clang/GCC configuration and contained in that sysroot; an escaping symlink or
-unresolved library is an error, with no host fallback. Matching full-path RT
-inputs are replaced with the overlay at the same position. Ambiguous alternate
-RT inputs, opaque linker-input scripts and response files are currently refused.
+unresolved library is an error, with no host fallback. A direct RT ELF argument
+whose canonical path matches the originally selected librt is replaced with the
+overlay at the same position, including `-Wl` and `-Xlinker` forwarding. A
+different RT DSO is refused even if its filename resembles the selected one.
+Other valid target DSOs may omit SONAME, and unrelated caller paths retain their
+OS-string spelling. Named inputs (`-lfoo`, exact-name and supported forwarded or
+separate forms) are checked against the completed Clang link command, including
+provider/GCC search paths, implicit C libraries and static/dynamic push/pop state.
+Ordinary provable ELF/archive dependencies stay usable. A named input found only
+through an unverified linker-built-in fallback is refused; supply its target
+ELF/archive path or an explicit search directory instead of guessing a host path.
+
+Opaque linker-input scripts are detected by format, not extension, including
+scripts selected through `-l`. Bounded standard libc/libm/GCC wrapper forms using
+`INPUT`, `GROUP`, `AS_NEEDED` and the target `OUTPUT_FORMAT` are checked without
+rewriting them; their selected leaves must not introduce an unprofiled RT DSO.
+This preserves normal full-sysroot C/Rust links. Unknown script commands and
+response files remain unsupported and refuse rather than bypass the policy.
+The classifier is bounded to 64 MiB per ELF input and does not certify the full
+runtime dependency closure.
+GNU section-placement flags (`-Ttext`, `-Tdata`, `-Tbss`, `-Ttext-segment`)
+retain their assigned or separate operands; they are not treated as scripts.
 This does not extend static-runtime support or make link stubs usable at runtime.
+
+The overlay supplies `librt.so` and `librt.so.1` with cache metadata. It does not
+add a runtime search path or install a replacement into the target system: the output
+retains the target's ordinary SONAME/version requirements. Source providers still
+require the target system's real runtime libraries when the program runs.
+Container preparation and container execution are different operations; using a
+container runner does not rebuild or change the selected link profile.
 
 Regenerate saved shell/TOML configuration with `cargo libc env` after upgrading.
 Its private derived paths and content identity belong to the selected target,
 not user policy switches. The profile ID and both original library hashes enter
 Cargo's fingerprint so the upgrade relinks in an existing target directory;
-other SDK files are not thereby fully content-hashed. See the
-[0.3.0 candidate record](RELEASE-0.3.0.md) for exact tested refs, pending gates
+other SDK files are not thereby fully content-hashed. The derived cache is keyed
+by that policy and the actual libc/RT bytes, separately from provider preparation.
+A changed, missing or mismatched exported identity is an error; regenerate the
+configuration instead of editing its private fields. Existing provider caches
+still have their version-keyed preparation behavior described above. No automatic
+old-cache import or offline migration is promised. See the
+[0.3.0 candidate record](RELEASE-0.3.0.md) for exact tested refs, remaining release steps
 and coverage limits. Version 0.3.0 is not yet published.
 
 ## Commands
@@ -428,6 +461,11 @@ The settings are:
 - the `libc-runner` test runner;
 - the C compiler wrappers.
 
+The target configuration also carries the derived clock profile's private paths
+and content identity. Both formats apply the same five-function linking default;
+do not copy only selected exports from an older configuration. Regenerate the
+whole output after updating the tool, provider or selected libc/RT inputs.
+
 Things to keep in mind:
 
 - **Always pass `--target x86_64-unknown-linux-gnu`.** Without it, build scripts
@@ -441,6 +479,10 @@ Things to keep in mind:
   on each machine or CI runner and after updating cargo-libc or a provider; do
   not commit generated configuration as portable project settings. `--format sh`
   refuses paths that contain whitespace; use `--format cargo` for those paths.
+- **Start with a clean target environment when switching formats.** Previously
+  exported target settings can take priority over a Cargo configuration file.
+  Regenerate the complete chosen format in a fresh shell rather than mixing old
+  private fields with a new file.
 
 A GitHub Actions job on `ubuntu-24.04`, which has GCC, Clang and binutils:
 

@@ -1,7 +1,7 @@
 # Cargo flags and workspace builds
 
 Maintained command restrictions, followed by dated fixture evidence. Current
-[workflow guide](USER-GUIDE.md#commands), [0.2.2 evidence](RELEASE-0.2.2.md) and
+[workflow guide](USER-GUIDE.md#commands), [release records](RELEASING.md#release-records) and
 [requirements](REQUIREMENTS.md) describe the release scope.
 
 Pass ordinary Cargo build options after the coordinator's separator. Options
@@ -28,6 +28,34 @@ arguments or relocation model. `install` works like `build` without
 `--artifact` and checks every executable it built. `env` prints the same
 configuration for plain Cargo ([user guide](USER-GUIDE.md#plain-cargo-and-ci)). `scripts/smoke-commands.sh`
 covers all five with automatic providers in CI.
+
+## Clock defaults and saved configuration (0.3.0 candidate)
+
+Every supported target link uses the same five-function
+[clock default](USER-GUIDE.md#clock-linking), whether started by managed Cargo
+commands, plain Cargo or a target C wrapper. Generated shell and TOML settings
+carry the selected original library paths, derived overlay path and profile/input
+identity. These are generated private fields, not a clock policy option. Keep the
+complete configuration and regenerate it after upgrading or changing selected
+inputs. The internal fingerprint salt and actual libc/RT hashes distinguish the
+new policy at unchanged helper paths; no manual target-directory cleaning should
+be needed for that upgrade. The exact same-directory regression remains a
+[candidate gate](RELEASE-0.3.0.md), not evidence supplied by this text.
+
+The helper prefixes an RT-only overlay and replaces matching full-path RT inputs
+at the same argument slot. It does not move library arguments or change groups,
+as-needed state, non-clock RT exports or GCC/unwinder choices. Explicit legacy
+clock versions remain linkable. An unrelated DSO need not declare SONAME, but an
+alternate RT DSO or opaque linker-input script/response file cannot bypass the
+selected profile and is refused. Named selection uses the completed Clang search
+paths and static/dynamic state, including implicit C libraries. Bounded standard
+libc/libm/GCC script forms preserve ordinary full-sysroot workflows; unverified
+linker-default fallbacks and unknown custom scripts refuse. Known GNU
+section-placement flags retain their operands. `check`, `clippy` and `doc` still do not prove a final link; `inspect`
+does not retrofit clock binding into an existing output.
+
+The [dated fixtures below](#qualified-workflow-fixtures) predate this default and
+do not establish its new input boundaries or cache/upgrade behavior.
 
 ## Qualified workflow fixtures
 
