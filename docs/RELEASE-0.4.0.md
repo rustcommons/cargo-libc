@@ -21,6 +21,16 @@ cross-DSO C-unwind behavior is a release gate, not waived by output classificati
   baseline only, no LLVM/x86-64 candidate qualification. Runtime selection is not
   yet active; production manifest/lock/version remain unchanged.
 
+## Native binding blocker
+
+[Initial verified proof](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02)
+shows hidden LLVM passing internal DSO catch but failing valid U10/U11 round trips.
+Nonhidden+broad host export passes three prototype cases, with DSO/GCC versioned
+getters interposing on host LLVM, but broad Rust exports are unacceptable as policy.
+DSO artifact selection remains distinct from its actual host-process bindings.
+Private-default wiring, full suites and dispatch remain paused pending a concrete
+minimal-export/binding design; no runtime behavior has been changed here.
+
 ## Pending qualification
 
 Producer-owned pinned archive/provenance/cache and complete helper/personality

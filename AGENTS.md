@@ -70,7 +70,11 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
   arbitrary system archives or silently fall back to dynamic unwind.
 - Preserve shared-library/PyO3/CMake-shared and native host runtime behavior and
   valid supported cross-DSO C-unwind round trips. Output selection alone is not
-  safety evidence; a measured regression needs an explicit decision.
+  safety evidence; a measured regression needs an explicit decision. Preserve DSO
+  artifact selection and valid behavior, not a promise that loaded unwind calls
+  always bind GCC: qualified host LLVM interposition may change symbol ownership.
+  Hidden LLVM native round-trip failures block wiring; broad Rust symbol export
+  is diagnostic only until a bounded binding design is qualified.
 - Keep runtime choice out of shared intermediate code. Preserve clocks, input
   order/groups/caller state and non-unwind compiler helpers; require complete
   symbol/personality support and content-aware config/relink identity.

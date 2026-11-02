@@ -236,9 +236,13 @@ Authorized 0.4.0 work will use validated static LLVM libunwind for supported fin
 standalone target executables while keeping panic=unwind and dynamic glibc. Current
 published 0.3.0 still uses its existing runtime. Shared libraries/Python extensions,
 CMake shared targets, host tools and shared intermediate libraries must retain
-prior behavior; no user opt-in mode or blanket static-runtime setting is planned.
+prior valid behavior; no user opt-in mode or blanket static-runtime setting is planned.
+Preserving a DSO artifact’s link inputs does not promise its loaded unwind symbols
+always bind GCC: host-process LLVM interposition must be explicitly qualified.
 
-The runtime adapter and valid cross-DSO coexistence are not qualified yet. Native
+The runtime adapter and valid cross-DSO coexistence are not qualified yet.
+Initial native hidden-LLVM round trips fail; wiring is paused pending a bounded
+binding design. Broad export of unrelated Rust symbols is not the final policy. Native
 libc APIs or intentionally loaded DSOs may still legitimately load GCC; eventual
 claims will name tested workloads, not every possible process API. See the
 [integration design](UNWINDER-0.4.0-PLAN.md) and permanent

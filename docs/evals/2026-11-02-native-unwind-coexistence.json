@@ -1,0 +1,270 @@
+{
+  "date": "2026-11-02",
+  "proof_archive": "unwind040-first-native-coexistence-proof.tar.gz",
+  "archive_sha256": "841673515218814d49825314791e57c403ca331309a59bd43ad819e36f61d283",
+  "verified_member_hashes": 1440,
+  "scope": "Native x86_64 WSL / Rust1.90 host SDK. Capture groups label GNU, but effective driver retains -fuse-ld=lld and final host ELF comment identifies LLD20.1.8; GNU qualification not established.",
+  "fixture_inputs": {
+    "link.py": "a1896839f6e4e039b17c674bcf3fd4e98e52ae8f887ff111b093fe932b9e523b",
+    "bridge.rs": "02eb7ddebf08810b6d25978514005801cdd6a29a0765fbb994bdf8193c72caee",
+    "README.md": "40a4cb072803d39b4beecc763cee18c39f1482d43de2fbf1eed1c277a6333713",
+    "host.rs": "8faa4d483e445cc06b24522b5e9abe60c433f2b72a0f08e9680862eec48c9b2b",
+    "run.py": "a5587609011f52e0cafe6bb02e001d103d5b9c10a3fd33ca6519b04288275612"
+  },
+  "rustc": "rustc 1.90.0 (1159e78c4 2025-09-14)\nbinary: rustc\ncommit-hash: 1159e78c4747b02ef996e55082b704c09b970588\ncommit-date: 2025-09-14\nhost: x86_64-unknown-linux-gnu\nrelease: 1.90.0\nLLVM version: 20.1.8\n",
+  "runtime_archives": {
+    "llvm-clang18-hidden/manifest.json": {
+      "target": "x86_64-unknown-linux-gnu",
+      "visibility": "hidden",
+      "archive_sha256": "a92d014209bb283a3bd2baf3df79dfc3bf960776aaf09882b63d6b242a2773bd",
+      "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin\n",
+      "resource_dir": "/usr/lib/llvm-18/lib/clang/18",
+      "source": "/tmp/rustcommons-unwind040-3dadkkwj/producer/unwind040-native-probe-kit/source/libunwind",
+      "sysroot": "/tmp/rustcommons-unwind040-3dadkkwj/producer/unwind040-native-probe-kit/headers/2.17",
+      "objects": {
+        "libunwind.cpp": "4b69ccc9322115e4384ed2176a1d2f6c7b49888935357a4f6b8972a1e290b4a9",
+        "Unwind-EHABI.cpp": "f4ad6ce9ddee7f6da76a898ae037257a5735b8a352d93cab8b73ad3599b72ae8",
+        "Unwind-seh.cpp": "d1147f551dc3e693367fe9a7a8faa68d3916363c88805992a06dd82103d71409",
+        "UnwindLevel1.c": "37f278dc9eda333f030c0f380bd318baa205c71e9de98ecf6c4799c2ab2f10d3",
+        "UnwindLevel1-gcc-ext.c": "dab0faa7fc75d5974a1d18bfe1695931378081b94e01ae5e44adb851131621ed",
+        "Unwind-sjlj.c": "8d912ecd538d90e3925a7318227df5446b27b6ffd2d9b90b5489b9df428619ae",
+        "Unwind-wasm.c": "4f4e2af0c871caf7ba4a8a42a991166cadbff51ff2cfaf4883c64003fa5f0a28",
+        "UnwindRegistersRestore.S": "efa9a34a83141f7a18fc9928feb1c8fc0654fc068a27dc3fad1a064c211d03d7",
+        "UnwindRegistersSave.S": "8d6d6d8c9ad6757685641e10e4ab2bff9b43a9d3c7b1d9e2ba8e3c6e412ee6b8"
+      }
+    },
+    "llvm-clang18-exported/manifest.json": {
+      "target": "x86_64-unknown-linux-gnu",
+      "visibility": "exported",
+      "archive_sha256": "49a742f17fcac46e53fcfd15f3999b318c7d410b567a2c35c5a29d1f461e540d",
+      "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin\n",
+      "resource_dir": "/usr/lib/llvm-18/lib/clang/18",
+      "source": "/tmp/rustcommons-unwind040-3dadkkwj/producer/unwind040-native-probe-kit/source/libunwind",
+      "sysroot": "/tmp/rustcommons-unwind040-3dadkkwj/producer/unwind040-native-probe-kit/headers/2.17",
+      "objects": {
+        "libunwind.cpp": "bfacf972ab7c04f994d6022e7b38b2124ce4f5b33669b06de7b5939faa90f386",
+        "Unwind-EHABI.cpp": "f4ad6ce9ddee7f6da76a898ae037257a5735b8a352d93cab8b73ad3599b72ae8",
+        "Unwind-seh.cpp": "d1147f551dc3e693367fe9a7a8faa68d3916363c88805992a06dd82103d71409",
+        "UnwindLevel1.c": "dd939cc62283b30b8656f06d1b5fdd5cef1409310e6cdfea5228a8f599680f34",
+        "UnwindLevel1-gcc-ext.c": "2df8dc26d3a8fe6280758db83e5e219d2af29cb6d2eabcd1c9cd543115c1aabf",
+        "Unwind-sjlj.c": "8d912ecd538d90e3925a7318227df5446b27b6ffd2d9b90b5489b9df428619ae",
+        "Unwind-wasm.c": "4f4e2af0c871caf7ba4a8a42a991166cadbff51ff2cfaf4883c64003fa5f0a28",
+        "UnwindRegistersRestore.S": "efa9a34a83141f7a18fc9928feb1c8fc0654fc068a27dc3fad1a064c211d03d7",
+        "UnwindRegistersSave.S": "21bcda2907889b168ebd7e31ffd6423173f2ec19eb963a4e56d5c9622b904e93"
+      }
+    }
+  },
+  "results": {
+    "baseline-gcc-gnu/results.json": [
+      {
+        "kind": "link",
+        "mode": "gcc",
+        "direct_libgcc_s": true,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "gcc",
+        "case": "u07",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "gcc",
+        "case": "u10",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "gcc",
+        "case": "u11",
+        "exit": 0,
+        "pass": true
+      }
+    ],
+    "llvm-exported-gnu-local/results.json": [
+      {
+        "kind": "link",
+        "mode": "gcc",
+        "direct_libgcc_s": true,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "gcc",
+        "case": "u07",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "gcc",
+        "case": "u10",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "gcc",
+        "case": "u11",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "link",
+        "mode": "hidden",
+        "direct_libgcc_s": false,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "hidden",
+        "case": "u07",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "hidden",
+        "case": "u10",
+        "exit": -6,
+        "pass": false
+      },
+      {
+        "kind": "runtime",
+        "mode": "hidden",
+        "case": "u11",
+        "exit": -11,
+        "pass": false
+      },
+      {
+        "kind": "link",
+        "mode": "exported",
+        "direct_libgcc_s": false,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "exported",
+        "case": "u07",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "exported",
+        "case": "u10",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "exported",
+        "case": "u11",
+        "exit": 0,
+        "pass": true
+      }
+    ],
+    "llvm-hidden-gnu-local/results.json": [
+      {
+        "kind": "link",
+        "mode": "gcc",
+        "direct_libgcc_s": true,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "gcc",
+        "case": "u07",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "gcc",
+        "case": "u10",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "gcc",
+        "case": "u11",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "link",
+        "mode": "hidden",
+        "direct_libgcc_s": false,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "hidden",
+        "case": "u07",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "hidden",
+        "case": "u10",
+        "exit": -6,
+        "pass": false
+      },
+      {
+        "kind": "runtime",
+        "mode": "hidden",
+        "case": "u11",
+        "exit": -11,
+        "pass": false
+      },
+      {
+        "kind": "link",
+        "mode": "exported",
+        "direct_libgcc_s": false,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "exported",
+        "case": "u07",
+        "exit": 0,
+        "pass": true
+      },
+      {
+        "kind": "runtime",
+        "mode": "exported",
+        "case": "u10",
+        "exit": -6,
+        "pass": false
+      },
+      {
+        "kind": "runtime",
+        "mode": "exported",
+        "case": "u11",
+        "exit": -11,
+        "pass": false
+      }
+    ]
+  },
+  "sample_versioned_bindings": {
+    "llvm-exported-gnu-local/exported-u10.bindings.txt": [
+      "    104763:\tbinding file /lib/x86_64-linux-gnu/libgcc_s.so.1 [0] to /tmp/rustcommons-unwind040-3dadkkwj/llvm-exported-gnu-local/host_exported [0]: normal symbol `_Unwind_GetRegionStart' [GCC_3.0]",
+      "    104763:\tbinding file /lib/x86_64-linux-gnu/libgcc_s.so.1 [0] to /tmp/rustcommons-unwind040-3dadkkwj/llvm-exported-gnu-local/host_exported [0]: normal symbol `_Unwind_RaiseException' [GCC_3.0]",
+      "    104763:\tbinding file /lib/x86_64-linux-gnu/libgcc_s.so.1 [0] to /tmp/rustcommons-unwind040-3dadkkwj/llvm-exported-gnu-local/host_exported [0]: normal symbol `_Unwind_SetIP' [GCC_3.0]"
+    ],
+    "llvm-exported-gnu-local/hidden-u10.bindings.txt": [
+      "    104726:\tbinding file /lib/x86_64-linux-gnu/libgcc_s.so.1 [0] to /lib/x86_64-linux-gnu/libgcc_s.so.1 [0]: normal symbol `_Unwind_GetRegionStart' [GCC_3.0]",
+      "    104726:\tbinding file /lib/x86_64-linux-gnu/libgcc_s.so.1 [0] to /lib/x86_64-linux-gnu/libgcc_s.so.1 [0]: normal symbol `_Unwind_RaiseException' [GCC_3.0]",
+      "    104726:\tbinding file /lib/x86_64-linux-gnu/libgcc_s.so.1 [0] to /lib/x86_64-linux-gnu/libgcc_s.so.1 [0]: normal symbol `_Unwind_SetIP' [GCC_3.0]"
+    ]
+  },
+  "disposition": "Private/hidden LLVM is a measured cross-DSO blocker. Nonhidden+broad export passes three cases only as diagnostic. Narrow export design and full supported-behavior/closure gates pending; private default wiring paused.",
+  "recorded_path_ld_version": "GNU ld (GNU Binutils for Ubuntu) 2.42\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis program is free software; you may redistribute it under the terms of\nthe GNU General Public License version 3 or (at your option) a later version.\nThis program has absolutely no warranty.\n",
+  "effective_driver_linker_selector": "-fuse-ld=lld",
+  "host_exported_elf_linker_comment": "Linker: LLD 20.1.8 (/checkout/src/llvm-project/llvm e8a2ffcf322f45b8dce82c65ab27a3e2430a6b51)"
+}

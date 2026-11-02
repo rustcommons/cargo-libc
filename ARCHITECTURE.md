@@ -192,7 +192,13 @@ flowchart LR
 The producer owns archive build/cache/content/provenance, and the future consumer
 adapter will carry that identity into shell/TOML settings and relink fingerprints.
 Output separation is necessary but not proof of cross-DSO context compatibility;
-valid C-unwind round trips and actual binding owners remain blockers until tested.
+valid C-unwind round trips and actual binding owners remain blockers. Initial
+native hidden-LLVM round trips fail; private-default wiring is paused. The DSO
+branch preserves artifact/runtime link inputs, not a promise that loaded unwind
+symbols always bind GCC: a qualified host LLVM binding can interpose. Broad export
+of unrelated Rust symbols is diagnostic only, not production policy. See the
+[verified native proof](docs/evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02),
+including its GNU-label/LLD-selection mismatch.
 Existing clock overlay, library order/state and non-unwind helpers remain separate
 inputs. No dynamic fallback, raw data edit or general dependency-closure feature
 is introduced. See [design](docs/UNWINDER-0.4.0-PLAN.md),

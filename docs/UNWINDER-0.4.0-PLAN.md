@@ -7,6 +7,10 @@ glibc. This supersedes the earlier proposal's GCC-versus-LLVM and opt-in/default
 questions. No public runtime knob is planned. Product version and production lock
 remain unchanged until the exact implementation is reviewed and release-qualified.
 
+Private LLVM-default wiring is paused after the [initial native coexistence proof](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02).
+Hidden LLVM fails valid round trips; broad export is diagnostic only. No full-suite
+or consumer dispatch proceeds until a concrete, bounded symbol-binding design.
+
 ## Concrete consumer integration
 
 Classify the final link, not the Cargo command, filename suffix or an entire
@@ -19,7 +23,7 @@ kind before the runtime policy executes.
 | Actual unit/output | Runtime selection for 0.4.0 | Isolation boundary |
 | --- | --- | --- |
 | Target bin, example, unit/integration/bench/doctest harness, install output; C/CMake executable probes | Validated static LLVM unwind at the final executable link | No Rust panic=abort or static glibc workaround. PIE/non-PIE classification is separate from executable versus DSO. |
-| Target cdylib/dylib, PyO3/maturin extension, C/CMake shared output | Preserve existing DSO runtime inputs and exports | No LLVM search prefix, archive, visibility or panic policy injected into these links. |
+| Target cdylib/dylib, PyO3/maturin extension, C/CMake shared output | Preserve existing artifact/runtime link inputs and exports | No executable-only policy injected into DSO links. Loaded unwind bindings can resolve to host LLVM; preserve valid behavior through qualified host-process binding. |
 | rlib/staticlib/object compile, partial/relocatable link | No executable-only runtime injection | Shared intermediate code can feed both bin and DSO in one workspace; do not contaminate compilation flags or intermediate archives. |
 | Native build script/proc macro/host C | Existing native compiler/runtime | Preserve the target-only rustflags and build-script marker; equal host/target triples do not identify a target unit. |
 
@@ -50,6 +54,9 @@ information (exact API still pending):
   archive path(s), strong content/member hashes and policy/build identity.
 - Source revision/tarball digest, patches/configuration, builder/tool versions,
   PIC/EH/thread/visibility decisions and license/provenance metadata.
+- Archive visibility and supported narrow unwind-export policy must be part of
+  content/build identity. A compile-hidden archive cannot simply be made
+  interposable with broad link export; actual compatible binding must be tested.
 - Complete provided/required unwind symbol inventory, compiler helper/personality
   strategy, member attribution and supported boundaries; controlled archives
   must not have escaped thin-member dependencies or an unverified host fallback.
@@ -96,6 +103,17 @@ Do not require catching a foreign-runtime panic or unwind across ordinary C ABI.
 Preserve baseline-supported valid cross-DSO behavior; a concrete failure is a design
 blocker to surface with bindings, not permission to silently drop plugin support.
 Multiple DSOs/load orders and real PyO3/maturin regressions are separate gates.
+
+Initial host-SDK evidence (LLD selected despite a GNU capture label) now
+demonstrates this blocker: GCC-runtime U07/U10/U11 all pass;
+hidden static LLVM passes U07 but aborts U10 and segfaults U11. Rebuilding a
+nonhidden archive and broadly exporting the host passes those three cases with
+versioned DSO/GCC getter calls interposed to host LLVM. Broad Rust/application
+symbol export is not an acceptable final policy. A narrow unwind-only export
+experiment is pending; no binding design is qualified yet. The DSO artifact can
+remain unchanged while its process bindings differ. The contract preserves valid
+observable unwind behavior, **not** an invariant that loaded DSOs always bind GCC.
+See the [verified proof and exact variants](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02).
 
 Bound the runtime promise: ordinary tested standalone Rust paths should have no
 direct libgcc_s or dynamic unwind runtime, but a deliberately loaded existing DSO

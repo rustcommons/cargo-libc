@@ -72,3 +72,51 @@ identity, every new glibc bundle/floor and final registry/package/install gates.
 Parent's fresh old0.3/new0.4/Zig 182-case capture waits for the final pair; strict
 comparison stays unchanged and legitimate LLVM helper imports need member/floor
 attribution. No consumer job, release action or full matrix was dispatched.
+
+
+## Initial native cross-DSO proof — later 2026-11-02
+
+The supplied `unwind040-first-native-coexistence-proof.tar.gz` SHA-256 is
+`841673515218814d49825314791e57c403ca331309a59bd43ad819e36f61d283`.
+The checksum and all 1,440 entries in its `PARENT-SHA256.json` were verified
+read-only, without executing or modifying its binaries. A compact
+[audit/result record](2026-11-02-native-unwind-coexistence.json) retains archive,
+fixture/build identities, exact statuses and representative versioned bindings.
+This is native x86-64 WSL / Rust 1.90 with host SDK; LLVM 23.1.4 archives
+were rebuilt using Clang 18 and glibc 2.17 headers. The capture labels its groups
+`gnu` and records PATH GNU ld 2.42, but the actual driver arguments retain rustc’s
+`-fuse-ld=lld`; the resulting host ELF `.comment` identifies LLD 20.1.8. The
+prototype wrapper only appends a linker choice for `PROBE_LINKER=lld` and does not
+force GNU for `gnu`. Treat these results as the observed LLD-selected capture;
+GNU qualification requires corrected explicit selection/verification. It is not a completed
+2.17 runtime/provider-floor or cargo-libc candidate qualification.
+
+| Prototype policy | U07 internal DSO catch | U10 executable-origin round trip | U11 DSO-origin round trip |
+| --- | --- | --- | --- |
+| Existing GCC baseline | Exit 0 | Exit 0 | Exit 0 |
+| Hidden static LLVM | Exit 0 | SIGABRT (-6) | SIGSEGV (-11) |
+| Hidden archive plus broad host export control | Exit 0 | SIGABRT (-6) | SIGSEGV (-11) |
+| Rebuilt nonhidden archive, hidden-at-link control | Exit 0 | SIGABRT (-6) | SIGSEGV (-11) |
+| Rebuilt nonhidden archive plus broad host `--export-dynamic` | Exit 0 | Exit 0 | Exit 0 |
+
+The hidden/default design is therefore a **concrete blocker**, not an unverified
+hypothesis. Removing direct libgcc_s and passing an internal catch did not preserve
+valid cross-DSO C-unwind behavior. The nonhidden/broad-export diagnostic shows
+versioned DSO and libgcc_s `_Unwind_*` getter bindings resolving to host LLVM;
+hidden controls leave those DSO bindings on GCC. This supports the split-owner
+context risk, but does not establish a complete context/ABI compatibility proof.
+Broad export of unrelated Rust/application symbols is unacceptable as production
+policy; do not promote it merely because these three cases pass.
+
+Preserve DSO artifact/runtime link selection; distinguish that from **host-process
+symbol binding**, where existing DSOs can resolve unwind calls to the executable's
+LLVM definitions. “DSOs always use GCC” is not the contract. Preserve valid observable
+behavior and verify actual personality/getter/resume/delete owners, load orders
+and qualified symbol-export boundaries. The pending experiment is a minimal unwind
+export policy with no unrelated Rust exports, not a private LLVM default or broad
+`--export-dynamic` workaround.
+
+Private-default wiring is paused. No full suite, runtime/consumer workflow or
+release action was dispatched for this evidence-only update. U10/U11/U12 remain
+blocked on a concrete binding design and fresh native proof; all other runtime,
+helper, floor, DSO/PyO3 and registry gates remain as listed in the checklist.

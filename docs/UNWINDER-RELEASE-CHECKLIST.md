@@ -3,7 +3,11 @@
 This is the durable downstream gate for cargo-libc and upstream glibc ABI/source
 bundle owners. Adopted for authorized 0.4.0 development on 2026-11-02. **The LLVM
 runtime is not integrated or qualified yet.** Checklist presence and host baseline
-probes do not make any pending case pass. The current published baseline is 0.3.0.
+probes do not make any pending case pass. The current published baseline is 0.3.0. Private LLVM-default wiring is paused:
+[initial native proof](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02)
+shows hidden LLVM breaking U10/U11. That capture’s GNU label is inconsistent
+with retained `-fuse-ld=lld`/LLD ELF evidence; GNU qualification remains pending.
+Broad host export is diagnostic, not a final policy.
 
 ## When this gate applies
 
@@ -64,12 +68,12 @@ outputs and target floors 2.17/2.22; cover each additional claimed floor/route.
 | U04 | First/repeated/threaded force_capture and formatted useful backtraces; capture lazy loads and debug named frames. | Host baseline capture/maps exists; transient binding traces/candidate pending. |
 | U05 | Uncaught and double-panic child status/diagnostics with core dumps disabled. | Baseline uncaught exit 101 exists; double-panic isolated fixture pending. |
 | U06 | Actual bin/test/doctest/example/bench/install vs cdylib/dylib/rlib/staticlib selection, mixed workspace; ambiguous forms refuse. | `cargo test --lib link_output --locked --offline`, C classifier and provider dispatch tests; probe captures two executable/two shared rustc links and zero rlib links. Full candidate/mixed workspace pending. |
-| U07 | Native C host loads Rust cdylib; panic caught within DSO, translated to status and reusable. | Candidate/baseline dynamic-load fixture pending; no panic crosses ordinary C ABI. |
+| U07 | Native C host loads Rust cdylib; panic caught within DSO, translated to status and reusable. | Initial native GCC and LLVM variants pass internal catch; no full candidate/route/PyO3 qualification. No panic crosses ordinary C ABI. |
 | U08 | Two independent DSOs, both load orders and supported local/global visibility; repeated use and controlled unload. | Native coexistence driver pending exact archive/profile. |
 | U09 | Existing PyO3/maturin normal/error/panic conversion, repeated use, mixed bin+cdylib workspace with host build/proc-macro. | Existing Python workflow must be reused for regression; candidate not run. |
-| U10 | Executable catch -> cleanup-bearing DSO C-unwind bridge -> executable panic -> originating executable catch, with all guards. | Exact candidate/native round trip pending; do not substitute foreign-runtime catch. |
-| U11 | DSO catch -> executable C-unwind bridge -> DSO panic -> originating DSO catch, all guards/continued use. | Exact candidate/native reverse round trip pending. |
-| U12 | Diagnostic hidden vs exported policies with real GCC DSO/LLVM executable; personality/context ownership in both phases and deletion. | Marker interposition probe demonstrates ELF risk only. Actual context compatibility is unqualified; a regression is a design blocker. |
+| U10 | Executable catch -> cleanup-bearing DSO C-unwind bridge -> executable panic -> originating executable catch, with all guards. | Initial host-SDK hidden LLVM SIGABRT versus GCC pass; nonhidden+broad-export passes diagnostically. Narrow compatible binding pending; no foreign-runtime catch. |
+| U11 | DSO catch -> executable C-unwind bridge -> DSO panic -> originating DSO catch, all guards/continued use. | Initial host-SDK hidden LLVM SIGSEGV versus GCC pass; nonhidden+broad-export diagnostic passes. Narrow compatible binding pending. |
+| U12 | Diagnostic hidden vs exported policies with real GCC DSO/LLVM executable; personality/context ownership in both phases and deletion. | Real native proof now blocks hidden default; broad export passes three cases with host LLVM interposition, but exposes unrelated symbols. Narrow unwind export/context coverage pending. |
 | U13 | Supported native unwind metadata, glibc backtrace and C-only pthread_exit/deferred cancel controls; lazy-load ownership explained. | Native C control fixtures pending integration. No cancellation through Rust/ordinary C FFI; no target C++ support added. |
 | U14 | All twelve baseline unwind functions and actual i128/math/native compiler helpers; explicit versioned refs handled or refused intentionally. | Symbol inventory recorded in design; actual extraction/call/helper/floor tests pending. Never blanket-drop libgcc. |
 | U15 | Five default libc clocks, mixed legacy/default references and genuine RT calls on GNU/LLD. | Existing clock driver/fixtures are reusable, not a fresh candidate pass; no clock-setting calls executed. |
@@ -83,7 +87,10 @@ outputs and target floors 2.17/2.22; cover each additional claimed floor/route.
 
 A baseline-supported valid C-unwind path failing under the new default is a
 material blocker: save exact bindings/context path and obtain a decision. Output
-kind separation or hidden symbols alone cannot waive U10/U11. Native libc controls
+kind separation or hidden symbols alone cannot waive U10/U11. Preserve DSO artifact
+link selection while testing the actual host-process bindings: DSOs can resolve
+versioned unwind calls to host LLVM. Do not require invariant GCC ownership or
+permit broad Rust/application export as a workaround. Native libc controls
 may deliberately load GCC in both candidate and Zig; explain workload-specific
 scope rather than claim universal absence or conceal accidental fallback.
 
