@@ -195,7 +195,7 @@ for variant, binary in [('old', old_bin), ('new', new_bin)]:
     (evidence / (variant + '.sh')).write_text(shell)
     (evidence / (variant + '.toml')).write_text(text)
     shell_file = evidence / (variant + '.sh')
-    roundtrip = run(['bash', '-c', 'source "$1"; python3 -c \'import json,os;print(json.dumps(dict(os.environ)))\'', 'clock-env', shell_file], base)
+    roundtrip = run(['bash', '-c', 'source "$1"; python3 -c \'import json,os;names=["CARGO_LIBC_CLOCK_"+s for s in ["LIBC","RT","OVERLAY","IDENTITY"]];print(json.dumps({k:os.environ[k] for k in names if k in os.environ}))\'', 'clock-env', shell_file], base)
     exported = json.loads(roundtrip)
     for key, value in tomllib.loads(text)['env'].items():
         if key.startswith('CARGO_LIBC_CLOCK_'):
