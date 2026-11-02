@@ -6,7 +6,7 @@ on:
       integration_mode:
         description: Source candidate, registry-only release validation, or published installation
         type: choice
-        options: [source, registry, installed, streams]
+        options: [source, registry, installed, streams, consumer-clock]
         default: source
       candidate_ref:
         description: Exact 40-character commit SHA in rustcommons/linux-abi-tools
@@ -69,8 +69,7 @@ jobs:
               raise SystemExit(0)
           producer = Path('candidate').resolve()
           paths = {'libc-abi-tools': producer}
-          paths.update({name: producer / 'crates' / name for name in
-                        ['kernel-abi-tools', 'linux-abi-scan', 'linux-targets']})
+
           manifest = Path(os.environ['RUNNER_TEMP']) / 'consumer/Cargo.toml'
           with manifest.open('a') as f:
               f.write('\n[patch.crates-io]\n')
@@ -82,7 +81,7 @@ jobs:
           set -euo pipefail
           cd "$CONSUMER"
           if [ "$INTEGRATION_MODE" = source ]; then
-            cargo update -p libc-abi-tools -p kernel-abi-tools -p linux-abi-scan -p linux-targets
+            cargo update -p libc-abi-tools
           fi
           cargo fetch --locked
           cargo metadata --format-version 1 --locked --offline > "$EVIDENCE/metadata.json"
@@ -94,44 +93,40 @@ jobs:
           data = json.loads((Path(os.environ['EVIDENCE']) / 'metadata.json').read_text())
           source_mode = os.environ['INTEGRATION_MODE'] == 'source'
           manifest_data = tomllib.loads(Path('Cargo.toml').read_text())
-          if not source_mode:
-              assert not manifest_data.get('patch') and not manifest_data.get('replace')
-              assert all(p['source'] == 'registry+https://github.com/rust-lang/crates.io-index'
-                         for p in data['packages'] if p['name'] != 'cargo-libc')
-              expected_versions = {'cargo-libc': '0.2.4',
-                                   'libc-abi-tools': '0.3.3', 'kernel-abi-tools': '0.3.3',
-                                   'linux-abi-scan': '0.3.3', 'linux-targets': '0.3.3',
-                                   'glibc-abilists': '0.1.2', 'glibc-provider-sources': '0.1.1'}
-              assert {p['name']: p['version'] for p in data['packages']} == expected_versions
-              assert len(data['packages']) == len(expected_versions)
-              lock = tomllib.loads(Path('Cargo.lock').read_text())
-              assert {p['name']: p['version'] for p in lock['package']} == expected_versions
-              expected_checksums = {
-                  'glibc-abilists': '0f76191d504fe7944029bf5ac1e3ee901b050e7ce3fc946fa2661a9094045287',
-                  'glibc-provider-sources': 'da10605d1cab20eb0ab8cf7ebe19b619737618578dc8c74e6c62a57e1a7ec440',
-                  'kernel-abi-tools': '0feddf7e5e33b15df1b279e3ba99c6a0743aae7edb91dd654e3a69ac01234dd3',
-                  'libc-abi-tools': '6a600e4bb78f84101a30c2658bd26a51ded0c6f79f73b74b99ad1168fa6b3bc7',
-                  'linux-abi-scan': 'eedffc57c88f27dee9bd28c3f177f39a457a694ddbe2678d9ba9e6078702028e',
-                  'linux-targets': '9138ccb80a4467c37c805b9ed7bfab8a574bd749a52fe42c4e00921e24affcb1',
-              }
-              assert {p['name']: p['checksum'] for p in lock['package'] if p['name'] != 'cargo-libc'} == expected_checksums
-              assert all(p['source'] == 'registry+https://github.com/rust-lang/crates.io-index'
-                         for p in lock['package'] if p['name'] != 'cargo-libc')
-              assert manifest_data['dependencies'] == {
-                  'kernel-abi-tools': '0.3.3', 'linux-abi-scan': '0.3.3',
-                  'libc-abi-tools': '0.3.2', 'linux-targets': '0.3.0'}
-          for name in ['libc-abi-tools', 'kernel-abi-tools', 'linux-abi-scan', 'linux-targets']:
-              manifest = producer / ('Cargo.toml' if name == 'libc-abi-tools' else f'crates/{name}/Cargo.toml')
-              expected = tomllib.loads(manifest.read_text())['package']['version'] if source_mode else '0.3.3'
-              matches = [p for p in data['packages'] if p['name'] == name]
-              assert len(matches) == 1, (name, matches)
-              p = matches[0]
-              if source_mode:
-                  assert p['source'] is None and Path(p['manifest_path']).resolve() == manifest.resolve(), p
-              assert p['version'] == expected, p
-              print(f"{name} {p['version']} {p['source']} {p['manifest_path']}")
+          expected_versions = {'cargo-libc': '0.3.0',
+                               'libc-abi-tools': '0.4.0', 'kernel-abi-tools': '0.3.3',
+                               'linux-abi-scan': '0.3.3', 'linux-targets': '0.3.3',
+                               'glibc-abilists': '0.1.2', 'glibc-provider-sources': '0.1.1'}
+          assert {p['name']: p['version'] for p in data['packages']} == expected_versions
+          lock = tomllib.loads(Path('Cargo.lock').read_text())
+          assert {p['name']: p['version'] for p in lock['package']} == expected_versions
+          expected_checksums = {
+              'glibc-abilists': '0f76191d504fe7944029bf5ac1e3ee901b050e7ce3fc946fa2661a9094045287',
+              'glibc-provider-sources': 'da10605d1cab20eb0ab8cf7ebe19b619737618578dc8c74e6c62a57e1a7ec440',
+              'kernel-abi-tools': '0feddf7e5e33b15df1b279e3ba99c6a0743aae7edb91dd654e3a69ac01234dd3',
+              'linux-abi-scan': 'eedffc57c88f27dee9bd28c3f177f39a457a694ddbe2678d9ba9e6078702028e',
+              'linux-targets': '9138ccb80a4467c37c805b9ed7bfab8a574bd749a52fe42c4e00921e24affcb1',
+          }
+          assert {p['name']: p['checksum'] for p in lock['package'] if p['name'] in expected_checksums} == expected_checksums
+          assert manifest_data['dependencies'] == {
+              'kernel-abi-tools': '0.3.3', 'linux-abi-scan': '0.3.3',
+              'libc-abi-tools': '0.4.0', 'linux-targets': '0.3.0'}
+          assert not manifest_data.get('replace')
+          if source_mode:
+              assert set(manifest_data['patch']['crates-io']) == {'libc-abi-tools'}
+          else:
+              assert not manifest_data.get('patch')
+          for p in data['packages']:
+              if p['name'] == 'cargo-libc':
+                  continue
+              if source_mode and p['name'] == 'libc-abi-tools':
+                  assert p['source'] is None and Path(p['manifest_path']).resolve() == (producer / 'Cargo.toml').resolve(), p
+              else:
+                  assert p['source'] == 'registry+https://github.com/rust-lang/crates.io-index', p
+              print(f"{p['name']} {p['version']} {p['source']} {p['manifest_path']}")
           PY
       - name: Portable consumer checks
+        if: inputs.integration_mode == 'registry'
         run: |
           set -euo pipefail
           cd "$CONSUMER"
@@ -143,7 +138,18 @@ jobs:
             cargo clippy --all-targets --locked --offline -- -D warnings
             RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --locked --offline
           } 2>&1 | tee "$EVIDENCE/portable.log"
+      - name: Scoped source consumer checks (not the final release suite)
+        if: inputs.integration_mode == 'source'
+        run: |
+          set -euo pipefail
+          cd "$CONSUMER"
+          cargo fmt --all -- --check
+          cargo test --lib clock:: --locked --offline
+          cargo test --lib elf:: --locked --offline
+          cargo clippy --all-targets --locked --offline -- -D warnings
+          cargo build --locked --offline
       - name: Shared provider stdout regression
+        if: inputs.integration_mode == 'registry'
         run: |
           set -euo pipefail
           cd "$CONSUMER"
@@ -153,18 +159,27 @@ jobs:
           set -euo pipefail
           test "$(uname -m)" = x86_64
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends clang-18 gcc g++ binutils cmake
+          sudo apt-get install -y --no-install-recommends clang-18 lld-18 gcc g++ binutils cmake
           { /usr/bin/clang-18 --version; gcc --version; ld.bfd --version; cmake --version; getconf GNU_LIBC_VERSION; } > "$EVIDENCE/native-tools.txt"
           cd "$CONSUMER"
           cargo fetch --manifest-path examples/hello/Cargo.toml --locked
           cargo fetch --manifest-path examples/too-new/Cargo.toml --locked
           cargo fetch --manifest-path examples/c-deps/Cargo.toml --locked
+      - name: Clock family native ELF and same-directory upgrade
+        if: inputs.integration_mode == 'source'
+        run: |
+          set -euo pipefail
+          cargo install cargo-libc --version 0.2.4 --locked --root "$RUNNER_TEMP/clock-old"
+          cd "$CONSUMER"
+          python3 scripts/check-clock-profile.py target/debug "$RUNNER_TEMP/clock-old/bin" "$EVIDENCE/clocks" 2>&1 | tee "$EVIDENCE/clocks.log"
       - name: Run and test redirected streams
+        if: inputs.integration_mode == 'registry'
         run: |
           set -euo pipefail
           cd "$CONSUMER"
           python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$EVIDENCE/run-streams.log"
       - name: Scanner and container IO boundaries
+        if: inputs.integration_mode == 'registry'
         run: |
           set -euo pipefail
           sudo apt-get install -y --no-install-recommends podman
@@ -173,6 +188,7 @@ jobs:
           python3 scripts/check-malformed-scan.py target/debug/cargo-libc 2>&1 | tee "$EVIDENCE/malformed-scan.log"
           CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$EVIDENCE/container-streams.log"
       - name: Automatic providers, reuse, inspect, run and symbol refusal
+        if: inputs.integration_mode == 'registry'
         run: |
           set -euo pipefail
           cd "$CONSUMER"
@@ -181,12 +197,16 @@ jobs:
         run: |
           set -euo pipefail
           cd "$CONSUMER"
-          bash scripts/smoke-c-deps.sh /usr/bin/clang-18 2.17 2.28 2>&1 | tee "$EVIDENCE/c-deps.log"
+          releases="2.17 2.28"
+          if [ "$INTEGRATION_MODE" = source ]; then releases=2.22; fi
+          bash scripts/smoke-c-deps.sh /usr/bin/clang-18 $releases 2>&1 | tee "$EVIDENCE/c-deps.log"
       - name: Cargo commands and both plain-Cargo configuration formats
         run: |
           set -euo pipefail
           cd "$CONSUMER"
-          bash scripts/smoke-commands.sh /usr/bin/clang-18 2.17 2.28 2>&1 | tee "$EVIDENCE/commands.log"
+          releases="2.17 2.28"
+          if [ "$INTEGRATION_MODE" = source ]; then releases=2.22; fi
+          bash scripts/smoke-commands.sh /usr/bin/clang-18 $releases 2>&1 | tee "$EVIDENCE/commands.log"
       - name: Existing sysroot and host-target separation
         env:
           CARGO_LIBC_SMOKE_CC: /usr/bin/clang-18
@@ -336,3 +356,263 @@ jobs:
         with:
           name: run-streams-${{ github.run_id }}
           path: ${{ runner.temp }}/evidence
+
+  consumer_clock_capture:
+    if: inputs.integration_mode == 'consumer-clock'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CARGO_BUILD_JOBS: 2
+      RUST_TEST_THREADS: 2
+      CARGO_HOME: ${{ github.workspace }}/clock-cargo-home
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: clock-tool
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: joey-huckabee/aero1553
+          ref: 9c248300f1e2ab20ce34dc4b227eb322e33e4c93
+          path: consumer
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.99.1
+      - name: Prepare exact tools and record public source identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = x86_64
+          test "$(git -C clock-tool rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git -C consumer rev-parse HEAD)" = 9c248300f1e2ab20ce34dc4b227eb322e33e4c93
+          python3 - <<'PYVERIFY'
+          import tomllib
+          from pathlib import Path
+          assert tomllib.loads(Path('clock-tool/Cargo.toml').read_text())['package']['version'] == '0.3.0'
+          PYVERIFY
+          mkdir -p "$RUNNER_TEMP/clock-evidence"
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang-18 gcc binutils
+          python3 -m pip install --user ziglang==0.17.0
+          cargo install --locked cargo-libc --version 0.2.4 --root "$RUNNER_TEMP/clock-old"
+          CARGO_TARGET_DIR="$RUNNER_TEMP/clock-tool-target" cargo install --path clock-tool --locked --root "$RUNNER_TEMP/clock-new"
+          cargo install --locked cargo-zigbuild --version 0.23.4 --root "$RUNNER_TEMP/clock-zigbuild"
+          {
+            git -C clock-tool rev-parse HEAD
+            git -C consumer rev-parse HEAD
+            uname -a
+            echo "ImageOS=${ImageOS-} ImageVersion=${ImageVersion-}"
+            rustc -vV
+            cargo -V
+            /usr/bin/clang-18 --version
+            gcc --version
+            ld --version
+            python3 -m ziglang version
+            "$RUNNER_TEMP/clock-old/bin/cargo-libc" --version
+            "$RUNNER_TEMP/clock-new/bin/cargo-libc" --version
+            "$RUNNER_TEMP/clock-zigbuild/bin/cargo-zigbuild" --version
+          } > "$RUNNER_TEMP/clock-evidence/versions.txt"
+          cp clock-tool/Cargo.toml "$RUNNER_TEMP/clock-evidence/tool-Cargo.toml"
+          cp clock-tool/Cargo.lock "$RUNNER_TEMP/clock-evidence/tool-Cargo.lock"
+          cp consumer/rust/Cargo.lock "$RUNNER_TEMP/clock-evidence/consumer-Cargo.lock"
+      - name: Build same consumer with old and candidate tools
+        working-directory: consumer/rust
+        shell: bash
+        env:
+          RUSTC_LOG: rustc_codegen_ssa::back::link=info
+        run: |
+          set -euo pipefail
+          for variant in old new; do
+            export PATH="$RUNNER_TEMP/clock-$variant/bin:$PATH"
+            export CARGO_TARGET_DIR="$RUNNER_TEMP/clock-target-$variant"
+            export CARGO_LIBC_PROVIDER_LINK_MAP="$RUNNER_TEMP/clock-evidence/$variant.map"
+            cargo libc build --distro sles-12-sp5 --cc /usr/bin/clang-18 --artifact "$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/release/aero1553" -- --release --locked -vv 2>&1 | tee "$RUNNER_TEMP/clock-evidence/$variant-build.log"
+            cp "$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/release/aero1553" "$RUNNER_TEMP/clock-evidence/$variant"
+          done
+      - name: Build exact Zig comparison
+        working-directory: consumer/rust
+        shell: bash
+        env:
+          RUSTC_LOG: rustc_codegen_ssa::back::link=info
+        run: |
+          set -euo pipefail
+          export PATH="$RUNNER_TEMP/clock-zigbuild/bin:$PATH"
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/clock-target-zig"
+          cargo zigbuild --locked --release --target x86_64-unknown-linux-gnu.2.22 -vv 2>&1 | tee "$RUNNER_TEMP/clock-evidence/zig-build.log"
+          cp "$CARGO_TARGET_DIR/x86_64-unknown-linux-gnu/release/aero1553" "$RUNNER_TEMP/clock-evidence/zig"
+      - name: Save ELF evidence and unchanged strict comparisons
+        working-directory: consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/clock-evidence"
+          for variant in old new zig; do
+            readelf -W -h -l -d -V --dyn-syms "$evidence/$variant" > "$evidence/$variant.readelf.txt"
+            objdump -T "$evidence/$variant" > "$evidence/$variant.objdump.txt"
+            sha256sum "$evidence/$variant" >> "$evidence/binaries.sha256"
+          done
+          for variant in old new; do
+            set +e
+            timeout 8m python3 scripts/compare-binaries.py "$evidence/zig" "$evidence/$variant" --rounds 1 > "$evidence/$variant-comparison.stdout" 2> "$evidence/$variant-comparison.stderr"
+            result=$?
+            set -e
+            printf '%s' "$result" > "$evidence/$variant-comparison.exit"
+          done
+          git diff --exit-code HEAD
+      - name: Assess only the allowed clock-policy delta, separately
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYASSESS'
+          import json
+          import os
+          from pathlib import Path
+
+          e = Path(os.environ['RUNNER_TEMP']) / 'clock-evidence'
+          clocks = {'clock_getcpuclockid', 'clock_getres', 'clock_gettime', 'clock_nanosleep', 'clock_settime'}
+
+
+          def requirements(name):
+              lines = (e / f'{name}.readelf.txt').read_text().splitlines()
+              interpreter, needed = [], []
+              for line in lines:
+                  marker = 'Requesting program interpreter:'
+                  if marker in line:
+                      value = line.partition(marker)[2].strip()
+                      if not value.endswith(']'):
+                          raise ValueError(f'{name}: malformed interpreter')
+                      interpreter.append(value[:-1])
+                  if '(NEEDED)' in line:
+                      value = line.partition('Shared library:')[2].strip()
+                      if not value.startswith('[') or not value.endswith(']'):
+                          raise ValueError(f'{name}: malformed NEEDED')
+                      needed.append(value[1:-1])
+              if len(interpreter) != 1 or not interpreter[0] or not needed or any(not n for n in needed):
+                  raise ValueError(f'{name}: missing interpreter or NEEDED evidence')
+
+              # Join undefined dynsym version indexes to .gnu.version_r File entries.
+              # Version text alone is insufficient: multiple DSOs can own GLIBC_2.2.5.
+              version_needs = {}
+              inside_needs, library = False, None
+              for line in lines:
+                  fields = line.split()
+                  if line.strip().startswith('Version ') and 'section ' in line:
+                      inside_needs = line.strip().startswith('Version needs section ')
+                      library = None
+                  if not inside_needs:
+                      continue
+                  if 'File:' in fields:
+                      library = fields[fields.index('File:') + 1]
+                  if 'Name:' in fields and 'Version:' in fields:
+                      version = fields[fields.index('Name:') + 1]
+                      index = int(fields[fields.index('Version:') + 1])
+                      if library not in needed or index in version_needs:
+                          raise ValueError(f'{name}: invalid or duplicate version-need ownership')
+                      version_needs[index] = (version, library)
+
+              owned_imports = set()
+              for line in lines:
+                  fields = line.split()
+                  if not fields or not fields[0].endswith(':') or not fields[0][:-1].isdigit() or 'UND' not in fields:
+                      continue
+                  at = fields.index('UND') + 1
+                  if at == len(fields):  # dynsym index 0 has an empty name
+                      continue
+                  symbol = fields[at]
+                  if '@' in symbol:
+                      symbol, _, version = symbol.partition('@')
+                      version = version.lstrip('@')
+                      if at + 1 >= len(fields):
+                          raise ValueError(f'{name}: missing dynsym version index')
+                      token = fields[at + 1]
+                      if not token.startswith('(') or not token.endswith(')') or not token[1:-1].isdigit():
+                          raise ValueError(f'{name}: malformed dynsym version index')
+                      index = int(token[1:-1])
+                      owner = version_needs.get(index)
+                      if owner is None or owner[0] != version:
+                          raise ValueError(f'{name}: unresolved/mismatched version-need index for {symbol}')
+                      owned_imports.add((symbol, version, owner[1]))
+                  else:
+                      owned_imports.add((symbol, '(none)', None))
+
+              imports = set()
+              for line in (e / f'{name}.objdump.txt').read_text().splitlines():
+                  if '*UND*' in line:
+                      fields = line.split()
+                      version = fields[-2] if fields[-2].startswith('(') else '(none)'
+                      imports.add((version, fields[-1]))
+              from_readelf = {
+                  (f'({version})' if version != '(none)' else '(none)', symbol)
+                  for symbol, version, library in owned_imports
+              }
+              if not imports or imports != from_readelf:
+                  raise ValueError(f'{name}: objdump/readelf undefined import evidence disagrees')
+              return {
+                  'interpreter': interpreter,
+                  'needed_in_order': needed,
+                  'imports': sorted(imports),
+                  'imports_with_owners': [
+                      {'name': symbol, 'version': version, 'library': library}
+                      for symbol, version, library in sorted(owned_imports)
+                  ],
+              }
+
+
+          data = {n: requirements(n) for n in ['old', 'new', 'zig']}
+          errors = []
+          for variant in ['old', 'new']:
+              code = int((e / f'{variant}-comparison.exit').read_text())
+              text = (e / f'{variant}-comparison.stdout').read_text()
+              if code not in (0, 1) or 'same behaviour: 182 of 182 invocations' not in text:
+                  errors.append(f'{variant}: comparator error/timeout or behavior mismatch')
+          old, new = data['old'], data['new']
+          if old['interpreter'] != new['interpreter']:
+              errors.append('candidate changed interpreter')
+          nonclock = lambda r: {tuple(x) for x in r['imports'] if x[1] not in clocks}
+          if nonclock(old) != nonclock(new):
+              errors.append('candidate changed non-clock imports, including unwinder/weak imports')
+          nonclock_owners = lambda r: {
+              (x['name'], x['version'], x['library'])
+              for x in r['imports_with_owners'] if x['name'] not in clocks
+          }
+          if nonclock_owners(old) != nonclock_owners(new):
+              errors.append('candidate changed non-clock version-needed ownership')
+          old_needed, new_needed = set(old['needed_in_order']), set(new['needed_in_order'])
+          if new_needed - old_needed or old_needed - new_needed - {'librt.so.1'}:
+              errors.append('candidate dependency changes exceed optional librt removal')
+          needed_order_equal = (
+              [x for x in old['needed_in_order'] if x != 'librt.so.1']
+              == [x for x in new['needed_in_order'] if x != 'librt.so.1']
+          )
+          old_clock = {x['name'] for x in old['imports_with_owners'] if x['name'] in clocks}
+          new_clock = {x['name']: x for x in new['imports_with_owners'] if x['name'] in clocks}
+          if old_clock != set(new_clock) or 'clock_gettime' not in new_clock:
+              errors.append('unexpected clock import set')
+          if any(x['version'] != 'GLIBC_2.17' or x['library'] != 'libc.so.6' for x in new_clock.values()):
+              errors.append('candidate clock default is not GLIBC_2.17 owned by libc.so.6')
+          report = {
+              'source_commit': os.environ['GITHUB_SHA'],
+              'requirements': data,
+              'allowed_delta': 'old-to-candidate: clock versions to libc GLIBC_2.17; optional librt removal only; no unwinder change',
+              'strict_consumer_comparator_unmodified': True,
+              'strict_zig_identity_not_claimed': True,
+              'non_librt_dependency_order_equal': needed_order_equal,
+              'dependency_order_review': 'Record order changes for review; sorted comparator cannot prove load-order equivalence',
+              'coverage': '182 cases per variant against Zig; no actual SLES host qualification',
+              'errors': errors,
+          }
+          (e / 'separate-clock-assessment.json').write_text(json.dumps(report, indent=2))
+          if errors:
+              raise SystemExit('; '.join(errors))
+          PYASSESS
+          git -C clock-tool diff --exit-code HEAD
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aero1553-three-way-clock-${{ github.run_id }}
+          path: ${{ runner.temp }}/clock-evidence
+          if-no-files-found: error

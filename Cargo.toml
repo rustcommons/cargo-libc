@@ -1,6 +1,6 @@
 [package]
 name = "cargo-libc"
-version = "0.2.4"
+version = "0.3.0"
 edition = "2021"
 rust-version = "1.90"
 description = "Cargo subcommand: build Rust for an older glibc (2.17 through 2.44 on x86-64 Linux) and check what binaries require"
@@ -52,4 +52,4 @@ linux-targets = "0.3.0"
 # Provider preparation (`cargo libc provider`, automatic providers). Its default
 # features compile in glibc's ABI lists (glibc-abilists) and recorded sources
 # (glibc-provider-sources), LGPL-2.1-or-later.
-libc-abi-tools = "0.3.2"
+libc-abi-tools = "0.4.0"

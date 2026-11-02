@@ -399,12 +399,20 @@ struct Prepared {
     profile_id: &'static str,
 }
 
-/// Temporary fail-closed adapter until the exact producer source is available.
-/// Replace with provider::link_profile::prepare(libc, rt, cache_root,
-/// LinkProfile::LibcClocksV1), mapping Overlay's search_dir, both raw hashes and
-/// profile.id(). ELF transformation/cache code must remain in the producer.
-fn producer_overlay(libraries: &Libraries, _cache_root: &Path) -> Result<Prepared, String> {
-    Err(format!("clock profile producer API integration is pending for {} and {}; this scaffolding is not a release candidate", libraries.libc.display(), libraries.rt.display()))
+fn producer_overlay(libraries: &Libraries, cache_root: &Path) -> Result<Prepared, String> {
+    use libc_abi_tools::provider::link_profile::{prepare, LinkProfile};
+    let overlay = prepare(
+        &libraries.libc,
+        &libraries.rt,
+        cache_root,
+        LinkProfile::LibcClocksV1,
+    )?;
+    Ok(Prepared {
+        search_dir: overlay.search_dir,
+        libc_sha256: overlay.libc_sha256,
+        librt_sha256: overlay.librt_sha256,
+        profile_id: overlay.profile.id(),
+    })
 }
 
 #[cfg(test)]
@@ -436,16 +444,6 @@ mod tests {
         let args: Vec<_> = command.get_args().collect();
         assert_eq!(args[0], "-L/cache with spaces/clock");
         assert_eq!(&args[1..], caller.map(std::ffi::OsStr::new));
-    }
-
-    #[test]
-    fn pending_adapter_cannot_silently_use_old_clock_defaults() {
-        assert!(Profile::prepare(Libraries {
-            libc: "/target/libc.so.6".into(),
-            rt: "/target/librt.so.1".into()
-        })
-        .unwrap_err()
-        .contains("not a release candidate"));
     }
 
     #[test]
