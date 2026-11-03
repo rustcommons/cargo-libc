@@ -129,7 +129,7 @@ This checker intentionally does not emulate every loader fallback.
 
 ## Maintainer validation
 
-`scripts/check-target-libgcc.py BIN EVIDENCE_DIR` links small GNU/LLD fixtures and
+`scripts/check-target-libgcc.py BIN EVIDENCE_DIR` links small GNU fixtures (plus LLD when available) and
 inspects them; it never executes their payloads. Unit tests cover bounded parsing,
 version-index joins, weak/node distinctions and conservative matching. The Linux
 CI job runs the static fixtures without installing another toolchain.

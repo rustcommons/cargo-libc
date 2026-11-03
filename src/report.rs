@@ -43,11 +43,15 @@ pub fn read_elf(path: &Path) -> Result<ElfInfo, String> {
 }
 
 pub fn read_bytes(path: &Path) -> Result<Vec<u8>, String> {
-    read_bytes_limited(path, MAX_ELF_BYTES)
+    read_bytes_inner(path, MAX_ELF_BYTES, false)
 }
 
 pub(crate) fn read_bytes_limited(path: &Path, limit: u64) -> Result<Vec<u8>, String> {
-    if limit != MAX_ELF_BYTES
+    read_bytes_inner(path, limit, true)
+}
+
+fn read_bytes_inner(path: &Path, limit: u64, precheck: bool) -> Result<Vec<u8>, String> {
+    if precheck
         && !std::fs::metadata(path)
             .map_err(|e| format!("cannot stat {}: {e}", path.display()))?
             .is_file()
@@ -350,7 +354,11 @@ pub(crate) fn inspect_file_with_libgcc(
     json: bool,
     target_libgcc: Option<&Path>,
 ) -> Result<i32, String> {
-    let bytes = read_bytes(path)?;
+    let bytes = if target_libgcc.is_some() {
+        read_bytes_limited(path, MAX_ELF_BYTES)?
+    } else {
+        read_bytes(path)?
+    };
     let info = elf::inspect(&bytes)?;
     let (ceiling, scan) = match scan_options {
         Some(options) => {

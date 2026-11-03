@@ -149,6 +149,9 @@ if os.name == "posix":
     assert v["gcc_abi_comparison"]["target_identity"]["path_display_lossy"] is True
     fifo=out/"fifo";os.mkfifo(fifo)
     compare("fifo_refused",app,fifo,3,"unresolved")
+    primary_fifo=subprocess.run([binary,"inspect",str(fifo),"--target-libgcc",str(good),"--json"],capture_output=True,text=True,timeout=5)
+    assert primary_fifo.returncode==1 and not primary_fifo.stdout and "regular file" in primary_fifo.stderr
+    results.append(dict(name="primary_fifo_refused",exit=1,status="primary_error"))
 alias=out/"alias.so";alias.symlink_to(good)
 compare("symlink",app,alias,0,"match")
 # Legacy JSON fields survive optional extraction failures, without a new field
