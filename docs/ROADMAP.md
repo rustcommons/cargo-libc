@@ -2,11 +2,13 @@
 
 ## Explicit target libgcc comparison
 
-The [unreleased checker](TARGET-LIBGCC.md) implements explicit two-file static
-comparison. Remaining release work is companion hash-API publication, deliberate
-registry minimum/lock adoption, unpatched package/install qualification and review.
-No release version is assigned here. General runtime/dependency resolution and
-GCC/LLVM interoperability remain outside this feature.
+The [0.5.0 candidate checker](TARGET-LIBGCC.md) implements explicit two-file
+static comparison. Published libc-abi-tools 0.5.0 supplies only the pure byte-hash
+API; actual registry adoption preserves all other tool/data locks. Remaining
+release work is candidate portable/native/package/clean-install qualification
+and final review, not another implementation change. [Release evidence](RELEASE-0.5.0.md)
+separates the accepted source proof from pending registry gates. General runtime/
+dependency resolution and GCC/LLVM interoperability remain outside this feature.
 
 Open work and adopted policy decisions. What cargo-libc does today is in the [user guide](USER-GUIDE.md), and
 current release evidence is in the [release index](RELEASING.md#release-records).

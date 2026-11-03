@@ -1,9 +1,10 @@
 # Compare a target libgcc runtime
 
-**Unreleased implementation.** This option is not in cargo-libc 0.4.0. It needs
-the companion `libc-abi-tools::content_sha256` API to be released and adopted
-from crates.io before registry-only release qualification. No version, lockfile,
-runtime selection or link policy is changed by this candidate.
+**0.5.0 release candidate; not published.** This option is not in cargo-libc
+0.4.0. The reviewed implementation is unchanged; published libc-abi-tools 0.5.0
+is now the sole raised producer minimum and is adopted from the real registry.
+Other tool/data locks stay unchanged. Candidate portable/native/package/install
+qualification is pending. Runtime selection and link policy remain unchanged.
 
 ```sh
 cargo libc inspect ./app --target-libgcc /copied-target/libgcc_s.so.1

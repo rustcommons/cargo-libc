@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Native x86/Rust 1.90 qualification; no installs of system tools, no publication.
+# Native x86/Rust 1.90 package qualification; no system-tool installs or publication.
 # QUALIFY_EXPECTED_SHA=40_HEX rustup run 1.90.0 bash SCRIPT CHECKOUT CLANG EVIDENCE
 set -euo pipefail
 repo=$(cd "${1:?checkout}" && pwd)
@@ -15,7 +15,8 @@ test "$(uname -m)" = x86_64
 [[ "$(cargo --version)" == 'cargo 1.90.0 '* ]]
 df -h "$repo" /tmp
 mkdir -p "$evidence"
-work=$(mktemp -d /tmp/cargo-libc-package-040.XXXXXXXX)
+version=$(python3 -c 'import tomllib,sys; print(tomllib.load(open(sys.argv[1], "rb"))["package"]["version"])' "$repo/Cargo.toml")
+work=$(mktemp -d "/tmp/cargo-libc-package-$version.XXXXXXXX")
 export CARGO_BUILD_JOBS=2 RUST_TEST_THREADS=2
 unset CARGO_TARGET_DIR RUSTFLAGS CARGO_ENCODED_RUSTFLAGS RUSTDOCFLAGS CARGO_ENCODED_RUSTDOCFLAGS
 export CARGO_HOME="$work/package-cargo-home"
@@ -45,18 +46,18 @@ cd "$repo"
   cargo fetch --locked
   cargo metadata --format-version 1 --locked --offline > "$evidence/metadata.json"
   cargo package --locked --target-dir "$work/package-target"
-  archive="$work/package-target/package/cargo-libc-0.4.0.crate"
+  archive="$work/package-target/package/cargo-libc-$version.crate"
   cp "$archive" "$evidence/"
   sha256sum "$archive"
   python3 scripts/check-release-package.py "$archive" "$evidence"
   mkdir "$work/unpacked"
   tar -xzf "$archive" -C "$work/unpacked"
-  unpacked="$work/unpacked/cargo-libc-0.4.0"
+  unpacked="$work/unpacked/cargo-libc-$version"
   export CARGO_HOME="$work/install-cargo-home"
   mkdir "$CARGO_HOME"
   cargo fetch --manifest-path "$unpacked/Cargo.toml" --locked
   cargo metadata --manifest-path "$unpacked/Cargo.toml" --format-version 1 --locked --offline > "$evidence/unpacked-metadata.json"
-  python3 - "$evidence" <<'PY'
+  python3 - "$evidence" "$version" <<'PY'
 import json, sys
 from pathlib import Path
 root=Path(sys.argv[1])
@@ -64,20 +65,31 @@ for name in ['metadata.json', 'unpacked-metadata.json']:
     data=json.loads((root/name).read_text())
     assert len(data['packages']) == 7
     for p in data['packages']:
-        if p['name']=='cargo-libc': assert p['version']=='0.4.0'
+        if p['name']=='cargo-libc': assert p['version']==sys.argv[2]
         else: assert p['source']=='registry+https://github.com/rust-lang/crates.io-index',p['name']
 PY
   cargo install --path "$unpacked" --locked --offline --root "$work/install" --target-dir "$work/install-target"
   sha256sum "$work/install/bin/"* > "$evidence/installed-binary-sha256.txt"
   for name in cargo-libc libc-linker libc-runner libc-cc libc-cxx; do test -x "$work/install/bin/$name"; done
-  "$work/install/bin/cargo-libc" --version | grep -Fx 'cargo-libc 0.4.0'
+  "$work/install/bin/cargo-libc" --version | grep -Fx "cargo-libc $version"
   python3 scripts/check-installed-capabilities.py "$work/install/bin" "$test_cc" "$evidence/capabilities"
-  bash scripts/smoke-installed.sh "$work/install" "$test_cc" 0.4.0 2>&1 | tee "$evidence/installed-smoke.log"
+  bash scripts/smoke-installed.sh "$work/install" "$test_cc" "$version" 2>&1 | tee "$evidence/installed-smoke.log"
   # The host C proc macro must see native host headers, not the 2.17 target's.
   host_minor=$(printf '#include <features.h>\n__GLIBC_MINOR__\n' | gcc -E -P -x c - | tail -1)
   grep -Fx "host proc macro: glibc 2.$host_minor headers" "$evidence/installed-smoke.log"
   # The existing C fixture includes a native proc macro using host C headers.
   python3 scripts/check-run-streams.py "$work/install/bin" "$test_cc"
+  if [ "$version" = 0.5.0 ]; then
+    # Reuse an explicitly supplied verified 0.4.0 installation when available.
+    baseline=${TARGET_LIBGCC_BASELINE_BIN:-}
+    if [ -z "$baseline" ]; then
+      cargo install cargo-libc --version 0.4.0 --locked --root "$work/baseline-040" --target-dir "$work/baseline-target"
+      baseline="$work/baseline-040/bin/cargo-libc"
+    fi
+    test "$("$baseline" --version)" = 'cargo-libc 0.4.0'
+    sha256sum "$baseline" > "$evidence/legacy-040-binary-sha256.txt"
+    python3 scripts/check-target-libgcc.py "$work/install/bin/cargo-libc" "$evidence/target-libgcc-fixtures" "$baseline"
+  fi
   git diff --exit-code HEAD -- Cargo.toml Cargo.lock src README.md LICENSE NOTICE.md
   printf 'PASS native x86 Rust1.90 package/unpacked-install; candidate=%s\n' "$expected"
 } 2>&1 | tee "$evidence/package-install.log"

@@ -1,7 +1,9 @@
 # Target libgcc checker source qualification
 
-2026-11-03. Unreleased implementation; no version, registry minimum or publication
-is assigned. This record does not update the immutable 0.4.0 package.
+Historical source-stage evidence, 2026-11-03: no version or registry adoption
+was assigned during these tests. Subsequent [0.5.0 release preparation](../RELEASE-0.5.0.md)
+adopts published libc-abi-tools 0.5.0 and records final registry gates separately.
+The source outcomes below and immutable 0.4.0 package remain unchanged.
 
 ## Exact source pair and commands
 

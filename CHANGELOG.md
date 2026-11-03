@@ -11,13 +11,38 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ## [Unreleased]
 
+No additional changes assigned.
+
+## [0.5.0] - 2026-11-03
+
+**Candidate preparation date; not published.** Producer 0.5.0 is verified and
+adopted from the real registry; candidate portable/native/package/install
+qualification is pending.
+Latest published cargo-libc remains 0.4.0.
+
 ### Added
 
-- Unreleased `inspect --target-libgcc FILE`: bounded comparison of exact recorded
-  direct libgcc symbol/version interfaces, with separate runtime GLIBC assessment,
-  JSON evidence and explicit missing/unresolved outcomes. It does not establish
-  loader selection, dependency closure or runtime safety. Source qualification
-  uses the companion hash API; registry adoption and release remain pending.
+- `inspect --target-libgcc FILE`: explicit read-only comparison of recorded
+  libgcc-owned mandatory version nodes and exact function symbol/version pairs
+  against the supplied x86-64 runtime ELF. Optional JSON evidence separates
+  match, missing and unresolved results, input identities and the runtime's own
+  direct GLIBC assessment. A match does not establish loader selection, runtime
+  authenticity, transitive/plugin closure or safety to run.
+
+### Upgrade and limits
+
+- The minor version covers the new inspect option/report/status contract;
+  ordinary inspect without the option preserves existing output and exits.
+  No new GCC-floor flag, runtime selector, linker policy or unwinder is included.
+- Only the root producer minimum becomes libc-abi-tools 0.5.0 following
+  verified publication. Other tool/data locks and MSRV/native floors stay unchanged.
+  The producer version participates in provider-cache identity; upgrading from
+  0.4.x can prepare fresh providers. No automatic cache import/offline migration
+  is promised; source mode needs host GCC, and container preparation has host-tool
+  plus engine/image prerequisites.
+- Bounded reads retain both input buffers; per-file/parser bounds are not a
+  whole-process memory cap. [Release notes](docs/releases/v0.5.0.md) and the
+  [checker contract](docs/TARGET-LIBGCC.md) give exact limits and known gaps.
 
 ## [0.4.0] - 2026-11-03
 
