@@ -169,6 +169,49 @@ The [release record](docs/RELEASE-0.3.0.md) and
 registry/package/publication evidence and unqualified input/provider forms. This
 is not a broader old-system compatibility claim.
 
+### Authorized executable runtime development
+
+The 0.4.0 path is under development, **not active LLVM selection yet**. The first
+consumer increment classifies each final link through `src/link_output.rs` and
+shares that decision between Rust/C startup dispatch. It consumes the completed
+Clang linker command via the existing trace parser, not a mixed driver/forwarded
+argument stream. Provider/sysroot startup choice is aligned and the final command
+kind revalidated; ambiguous or unsupported overrides refuse.
+[Focused native controls](docs/evals/2026-11-02-link-output-classification.md)
+check actual ELF kind/PIE/RUNPATH and preserve shared/partial startup boundaries.
+Library suffixes and Cargo subcommands do not choose a workspace-wide runtime.
+rlib/staticlib/object code receives no new runtime compilation flags.
+
+The intended final link-only branch is:
+
+```mermaid
+flowchart LR
+    TARGET["Target final link"] --> KIND["Classify actual output"]
+    KIND -->|executable| LLVM["Pending producer API<br/>validated static LLVM + helpers"]
+    KIND -->|shared / extension| DSO["Existing DSO runtime inputs"]
+    KIND -->|partial / intermediate| PART["No executable runtime injection"]
+    HOST["Host build/proc-macro/C"] --> NATIVE["Existing native compiler/runtime"]
+    LLVM -.-> VERIFY["Pending: effective-command validation<br/>context/coexistence + ELF/load gates"]
+```
+
+The producer owns archive build/cache/content/provenance, and the future consumer
+adapter will carry that identity into shell/TOML settings and relink fingerprints.
+Output separation is necessary but not proof of cross-DSO context compatibility;
+valid C-unwind round trips and actual binding owners remain blockers. Initial
+native hidden-LLVM round trips fail. Corrected narrow exports pass bounded Rust
+round trips on actual BFD/LLD, but native C -fexceptions cleanup still fails; all
+LLVM-default wiring is paused pending complete helper/personality compatibility. The DSO
+branch preserves artifact/runtime link inputs, not a promise that loaded unwind
+symbols always bind GCC: a qualified host LLVM binding can interpose. Broad export
+of unrelated Rust symbols is diagnostic only, not production policy. See the
+[verified native proof](docs/evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02),
+including its original GNU-label/LLD-selection mismatch and
+[corrected minimal/C-EH follow-up](docs/evals/2026-11-02-unwind-boundaries.md#corrected-minimal-exports-and-native-c-eh-follow-up--2026-11-02).
+Existing clock overlay, library order/state and non-unwind helpers remain separate
+inputs. No dynamic fallback, raw data edit or general dependency-closure feature
+is introduced. See [design](docs/UNWINDER-0.4.0-PLAN.md),
+[permanent checklist](docs/UNWINDER-RELEASE-CHECKLIST.md) and CL-REQ-028–030.
+
 ### Data, source and licensing boundaries
 
 The provider's ABI lists come from glibc's signed release tags, collected with

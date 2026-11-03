@@ -7,7 +7,38 @@ use std::{
     fs,
     io::Read,
     path::{Path, PathBuf},
+    process::Command,
 };
+
+/// Ask Clang for its completed linker invocation without executing it. Preserve
+/// arguments, environment removals and cwd; do not reconstruct a driver stream.
+pub(crate) fn completed_command(command: &Command, linker: &Path) -> Result<Vec<OsString>, String> {
+    let mut trace = Command::new(command.get_program());
+    trace.args(command.get_args()).arg("-###");
+    if let Some(cwd) = command.get_current_dir() {
+        trace.current_dir(cwd);
+    }
+    for (key, value) in command.get_envs() {
+        match value {
+            Some(value) => {
+                trace.env(key, value);
+            }
+            None => {
+                trace.env_remove(key);
+            }
+        }
+    }
+    let output = trace
+        .output()
+        .map_err(|e| format!("cannot probe completed Clang link: {e}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "Clang cannot expose the completed target link: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    trace_command(&output.stderr, linker)
+}
 
 fn os(bytes: &[u8]) -> Result<OsString, String> {
     #[cfg(unix)]
@@ -105,49 +136,284 @@ fn rooted(path: &OsStr, root: &Path) -> Result<PathBuf, String> {
     })
 }
 
-fn takes_value(b: &[u8]) -> bool {
-    matches!(
-        b,
-        b"-o"
-            | b"-L"
-            | b"--library-path"
-            | b"-l"
-            | b"--library"
-            | b"-a"
-            | b"--sysroot"
-            | b"-m"
-            | b"-z"
-            | b"-u"
-            | b"--undefined"
-            | b"-e"
-            | b"--entry"
-            | b"-h"
-            | b"-soname"
-            | b"--soname"
-            | b"-dynamic-linker"
-            | b"--dynamic-linker"
-            | b"-rpath"
-            | b"--rpath"
-            | b"-rpath-link"
-            | b"--rpath-link"
-            | b"-Map"
-            | b"--Map"
-            | b"--version-script"
-            | b"--dynamic-list"
-            | b"--retain-symbols-file"
-            | b"--defsym"
-            | b"--section-start"
-            | b"--wrap"
-            | b"--exclude-libs"
-            | b"--exclude-symbols"
-            | b"-Ttext"
-            | b"-Tdata"
-            | b"-Tbss"
-            | b"-Ttext-segment"
-            | b"-plugin"
-            | b"--plugin"
-            | b"-plugin-opt"
-    )
+/// Bounded GNU/LLD ELF grammar for completed linker commands. These are
+/// linker options, never compiler-driver options. Optional operands are accepted
+/// only with `=`; unknown syntax is refused rather than assigned guessed arity.
+pub(crate) const VALUE_OPTIONS: &[&str] = &[
+    "-o",
+    "--output",
+    "--out-implib",
+    "-R",
+    "-I",
+    "--just-symbols",
+    "--oformat",
+    "--format",
+    "-b",
+    "-L",
+    "--library-path",
+    "-l",
+    "--library",
+    "-a",
+    "--sysroot",
+    "-m",
+    "-z",
+    "-u",
+    "--undefined",
+    "--require-defined",
+    "-e",
+    "--entry",
+    "-h",
+    "-soname",
+    "--soname",
+    "-dynamic-linker",
+    "--dynamic-linker",
+    "-rpath",
+    "--rpath",
+    "-rpath-link",
+    "--rpath-link",
+    "-Map",
+    "--Map",
+    "--version-script",
+    "--dynamic-list",
+    "--retain-symbols-file",
+    "--defsym",
+    "--section-start",
+    "--wrap",
+    "--exclude-libs",
+    "--exclude-symbols",
+    "-Ttext",
+    "-Tdata",
+    "-Tbss",
+    "-Ttext-segment",
+    "-Trodata-segment",
+    "-Tldata-segment",
+    "-plugin",
+    "--plugin",
+    "-plugin-opt",
+    "--plugin-opt",
+    "-A",
+    "--architecture",
+    "-f",
+    "--auxiliary",
+    "-F",
+    "--filter",
+    "--gpsize",
+    "-G",
+    "-O",
+    "-mllvm",
+    "--mllvm",
+    "--dependency-file",
+    "-y",
+    "--trace-symbol",
+    "-Y",
+    "-assert",
+    "-init",
+    "-fini",
+    "--sort-section",
+    "--spare-dynamic-tags",
+    "--task-link",
+    "--version-exports-section",
+    "--export-dynamic-symbol",
+    "--export-dynamic-symbol-list",
+    "--ignore-unresolved-symbol",
+    "--orphan-handling",
+    "--hash-style",
+    "--hash-size",
+    "--unresolved-symbols",
+    "--max-cache-size",
+    "--ctf-share-types",
+    "--compress-debug-sections",
+    "--icf",
+    "--error-limit",
+    "--pack-dyn-relocs",
+    "--symbol-ordering-file",
+];
+
+pub(crate) fn takes_value(b: &[u8]) -> bool {
+    VALUE_OPTIONS.iter().any(|v| v.as_bytes() == b)
+}
+
+pub(crate) fn known_option(b: &[u8]) -> bool {
+    const FLAGS: &[&str] = &[
+        "-shared",
+        "--shared",
+        "-Bshareable",
+        "-pie",
+        "--pie",
+        "--pic-executable",
+        "-no-pie",
+        "--no-pie",
+        "-r",
+        "--relocatable",
+        "-Ur",
+        "-i",
+        "-EL",
+        "-EB",
+        "--as-needed",
+        "--no-as-needed",
+        "--push-state",
+        "--pop-state",
+        "--whole-archive",
+        "--no-whole-archive",
+        "--start-group",
+        "--end-group",
+        "-(",
+        "-)",
+        "-Bstatic",
+        "--Bstatic",
+        "-dn",
+        "-non_shared",
+        "-static",
+        "--static",
+        "-n",
+        "-N",
+        "--nmagic",
+        "--omagic",
+        "-Bdynamic",
+        "--Bdynamic",
+        "-dy",
+        "-call_shared",
+        "-Bsymbolic",
+        "-Bsymbolic-functions",
+        "-Bno-symbolic",
+        "-E",
+        "--export-dynamic",
+        "--no-export-dynamic",
+        "--eh-frame-hdr",
+        "--no-eh-frame-hdr",
+        "--gc-sections",
+        "--no-gc-sections",
+        "--print-gc-sections",
+        "--no-print-gc-sections",
+        "--gc-keep-exported",
+        "-s",
+        "--strip-all",
+        "-S",
+        "--strip-debug",
+        "--strip-discarded",
+        "--no-strip-discarded",
+        "-x",
+        "-X",
+        "--discard-all",
+        "--discard-locals",
+        "--discard-none",
+        "-g",
+        "-d",
+        "-dc",
+        "-dp",
+        "--no-dynamic-linker",
+        "--no-undefined",
+        "--allow-shlib-undefined",
+        "--no-allow-shlib-undefined",
+        "--allow-multiple-definition",
+        "--fatal-warnings",
+        "--no-fatal-warnings",
+        "--undefined-version",
+        "--no-undefined-version",
+        "--default-symver",
+        "--default-imported-symver",
+        "--no-keep-memory",
+        "--relax",
+        "--no-relax",
+        "--no-demangle",
+        "--check-sections",
+        "--no-check-sections",
+        "--copy-dt-needed-entries",
+        "--no-copy-dt-needed-entries",
+        "--warn-common",
+        "--warn-execstack",
+        "--no-warn-execstack",
+        "--warn-rwx-segments",
+        "--no-warn-rwx-segments",
+        "--warn-textrel",
+        "--warn-once",
+        "--no-warn-mismatch",
+        "--no-warn-search-mismatch",
+        "--warn-unresolved-symbols",
+        "--error-unresolved-symbols",
+        "--no-define-common",
+        "--noinhibit-exec",
+        "-nostdlib",
+        "--cref",
+        "--stats",
+        "-t",
+        "--trace",
+        "-M",
+        "--print-map",
+        "--print-memory-usage",
+        "--emit-relocs",
+        "-q",
+        "--enable-new-dtags",
+        "--disable-new-dtags",
+        "--no-add-needed",
+        "--add-needed",
+        "--dynamic-list-data",
+        "--dynamic-list-cpp-new",
+        "--dynamic-list-cpp-typeinfo",
+        "--no-rosegment",
+        "--rosegment",
+        "--gdb-index",
+        "--no-gdb-index",
+        "--fix-cortex-a53-843419",
+        "--fix-cortex-a53-835769",
+        "--no-apply-dynamic-relocs",
+        "--apply-dynamic-relocs",
+        "--use-android-relr-tags",
+        "--no-use-android-relr-tags",
+        "--no-undefined-version",
+        "--no-relax-gp",
+        "--no-warn-execstack",
+    ];
+    if FLAGS.iter().any(|v| v.as_bytes() == b) {
+        return true;
+    }
+    // Joined operands have no next-token effect. Do not accept arbitrary long
+    // options merely because they contain '='.
+    if let Some(eq) = b.iter().position(|v| *v == b'=') {
+        let key = &b[..eq];
+        if takes_value(key)
+            || [
+                b"--build-id".as_slice(),
+                b"--demangle",
+                b"--sort-common",
+                b"--unique",
+                b"--split-by-file",
+                b"--split-by-reloc",
+                b"--verbose",
+            ]
+            .contains(&key)
+        {
+            return true;
+        }
+    }
+    if [
+        b"--build-id".as_slice(),
+        b"--demangle",
+        b"--sort-common",
+        b"--unique",
+        b"--split-by-file",
+        b"--split-by-reloc",
+        b"--verbose",
+    ]
+    .contains(&b)
+    {
+        return true;
+    }
+    // Only the ubiquitous compiler-emitted search/library joined forms are
+    // admitted. Guessing arbitrary short-option prefixes would misread named
+    // options such as LLD's -mllvm or GNU's -out-implib as joined -m/-o.
+    // Refuse undeclared single-dash aliases of our long options as well.
+    if VALUE_OPTIONS
+        .iter()
+        .any(|v| v.starts_with("--") && &v.as_bytes()[1..] == b)
+    {
+        return false;
+    }
+    [b"-L".as_slice(), b"-l"]
+        .iter()
+        .any(|prefix| b.starts_with(prefix) && b.len() > prefix.len())
+        || (b.starts_with(b"-O") && b.len() > 2 && b[2..].iter().all(u8::is_ascii_digit))
+        || [b"-aarchive".as_slice(), b"-ashared", b"-adefault"].contains(&b)
 }
 
 struct Search<'a> {
@@ -393,6 +659,7 @@ fn script_tokens(mut bytes: &[u8]) -> Result<Vec<Vec<u8>>, String> {
 
 /// Validate effective ld arguments, including compiler-injected default libs.
 pub(crate) fn validate(profile: &Profile, args: &[OsString], root: &Path) -> Result<(), String> {
+    crate::link_output::classify(args)?;
     let root = fs::canonicalize(root).map_err(|e| e.to_string())?;
     let mut dirs = Vec::new();
     let mut i = 0;
@@ -471,36 +738,7 @@ pub(crate) fn validate(profile: &Profile, args: &[OsString], root: &Path) -> Res
                 i += 1;
                 search.library(name, static_only, 0)?;
             }
-            b"-o"
-            | b"-L"
-            | b"--library-path"
-            | b"-m"
-            | b"-z"
-            | b"-u"
-            | b"-e"
-            | b"-h"
-            | b"-soname"
-            | b"--soname"
-            | b"-dynamic-linker"
-            | b"--dynamic-linker"
-            | b"-rpath"
-            | b"--rpath"
-            | b"-rpath-link"
-            | b"--rpath-link"
-            | b"-Map"
-            | b"--Map"
-            | b"--version-script"
-            | b"--dynamic-list"
-            | b"--retain-symbols-file"
-            | b"--defsym"
-            | b"--section-start"
-            | b"-Ttext"
-            | b"-Tdata"
-            | b"-Tbss"
-            | b"-Ttext-segment"
-            | b"-plugin"
-            | b"--plugin"
-            | b"-plugin-opt" => {
+            _ if takes_value(b) => {
                 if i == args.len() {
                     return Err("missing linker option operand".into());
                 }

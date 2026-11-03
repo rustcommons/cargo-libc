@@ -1,0 +1,321 @@
+{
+  "date": "2026-11-03",
+  "scope": "Read-only existing Aero/ELF/native proof audit plus pinned public source inspection. No new native/runtime qualification.",
+  "consumer_ref": "9c248300f1e2ab20ce34dc4b227eb322e33e4c93",
+  "cargo_libc_tested_ref": "29582bc7af35cba1f741f989b47bc520979e13ae",
+  "consumer_workflow_run": "41378111334",
+  "versions": "29582bc7af35cba1f741f989b47bc520979e13ae\n9c248300f1e2ab20ce34dc4b227eb322e33e4c93\nLinux runnervm48cm3 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux\nImageOS=ubuntu24 ImageVersion=20261026.354.1\nrustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1\ncargo 1.99.1 (5f94df478 2026-08-27)\nUbuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin\ngcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\nGNU ld (GNU Binutils for Ubuntu) 2.42\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis program is free software; you may redistribute it under the terms of\nthe GNU General Public License version 3 or (at your option) a later version.\nThis program has absolutely no warranty.\n0.17.0\ncargo-libc 0.2.4\ncargo-libc 0.3.0\ncargo-zigbuild 0.23.4\n",
+  "artifact_zip_sha256": "fc2430f375145f818366535ef8036daa4f8144fa792ff775d38c8a1e808113ff",
+  "binaries": {
+    "old": {
+      "sha256": "2884c480365ffe8f3afd99c522602e98821c7415b3fed1689670323134f4d544",
+      "needed": [
+        "libgcc_s.so.1",
+        "librt.so.1",
+        "libpthread.so.0",
+        "libdl.so.2",
+        "libc.so.6"
+      ],
+      "unwind_imports": [
+        {
+          "name": "_Unwind_Backtrace",
+          "version": "GCC_3.3",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_DeleteException",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetDataRelBase",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetIP",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetIPInfo",
+          "version": "GCC_4.2.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetLanguageSpecificData",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetRegionStart",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetTextRelBase",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_RaiseException",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_Resume",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_SetGR",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_SetIP",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        }
+      ],
+      "unwind_dynamic_symbols": [
+        "8: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_Backtrace@GCC_3.3 (4)",
+        "20: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetRegionStart@GCC_3.0 (7)",
+        "23: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetTextRelBase@GCC_3.0 (7)",
+        "24: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_RaiseException@GCC_3.0 (7)",
+        "33: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetIPInfo@GCC_4.2.0 (8)",
+        "38: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetLanguageSpecificData@GCC_3.0 (7)",
+        "52: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetIP@GCC_3.0 (7)",
+        "65: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetDataRelBase@GCC_3.0 (7)",
+        "68: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_SetGR@GCC_3.0 (7)",
+        "82: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_DeleteException@GCC_3.0 (7)",
+        "85: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_Resume@GCC_3.0 (7)",
+        "86: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_SetIP@GCC_3.0 (7)"
+      ],
+      "rustc_link_flags": [
+        "-m64",
+        "-Wl,--as-needed",
+        "-Wl,-Bstatic",
+        "-Wl,-Bdynamic",
+        "-lgcc_s",
+        "-lutil",
+        "-lrt",
+        "-lpthread",
+        "-lm",
+        "-ldl",
+        "-lc",
+        "-L",
+        "-Wl,--eh-frame-hdr",
+        "-Wl,-z,noexecstack",
+        "-L",
+        "-o",
+        "-Wl,--gc-sections",
+        "-pie",
+        "-Wl,-z,relro,-z,now",
+        "-Wl,-O1",
+        "-Wl,--strip-all",
+        "-nodefaultlibs",
+        "--sysroot=/home/runner/work/cargo-libc/cargo-libc/clock-cargo-home/libc-providers/x86_64-unknown-linux-gnu/glibc-2.22/source-7cff2c1eb9bf10bd/sysroot",
+        "--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13",
+        "-fuse-ld=/usr/bin/x86_64-linux-gnu-ld.bfd"
+      ],
+      "comparator_exit": "1",
+      "comparator_stdout": "old: /home/runner/work/_temp/clock-evidence/zig (951,048 bytes)\nnew: /home/runner/work/_temp/clock-evidence/old (910,296 bytes)\nsame interpreter: 1 entry\nnewest glibc: old 2.18, new 2.18\nsame behaviour: 182 of 182 invocations\ndecode of a-large, median of 1 interleaved rounds (information only): old 0.104s, new 0.104s, new/old 0.995\n"
+    },
+    "new": {
+      "sha256": "9843ac75bad2e74d0f5417767256f6c16269e435cc414292ce677d28caca2c6c",
+      "needed": [
+        "libgcc_s.so.1",
+        "libpthread.so.0",
+        "libdl.so.2",
+        "libc.so.6"
+      ],
+      "unwind_imports": [
+        {
+          "name": "_Unwind_Backtrace",
+          "version": "GCC_3.3",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_DeleteException",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetDataRelBase",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetIP",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetIPInfo",
+          "version": "GCC_4.2.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetLanguageSpecificData",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetRegionStart",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_GetTextRelBase",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_RaiseException",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_Resume",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_SetGR",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        },
+        {
+          "name": "_Unwind_SetIP",
+          "version": "GCC_3.0",
+          "library": "libgcc_s.so.1"
+        }
+      ],
+      "unwind_dynamic_symbols": [
+        "8: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_Backtrace@GCC_3.3 (4)",
+        "21: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetRegionStart@GCC_3.0 (8)",
+        "24: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetTextRelBase@GCC_3.0 (8)",
+        "25: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_RaiseException@GCC_3.0 (8)",
+        "34: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetIPInfo@GCC_4.2.0 (9)",
+        "39: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetLanguageSpecificData@GCC_3.0 (8)",
+        "53: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetIP@GCC_3.0 (8)",
+        "65: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_GetDataRelBase@GCC_3.0 (8)",
+        "68: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_SetGR@GCC_3.0 (8)",
+        "82: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_DeleteException@GCC_3.0 (8)",
+        "85: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_Resume@GCC_3.0 (8)",
+        "86: 0000000000000000     0 FUNC    GLOBAL DEFAULT  UND _Unwind_SetIP@GCC_3.0 (8)"
+      ],
+      "rustc_link_flags": [
+        "-m64",
+        "-Wl,--as-needed",
+        "-Wl,-Bstatic",
+        "-Wl,-Bdynamic",
+        "-lgcc_s",
+        "-lutil",
+        "-lrt",
+        "-lpthread",
+        "-lm",
+        "-ldl",
+        "-lc",
+        "-L",
+        "-Wl,--eh-frame-hdr",
+        "-Wl,-z,noexecstack",
+        "-L",
+        "-o",
+        "-Wl,--gc-sections",
+        "-pie",
+        "-Wl,-z,relro,-z,now",
+        "-Wl,-O1",
+        "-Wl,--strip-all",
+        "-nodefaultlibs",
+        "--sysroot=/home/runner/work/cargo-libc/cargo-libc/clock-cargo-home/libc-providers/x86_64-unknown-linux-gnu/glibc-2.22/source-1bbfe45535f9a17f/sysroot",
+        "--gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13",
+        "-fuse-ld=/usr/bin/x86_64-linux-gnu-ld.bfd"
+      ],
+      "comparator_exit": "1",
+      "comparator_stdout": "old: /home/runner/work/_temp/clock-evidence/zig (951,048 bytes)\nnew: /home/runner/work/_temp/clock-evidence/new (910,296 bytes)\nsame interpreter: 1 entry\nnewest glibc: old 2.18, new 2.18\nsame behaviour: 182 of 182 invocations\ndecode of a-large, median of 1 interleaved rounds (information only): old 0.110s, new 0.103s, new/old 0.939\n"
+    },
+    "zig": {
+      "sha256": "d2e3767e7b1c94d173eb9788a096dcd2bb4414adbcd912b0e6564224b82ce4da",
+      "needed": [
+        "libc.so.6",
+        "libpthread.so.0",
+        "libdl.so.2"
+      ],
+      "unwind_imports": [],
+      "unwind_dynamic_symbols": [],
+      "rustc_link_flags": [
+        "-m64",
+        "-Wl,--as-needed",
+        "-Wl,-Bstatic",
+        "-Wl,-Bdynamic",
+        "-lgcc_s",
+        "-lutil",
+        "-lrt",
+        "-lpthread",
+        "-lm",
+        "-ldl",
+        "-lc",
+        "-L",
+        "-B/home/runner/.rustup/toolchains/1.99.1-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld",
+        "-fuse-ld=lld",
+        "-Wl,--eh-frame-hdr",
+        "-Wl,-z,noexecstack",
+        "-L",
+        "-o",
+        "-Wl,--gc-sections",
+        "-pie",
+        "-Wl,-z,relro,-z,now",
+        "-Wl,-O1",
+        "-Wl,--strip-all",
+        "-nodefaultlibs"
+      ],
+      "comparator_exit": null,
+      "comparator_stdout": null
+    }
+  },
+  "sources": {
+    "cargo_zigbuild_crate_sha256": "0b0c2fe7d5f1a782047272e3fc1cd44214c450776bbde564bf92b9776dc2d781",
+    "cargo_zigbuild_vcs": {
+      "git": {
+        "sha1": "4258db97f6ac4bd1fc6e5c714d3f8d01db5c35e8"
+      },
+      "path_in_vcs": ""
+    },
+    "Zig017_builder_sha256": "93fd564ab255dae1dfaedb4e1da407c6941a25f3245b47e34c6dc8e6f821d29a",
+    "Zig017_personality_sha256": "cebe2184f98fc17f72dc8521be17201d76b644047a8a2ba604e23b2684848d6a",
+    "wheel_personality_matches_official": true,
+    "wheel_read_scope": "Selected zip members fetched by bounded HTTP range with ZIP CRC validation; full wheel hash not verified and original hosted Zig executable checksum not captured. Version pin and saved output do not establish exact rebuilt runtime-member identity."
+  },
+  "native_c_proof": {
+    "archive_sha256": "c6e1b66ef47aa5e1509b7553ecdb29e297c6e6d234ba7cd74cba62226bcfea46",
+    "scope": "GCC13 native host-SDK direct C link, not the actual Rust/Zig wrapper; retains GCC personality/dynamic libgcc in EH modes. Exact failure table in saved results. No new run."
+  },
+  "lifecycle": "Three contract clarifications previously sent to producer are DESIGN only; integration/ledger deferred while interoperability blocker is prioritized.",
+  "reviewer_synthesis": {
+    "source_file": "cornercase-review-coverage.md",
+    "sha256": "af39cdfc81578e8fc366c47e431b6324366860ccc48de5806894e08330b82b65",
+    "date": "2026-11-03",
+    "owner_raw_packets_or_gdb_inspected": false,
+    "E5": {
+      "packet_sha256": "d37ee43cf662249185972ba56b96324afcaf2b87219c374ad1ef4fcdeb492fba",
+      "helper_archive_sha256": "b96227b64097a311305eab92966607770a6441c4df72dbf967a4fcf5d9ad1237",
+      "result": "selected/hidden helper; BFD+LLD C exit/cancel SIGSEGV; no missing-helper-only explanation"
+    },
+    "E6": {
+      "packet_sha256": "daab0ea02a5c2c56d359f75e67034656d9f270c2eb7128719d6048a7bc0863bf",
+      "binary_sha256": "14a27cb5d6d8cf26a51e2a808d73b7b69d6bddc714868169dc7fe5d9ca6fe519",
+      "fixture_sha256": "309df88609a84558680e544d3be77c9935077b6ac650bf0726bdca1106336766",
+      "tools": "Zig0.17.0/vendorClang22.1.8, target glibc2.22, explicit -lunwind; host glibc2.39",
+      "result": "backtrace passes; pthread_exit/cancel SIGSEGV; original no-lunwind link failure retained"
+    },
+    "E7": {
+      "log": "native-zig-pthread-exit.gdb.log",
+      "same_binary_as_E6": true,
+      "chain": "GCC _Unwind_ForcedUnwind -> Zig-local __gcc_personality_v0 -> local LLVM _Unwind_GetLanguageSpecificData -> __unw_get_proc_info -> stack-address SIGSEGV",
+      "scope": "Exact-stack gap closed for this host2.39 C fixture only; not actual Rust driver/Aero/old glibc2.22 runtime/all-Zig or private cursor-field decoding"
+    }
+  },
+  "lifecycle_design_sha256": "436853b803d1e30c439a828853a77e06eee3efa3a542cbb9996cdc24a2ff8fb5"
+}

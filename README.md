@@ -97,6 +97,7 @@ maps confirmed constraints to source, guides, scoped checks and known gaps.
 | `src/toolchain.rs` | Input probes, target flags, Cargo execution, the linker and C compiler drivers, artifact checks, `env` |
 | `src/clock.rs` | Selected target clock inputs, delegated RT overlay, private configuration identity and controlled full-path replacement |
 | `src/clock_named.rs` | Completed-Clang named-input search/state validation and bounded standard-library scripts |
+| `src/link_output.rs` | Final executable/shared/relocatable classification for target linker dispatch |
 | `src/cc.rs`, `src/bin/libc-cc.rs`, `src/bin/libc-cxx.rs` | C compiler wrappers for target C dependencies |
 | `src/simulate.rs`, `src/bin/libc-runner.rs` | Tier 2 target runner: glibc checks, then the local filter or a container |
 | `src/report.rs` | glibc assessment, tier 1 scan, human and JSON reports |

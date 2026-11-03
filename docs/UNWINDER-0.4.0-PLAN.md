@@ -1,137 +1,187 @@
-# Proposed 0.4.0 executable unwinder investigation
+# Cargo-libc 0.4.0 executable LLVM unwinder integration
 
-Status: **proposal for review, not an approved runtime design or release**
-(2026-11-02). No implementation, flag, default, archive distribution, producer
-version or release date is committed. Current 0.3.0 behavior remains authoritative.
-This document records the requested investigation, not new accepted requirements.
+Status, 2026-11-03: **current default remains system unwinding; runtime and public
+selector wiring remain on hold**. The original authorized static-LLVM executable
+goal is blocked by measured mixed-runtime failures. A candidate selector proposal
+is not an adopted release policy. The technical work below records research goals,
+not implemented behavior or a compatibility promise. See the canonical
+[corner-case inventory](UNWINDER-RELEASE-CHECKLIST.md#permanent-acceptance-cases-and-current-automation)
+and [approved lifecycle v2 DESIGN](evals/2026-11-02-llvm-lifecycle-design-v2.md).
+Versions and production locks remain unchanged.
+LLVM-default wiring remains paused after native C EH failures. The
+[initial proof](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02)
+blocked hidden LLVM; the [corrected follow-up](evals/2026-11-02-unwind-boundaries.md#corrected-minimal-exports-and-native-c-eh-follow-up--2026-11-02)
+passes Rust round trips with narrow unwind exports on BFD/LLD but still crashes
+C `-fexceptions` cleanup paths. No full-suite/consumer dispatch proceeds before a
+concrete native helper/context solution. Broad Rust export remains diagnostic only.
 
-## Goal and unchanged boundaries
+## Concrete consumer integration
 
-Investigate removing the `libgcc_s.so.1` runtime dependency from **standalone
-executables** while retaining `panic=unwind` and dynamic glibc. Do not substitute
-`panic=abort`, `crt-static`/static glibc, or a relaxed consumer comparator to make the result
-pass. Preserve the five-clock libc default, explicit legacy clock versions,
-actual RT APIs, target/host separation, caller as-needed policy, groups and linker
-state. No general library-argument reorder is proposed.
+Classify the final link, not the Cargo command, filename suffix or an entire
+workspace. The current source shares `link_output::classify` between Rust/C helper dispatch,
+using only the completed Clang linker stream. Driver-only controls never consume
+pending linker operands. Kind is probed before startup assembly and rechecked
+afterwards; caller argument bytes are retained. See the
+[focused classification correction](evals/2026-11-02-link-output-classification.md). This increment does **not** yet select an
+LLVM archive. Final completed-Clang command verification must confirm the chosen
+kind before the runtime policy executes.
 
-The [0.3.0 consumer record](RELEASE-0.3.0.md#exact-consumer-comparison) establishes
-the motivation: 182 behavior cases pass, but the unchanged strict Zig comparator
-still fails with `libgcc_s.so.1` and pre-existing non-clock differences. Removing
-one dependency would not by itself establish strict equivalence or glibc-only
-transitive dependency closure.
-
-The [current provider link implementation](../src/toolchain.rs) passes rustc's
-arguments through and also supplies GCC runtime libraries for target C links.
-`-static-libgcc` alone does not override an explicit Rust `-lgcc_s`; with
-`-nodefaultlibs`/`-nostdlib`, driver defaults are not a substitute for auditing the
-actual final link. Capture completed Clang/GNU/LLD commands before choosing a
-mechanism. See [GCC link options](https://gcc.gnu.org/onlinedocs/gcc/Link-Options.html)
-and [Rust codegen options](https://doc.rust-lang.org/rustc/codegen-options/index.html).
-
-## Existing planning probes, not qualification
-
-The supplied [native planning probes](evals/2026-11-02-unwinder-plan-probes.json)
-(2026-11-02) show installed Rust 1.90 rejecting
-`-C link-self-contained=+unwind` without unstable options. Do not promise a stable
-one-flag solution, silently raise the MSRV, or require nightly to evade this result.
-The [rustc option reference](https://doc.rust-lang.org/rustc/codegen-options/index.html#link-self-contained)
-is context; the exact 1.90 probe establishes the observed supported-toolchain limit.
-
-GCC 13's `-print-file-name` resolves `libgcc.a` and `libgcc_eh.a` in its x86-64
-runtime directory. That establishes location only: no static-unwind member,
-glibc-floor, link, panic, shared-library or runtime qualification was performed.
-The official GCC link-options reference also states that `-static-libgcc` is
-ignored with `-nodefaultlibs` and recommends shared libgcc for exceptions crossing
-DSO boundaries. These facts motivate separate executable/extension designs, not
-a claim that either archive is ready to ship.
-
-## Candidates to compare before a design decision
-
-| Candidate | Required investigation | Decision still open |
+| Actual unit/output | Runtime selection for 0.4.0 | Isolation boundary |
 | --- | --- | --- |
-| Selected GCC static unwind/runtime archives, including `libgcc_eh.a`/`libgcc.a` as appropriate | Discover through the selected target GCC/Clang toolchain, validate actual members/architecture, exception support, archive dependencies, build provenance/license and PIC constraints. Measure their real GLIBC imports; the build host's GCC age does not prove target-floor safety. | Which archive/member combination preserves Rust unwind semantics and avoids runtime loads of libgcc_s? Do not blindly replace every runtime library or use an arbitrary host archive. |
-| Explicitly validated LLVM libunwind alternative | Pin provenance/configuration and demonstrate matching target ABI, exception handling, threading, backtrace and glibc-floor behavior; identify any accompanying compiler-runtime requirement. Validate actual archive PIC/build inputs and license/distribution constraints. | Whether it can meet the same supported targets without new unsupported runtime dependencies or broadening scope. LLVM is a candidate, not an approved replacement. |
+| Target bin, example, unit/integration/bench/doctest harness, install output; C/CMake executable probes | Blocked research: static LLVM unwind at the final executable link; shipping policy pending, current system behavior unchanged | No Rust panic=abort or static glibc workaround. PIE/non-PIE classification is separate from executable versus DSO. |
+| Target cdylib/dylib, PyO3/maturin extension, C/CMake shared output | Preserve existing artifact/runtime link inputs and exports | No executable-only policy injected into DSO links. Loaded unwind bindings can resolve to host LLVM; preserve valid behavior through qualified host-process binding. |
+| rlib/staticlib/object compile, partial/relocatable link | No executable-only runtime injection | Shared intermediate code can feed both bin and DSO in one workspace; do not contaminate compilation flags or intermediate archives. |
+| Native build script/proc macro/host C | Existing native compiler/runtime | Preserve the target-only rustflags and build-script marker; equal host/target triples do not identify a target unit. |
 
-Compare both on the same inputs before selecting either. An unavailable or
-unvalidated archive must produce a clear decision/refusal, not silent host fallback.
-Provider source/container, explicit-provider and full-sysroot routes need separately
-defined discovery/containment rules: a minimal generated provider is not a full
-runtime SDK. Keep user inputs read-only and retain reproducible provenance.
-No downloaded/bundled unwinder or new dependency is authorized by this plan.
+Shipping runtime/default policy is pending; current behavior remains system
+unwinding. Static LLVM executable linkage is blocked research, gated on the
+producer API and real cross-DSO/native C cleanup evidence. Any future runtime changes belong only in
+final helpers (`libc-linker`, target `libc-cc`), including C's implicit default
+libraries. No global `--unwindlib`/`-static-libgcc` flag or linker search prefix may
+silently alter shared outputs or mask a named library. Preserve original input
+order, groups/repeated archives, static/dynamic/push-pop/as-needed and clock overlay
+semantics; use precise substitution and verify the completed command.
 
-## Shared libraries and user interface remain undecided
+The previous `-static-libgcc` shortcut does not override explicit Rust `-lgcc_s`,
+and driver defaults may be ignored under `-nodefaultlibs`/`-nostdlib`. Stable Rust
+1.90 rejected `-C link-self-contained=+unwind` in the supplied
+[planning probe](evals/2026-11-02-unwinder-plan-probes.json); neither nightly nor an
+MSRV increase is a solution. GCC static archives are a bounded mechanism reference,
+not a competing product decision. Never select system nongnu libunwind, an arbitrary
+host archive or a runtime merely because a similarly named file exists.
 
-`cdylib`, Python/PyO3 extensions and plugins can share a process and unwind/runtime
-state with other DSOs. They need separate treatment, including symbol visibility,
-interposition, duplicate unwinder instances, PIC/text relocations, exception-frame
-registration and actual supported language/FFI boundaries. A standalone-executable
-result is **not** a universal static-unwinder default for extensions. Preserve
-existing shared-library behavior until a separately reviewed design and tests
-justify a change; do not allow unwinding through an ABI that forbids it.
+## Producer helper needs and private consumer adapter
 
-A user product decision is pending: static unwind opt-in versus default for
-standalone executables. Both remain under consideration; neither is selected. No flag or environment/TOML key is specified here.
-After prototype evidence, obtain a product decision on user-facing semantics,
-unsupported-input handling and migration before implementing a release policy.
+Producer research/preparation owns pinned LLVM source/build inputs, validated
+archive assembly, content cache, immutable atomic creation and notices. Cargo must
+reuse that helper rather than duplicate a CMake/LLVM builder. Required returned
+information (exact API still pending):
 
-## Proposed evidence and acceptance gates
+- Target triple/features, selected libc/floor and original provider identity;
+  archive path(s), strong content/member hashes and policy/build identity.
+- Source revision/tarball digest, patches/configuration, builder/tool versions,
+  PIC/EH/thread/visibility decisions and license/provenance metadata.
+- Archive visibility and supported narrow unwind-export policy must be part of
+  content/build identity. A compile-hidden archive cannot simply be made
+  interposable with broad link export; actual compatible binding must be tested.
+- Complete provided/required unwind symbol inventory, compiler helper/personality
+  strategy, member attribution and supported boundaries; controlled archives
+  must not have escaped thin-member dependencies or an unverified host fallback.
+- Read-only cached inputs that can be revalidated by helpers and exported through
+  generated shell/TOML private configuration; missing/corrupt/incompatible inputs
+  must refuse rather than silently select dynamic GCC or another runtime.
 
-These are work to perform, not passing results:
+The twelve versioned Aero baseline imports are `_Unwind_Backtrace`,
+`_Unwind_DeleteException`, `_Unwind_GetDataRelBase`, `_Unwind_GetIP`,
+`_Unwind_GetIPInfo`, `_Unwind_GetLanguageSpecificData`, `_Unwind_GetRegionStart`,
+`_Unwind_GetTextRelBase`, `_Unwind_RaiseException`, `_Unwind_Resume`, `_Unwind_SetGR`
+and `_Unwind_SetIP`. Name completeness is necessary, not sufficient: exercise
+actual contexts/encodings, cleanup/resume and deletion. LLVM's implementation of
+some base getters can be path-sensitive; do not infer parity from symbol names.
 
-1. **Baseline and discovery:** record exact 0.3.0/candidate refs, tool versions,
-   target/provider/sysroot, compiler traces, archive hashes and member provenance.
-   Compare GCC and LLVM candidates on 10–20 realistic executable/shared-library
-   cases before choosing; retain failed cases and explain any excluded route.
-2. **Link and ABI:** use GNU ld and LLD with Rust 1.90 (plus the supported current
-   toolchain). Inspect all dynsym imports, relocations, version-needed owners,
-   DT_NEEDED, text relocations, search paths and the tested applications’ actual
-   bounded load closure. Prove no
-   libgcc_s dependency or delayed `dlopen` reintroduction for the tested executable
-   workloads, no unwanted GLIBC-floor increase and no unexplained non-unwind
-   binding changes. Verify both existing 2.17 and consumer 2.22 ceilings; do not
-   confuse a low measured import tag with qualification for an older glibc.
-3. **Unwind behavior:** test real panic/catch_unwind, destructor cleanup during
-   unwind, nested catches, thread spawn/join/panic and useful backtraces. Separate
-   capture/display and runtime loading observations; library absence in DT_NEEDED
-   alone is insufficient. Do not run clock-setting fixtures.
-4. **Integration and migration:** exercise Rust build/run/test/install, direct C
-   and CMake, provider/sysroot discovery, native host tools, library groups and
-   push/pop/static/dynamic/as-needed state. Preserve clock owners, mixed legacy
-   references and genuine RT APIs. A policy/archive/content change must enter
-   target fingerprints and generated shell/TOML identity; demonstrate old/new
-   relinking in the same target directory without manual cleaning. Do not freeze
-   a config/cache format before the design decision.
-5. **Shared-library regressions:** build/load existing `cdylib` and PyO3/maturin
-   fixtures, including multiple DSOs and host dependencies where meaningful;
-   verify their existing unwind/runtime contracts remain intact. Document PIC,
-   interposition and cross-boundary limits, rather than infer them from an
-   executable passing catch_unwind.
-6. **Real consumer:** rerun the pinned Aero1553 old/candidate/Zig comparison with
-   182 behavior cases and fresh ELF/import/closure evidence. Keep its original
-   strict comparator unchanged and report any remaining differences. Do not
-   reuse the 0.3.0 clock-only comparison as unwinder qualification.
-7. **Release gates after approval:** one exact candidate's applicable portable,
-   MSRV, native, package and clean unpacked locked-install checks; independent
-   review and normal merge; coordinator publication, official archive/docs.rs,
-   published installation, immutable tag and reviewed GitHub notes. Use the
-   [release policy](RELEASING.md); no crate release occurs in this documentation PR.
+Aero is not the whole helper contract. Preserve non-unwind compiler helpers
+(i128 division/remainder/conversions and actual native C helper calls). Native C
+`-fexceptions`/cleanup can need `__gcc_personality_v0`; the producer's LLVM 23.1.4
+source investigation notes that its libunwind snapshot lacks Zig's vendored
+`gcc_personality_v0.c`. A qualified compiler-rt/personality or other supported
+helper strategy must be explicit. Follow-up proof confirms the gap: plain C controls pass, while `-fexceptions`
+private cancellation and minimal-export exit/cancellation segfault. The C object
+needs `__gcc_personality_v0`, still supplied by libgcc_s; C stacks have no Rust
+frames. [Exact failed cases and fixtures](evals/2026-11-02-unwind-boundaries.md#corrected-minimal-exports-and-native-c-eh-follow-up--2026-11-02)
+are mandatory regressions, not optional controls. No blanket removal of
+`-lgcc`/`-lgcc_s`, guessed
+host helper archive or accidental dynamic fallback is acceptable. Unsupported
+explicit versioned/runtime overrides need a specific diagnostic, not rebinding.
 
-Tier 3 actual old-system execution remains deferred and must be stated as a gap;
-modern-kernel containers do not supply it. Prebuilt-provider legal gates remain
-unchanged. If prototype results contradict the goal or require unacceptable
-shared-library compromises, return the decision rather than ship a workaround.
+## Visibility and cross-DSO design gate
 
-## Version and scope decisions
+Zig's pinned builder source sets `_LIBUNWIND_HIDE_SYMBOLS`, hidden visibility and
+`_LIBUNWIND_IS_NATIVE_ONLY`; that is a mechanism reference, not proof of safe
+GCC/LLVM context mixing. The exact Zig binary/package provenance must be recovered
+in fresh comparison rather than equating a reference source to old Zig 0.17.0.
 
-A prospective cargo-libc **0.4.0** is appropriate for an approved runtime/linking
-contract change under the existing minor-version policy; no version bump is made
-now. A producer minor release is needed only if the chosen design actually needs
-a new public producer API. No raw ABI/source-data release, producer-wide lockstep
-bump or unrelated library update is assumed. Acceptance checks observe the
-resulting tested app closure; a general dependency-closure product feature is
-outside this proposal.
+A static archive exporting unwind symbols may interpose on existing DSOs; hiding
+it can instead leave a DSO personality/getter bound to GCC while the initiating
+unwinder uses an LLVM context. Neither choice qualifies by inspection alone.
+Measure exact `_Unwind_*` and Rust/native personality bindings in search and cleanup
+phases, including resumes and exception deletion. The first native marker probe
+shows exported executable definitions overriding a DSO; archive hiding avoids that
+marker interposition. It is **not** actual unwind-context compatibility evidence.
 
-Keep optional unrelated fixes out of this release unless their necessity and
-compatibility are independently justified. Track any approved follow-up in the
-[roadmap](ROADMAP.md), keep user-visible work in [Unreleased](../CHANGELOG.md), and
-record proposed-versus-implemented status in the [trace index](REQUIREMENTS.md).
+The permanent U10/U11 fixtures must round-trip a panic to a catch in its originating
+Rust runtime: executable catch -> DSO cleanup bridge (C-unwind) -> executable panic,
+and the reverse DSO-origin path. Verify exact drop order, payload and continued use.
+Do not require catching a foreign-runtime panic or unwind across ordinary C ABI.
+Preserve baseline-supported valid cross-DSO behavior; a concrete failure is a design
+blocker to surface with bindings, not permission to silently drop plugin support.
+Multiple DSOs/load orders and real PyO3/maturin regressions are separate gates.
+
+Initial host-SDK evidence (LLD selected despite a GNU capture label) now
+demonstrates this blocker: GCC-runtime U07/U10/U11 all pass;
+hidden static LLVM passes U07 but aborts U10 and segfaults U11. Rebuilding a
+nonhidden archive and broadly exporting the host passes those three cases with
+versioned DSO/GCC getter calls interposed to host LLVM. Broad Rust/application
+symbol export is not an acceptable final policy. The corrected narrow-export experiment now passes U07/U10/U11 on BFD and LLD,
+but native C EH controls still fail; no complete binding/helper design is qualified. The DSO artifact can remain unchanged while its process bindings differ. The contract preserves valid
+observable unwind behavior, **not** an invariant that loaded DSOs always bind GCC.
+See the [verified proof and exact variants](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02).
+
+Bound the runtime promise: ordinary tested standalone Rust paths should have no
+direct libgcc_s or dynamic unwind runtime, but a deliberately loaded existing DSO
+or native libc backtrace/pthread control may legitimately load GCC in candidate
+and Zig. Observe direct/transitive/short-lived lazy loads and explain the actual
+workload rather than promise that every possible process API is libgcc-free.
+No general dependency-closure product feature is added.
+
+## Configuration, content identity and relinking
+
+The following is an integration goal, not current freshness automation. The
+[approved lifecycle v2 DESIGN](evals/2026-11-02-llvm-lifecycle-design-v2.md) separates
+static recipe R from verified input/archive I/A and invalidation E. A skipped
+linker cannot detect changed inputs; plain Cargo needs explicit refresh and
+CMake/Ninja same-directory relinking must be demonstrated. No fake all-input
+fingerprint, cache repair or eager LLVM prerequisites are implied.
+
+Export a private runtime policy/content identity alongside existing clock/provider
+fields, with a stable policy salt and complete validated archive hashes. Helpers
+must verify regenerated configuration against the actual selection. A same-target-
+directory upgrade must relink old executable outputs without manual cleaning,
+then remain fresh for unchanged inputs; archive content changes at the same path
+must invalidate it. Output kind selects the link-only branch; do not make one
+workspace-wide mode force shared units to the executable policy. Preserve Cargo's
+own output-kind identity and include the conditional runtime policy in target
+fingerprints without changing shared intermediate code generation.
+
+Source/container, explicit descriptor and full sysroot routes require separately
+validated target-runtime preparation/discovery; minimal providers are not full
+sysroots. The [canonical release checklist](UNWINDER-RELEASE-CHECKLIST.md) defines
+exact data/source override qualification and every-bundle/update gates. The final
+runtime-dependent driver and exported field/API spelling are pending producer
+integration; baseline-only checks cannot qualify a changed dataset.
+
+## Qualification and release sequence
+
+Use the [U01–U22 checklist](UNWINDER-RELEASE-CHECKLIST.md) with exact refs, saved
+failure output, maps/import/version joins, archive-member attribution and bounded
+loaded-library tracing. Fresh LLVM libc helper imports require supported-floor
+proof and explanation, not the old clock-only invariant for all non-clock imports.
+The parent will run old0.3/new0.4/Zig at unchanged Aero
+`9c248300f1e2ab20ce34dc4b227eb322e33e4c93`: all 182 behavior cases, original strict
+comparator unchanged, separate explanatory unwind assessment. Do not dispatch
+before the final runtime/source pair exists.
+
+Run focused dispatch/probe checks early; cap workers. Once the runtime is integrated,
+run one full applicable native/portable/package/unpacked locked-install suite on
+frozen exact source, independent review and final real-registry adoption. Existing
+release policy then governs coordinator publication, official archive, published
+install, immutable tag, docs.rs, changelog and reviewed GitHub notes. No merge,
+version bump, tag or publication is authorized in this implementation stage.
+No raw ABI/source-data change or producer-wide lockstep bump is assumed; a new
+producer minor is needed only for the new public helper API actually used.
+
+Tier 3 old-system execution and prebuilt legal clearance remain explicit gaps.
+The runtime direction is on hold pending the user decision; this independent
+classification fix does not select a default or implement a mode. Current
+development evidence and remaining blockers are in the
+[dated probe record](evals/2026-11-02-unwind-boundaries.md); they are not a completed
+0.4.0 qualification or universal DSO/FFI compatibility claim.

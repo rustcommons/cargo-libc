@@ -1,0 +1,597 @@
+{
+  "date": "2026-11-02",
+  "packets": [
+    {
+      "packet": "unwind040-native-minimal-followup-proof.tar.gz",
+      "sha256": "b9c9434aae3fcdeace10a0869075b7d0560181996151c9771a07538bd6316031",
+      "verified_member_hashes": 192,
+      "records": {
+        "llvm-minimal-v2-gnu-local/bridge_dso.link.json": {
+          "mode": "gcc",
+          "cc": "/usr/bin/gcc",
+          "linker_selectors": [
+            "-fuse-ld=lld",
+            "-fuse-ld=bfd"
+          ],
+          "export_flags": []
+        },
+        "llvm-minimal-v2-gnu-local/host_exported.link.json": {
+          "mode": "exported",
+          "cc": "/usr/bin/gcc",
+          "linker_selectors": [
+            "-fuse-ld=lld",
+            "-fuse-ld=bfd"
+          ],
+          "export_flags": [
+            "-Wl,--export-dynamic-symbol=_Unwind_*"
+          ]
+        },
+        "llvm-minimal-v2-gnu-local/host_gcc.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]",
+          "0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]"
+        ],
+        "llvm-minimal-v2-gnu-local/host_gcc.link.json": {
+          "mode": "gcc",
+          "cc": "/usr/bin/gcc",
+          "linker_selectors": [
+            "-fuse-ld=lld",
+            "-fuse-ld=bfd"
+          ],
+          "export_flags": []
+        },
+        "llvm-minimal-v2-gnu-local/host_hidden.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]",
+          "0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]"
+        ],
+        "llvm-minimal-v2-gnu-local/host_hidden.link.json": {
+          "mode": "hidden",
+          "cc": "/usr/bin/gcc",
+          "linker_selectors": [
+            "-fuse-ld=lld",
+            "-fuse-ld=bfd"
+          ],
+          "export_flags": []
+        },
+        "llvm-minimal-v2-gnu-local/inputs.json": {
+          "source_sha256": {
+            "link.py": "a32dfa166bc9d925bddd3b9bb89a1d5852f7fccd013464657cb4449b3544f79c",
+            "bridge.rs": "02eb7ddebf08810b6d25978514005801cdd6a29a0765fbb994bdf8193c72caee",
+            "README.md": "70074f160973da3a4d789f18041bcb2f708e5c97ed7dd79bf5e06de6733a11d7",
+            "host.rs": "8faa4d483e445cc06b24522b5e9abe60c433f2b72a0f08e9680862eec48c9b2b",
+            "run.py": "a5587609011f52e0cafe6bb02e001d103d5b9c10a3fd33ca6519b04288275612"
+          },
+          "scope": "local",
+          "linker": "gnu",
+          "archive_input": "/tmp/rustcommons-unwind040-3dadkkwj/llvm-clang18-exported/libunwind.a"
+        },
+        "llvm-minimal-v2-gnu-local/results.json": [
+          {
+            "kind": "link",
+            "mode": "gcc",
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "u07",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "u10",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "u11",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "link",
+            "mode": "hidden",
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "u07",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "u10",
+            "exit": -6,
+            "pass": false
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "u11",
+            "exit": -11,
+            "pass": false
+          },
+          {
+            "kind": "link",
+            "mode": "exported",
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "exported",
+            "case": "u07",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "exported",
+            "case": "u10",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "exported",
+            "case": "u11",
+            "exit": 0,
+            "pass": true
+          }
+        ],
+        "llvm-minimal-v2-lld-local/bridge_dso.link.json": {
+          "mode": "gcc",
+          "cc": "/usr/bin/gcc",
+          "linker_selectors": [
+            "-fuse-ld=lld",
+            "-fuse-ld=lld"
+          ],
+          "export_flags": []
+        },
+        "llvm-minimal-v2-lld-local/host_exported.link.json": {
+          "mode": "exported",
+          "cc": "/usr/bin/gcc",
+          "linker_selectors": [
+            "-fuse-ld=lld",
+            "-fuse-ld=lld"
+          ],
+          "export_flags": [
+            "-Wl,--export-dynamic-symbol=_Unwind_*"
+          ]
+        },
+        "llvm-minimal-v2-lld-local/host_gcc.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]",
+          "0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]"
+        ],
+        "llvm-minimal-v2-lld-local/host_gcc.link.json": {
+          "mode": "gcc",
+          "cc": "/usr/bin/gcc",
+          "linker_selectors": [
+            "-fuse-ld=lld",
+            "-fuse-ld=lld"
+          ],
+          "export_flags": []
+        },
+        "llvm-minimal-v2-lld-local/host_hidden.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]",
+          "0x0000000000000001 (NEEDED)             Shared library: [ld-linux-x86-64.so.2]"
+        ],
+        "llvm-minimal-v2-lld-local/host_hidden.link.json": {
+          "mode": "hidden",
+          "cc": "/usr/bin/gcc",
+          "linker_selectors": [
+            "-fuse-ld=lld",
+            "-fuse-ld=lld"
+          ],
+          "export_flags": []
+        },
+        "llvm-minimal-v2-lld-local/inputs.json": {
+          "source_sha256": {
+            "link.py": "a32dfa166bc9d925bddd3b9bb89a1d5852f7fccd013464657cb4449b3544f79c",
+            "bridge.rs": "02eb7ddebf08810b6d25978514005801cdd6a29a0765fbb994bdf8193c72caee",
+            "README.md": "70074f160973da3a4d789f18041bcb2f708e5c97ed7dd79bf5e06de6733a11d7",
+            "host.rs": "8faa4d483e445cc06b24522b5e9abe60c433f2b72a0f08e9680862eec48c9b2b",
+            "run.py": "a5587609011f52e0cafe6bb02e001d103d5b9c10a3fd33ca6519b04288275612"
+          },
+          "scope": "local",
+          "linker": "lld",
+          "archive_input": "/tmp/rustcommons-unwind040-3dadkkwj/llvm-clang18-exported/libunwind.a"
+        },
+        "llvm-minimal-v2-lld-local/results.json": [
+          {
+            "kind": "link",
+            "mode": "gcc",
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "u07",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "u10",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "u11",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "link",
+            "mode": "hidden",
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "u07",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "u10",
+            "exit": -6,
+            "pass": false
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "u11",
+            "exit": -11,
+            "pass": false
+          },
+          {
+            "kind": "link",
+            "mode": "exported",
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "exported",
+            "case": "u07",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "exported",
+            "case": "u10",
+            "exit": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "exported",
+            "case": "u11",
+            "exit": 0,
+            "pass": true
+          }
+        ],
+        "native-c-load-controls/gcc.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]"
+        ],
+        "native-c-load-controls/hidden.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]"
+        ],
+        "native-c-load-controls/minimal.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]"
+        ],
+        "native-c-load-controls/results.json": [
+          {
+            "kind": "build",
+            "mode": "gcc",
+            "exit": 0
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "backtrace",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "pthread-exit",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "cancel",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "build",
+            "mode": "hidden",
+            "exit": 0
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "backtrace",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "pthread-exit",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "cancel",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "build",
+            "mode": "minimal",
+            "exit": 0
+          },
+          {
+            "kind": "runtime",
+            "mode": "minimal",
+            "case": "backtrace",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "minimal",
+            "case": "pthread-exit",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "minimal",
+            "case": "cancel",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          }
+        ],
+        "NATIVE-FOLLOWUP-SUMMARY.json": {
+          "scope": "focused native hostSDK Rust1.90 Clang18 LLVM23.1.4 mechanism evidence; not product/floor qualification",
+          "minimal_exports": {
+            "llvm-minimal-v2-gnu-local": {
+              "defined_dynsym": [
+                "_Unwind_Resume_or_Rethrow",
+                "_Unwind_GetIPInfo",
+                "_Unwind_RaiseException",
+                "_Unwind_GetTextRelBase",
+                "_Unwind_SetGR",
+                "_Unwind_GetDataRelBase",
+                "_Unwind_GetIP",
+                "_Unwind_Backtrace",
+                "_Unwind_GetRegionStart",
+                "_Unwind_GetGR",
+                "_Unwind_GetCFA",
+                "_Unwind_Find_FDE",
+                "_Unwind_DeleteException",
+                "_Unwind_ForcedUnwind",
+                "_Unwind_FindEnclosingFunction",
+                "_Unwind_SetIP",
+                "_Unwind_GetLanguageSpecificData",
+                "_Unwind_Resume"
+              ],
+              "unwind_symbols": [
+                "_Unwind_Resume_or_Rethrow",
+                "_Unwind_GetIPInfo",
+                "_Unwind_RaiseException",
+                "_Unwind_GetTextRelBase",
+                "_Unwind_SetGR",
+                "_Unwind_GetDataRelBase",
+                "_Unwind_GetIP",
+                "_Unwind_Backtrace",
+                "_Unwind_GetRegionStart",
+                "_Unwind_GetGR",
+                "_Unwind_GetCFA",
+                "_Unwind_Find_FDE",
+                "_Unwind_DeleteException",
+                "_Unwind_ForcedUnwind",
+                "_Unwind_FindEnclosingFunction",
+                "_Unwind_SetIP",
+                "_Unwind_GetLanguageSpecificData",
+                "_Unwind_Resume"
+              ]
+            },
+            "llvm-minimal-v2-lld-local": {
+              "defined_dynsym": [
+                "_Unwind_GetDataRelBase",
+                "_Unwind_Backtrace",
+                "_Unwind_GetLanguageSpecificData",
+                "_Unwind_ForcedUnwind",
+                "_Unwind_Resume",
+                "_Unwind_GetIP",
+                "_Unwind_FindEnclosingFunction",
+                "_Unwind_GetIPInfo",
+                "_Unwind_SetGR",
+                "_Unwind_SetIP",
+                "_Unwind_GetGR",
+                "_Unwind_GetCFA",
+                "_Unwind_GetRegionStart",
+                "_Unwind_DeleteException",
+                "_Unwind_GetTextRelBase",
+                "_Unwind_RaiseException",
+                "_Unwind_Resume_or_Rethrow",
+                "_Unwind_Find_FDE"
+              ],
+              "unwind_symbols": [
+                "_Unwind_GetDataRelBase",
+                "_Unwind_Backtrace",
+                "_Unwind_GetLanguageSpecificData",
+                "_Unwind_ForcedUnwind",
+                "_Unwind_Resume",
+                "_Unwind_GetIP",
+                "_Unwind_FindEnclosingFunction",
+                "_Unwind_GetIPInfo",
+                "_Unwind_SetGR",
+                "_Unwind_SetIP",
+                "_Unwind_GetGR",
+                "_Unwind_GetCFA",
+                "_Unwind_GetRegionStart",
+                "_Unwind_DeleteException",
+                "_Unwind_GetTextRelBase",
+                "_Unwind_RaiseException",
+                "_Unwind_Resume_or_Rethrow",
+                "_Unwind_Find_FDE"
+              ]
+            }
+          },
+          "linkers": "v2 actually appends-fuse-ld=bfd orlld and retains priorlabel correction",
+          "outcome": "minimal-exported U07/U10/U11 pass actualGNUbfd+LLD; hiddennegativecontrols stillfail; Cglibcbacktrace/exit/cancel9/9pass withintentionalGCCloads; examinebindingowners beforeGO"
+        }
+      }
+    },
+    {
+      "packet": "unwind040-native-c-eh-controls-proof.tar.gz",
+      "sha256": "c6e1b66ef47aa5e1509b7553ecdb29e297c6e6d234ba7cd74cba62226bcfea46",
+      "verified_member_hashes": 31,
+      "records": {
+        "native-c-load-controls-eh/control.undefined.txt": "                 U _Unwind_Resume\n                 U __gcc_personality_v0\n                 U __stack_chk_fail\n                 U backtrace\n                 U backtrace_symbols_fd\n                 U pthread_cancel\n                 U pthread_create\n                 U pthread_exit\n                 U pthread_join\n                 U pthread_testcancel\n                 U puts\n                 U sched_yield\n                 U strcmp\n",
+        "native-c-load-controls-eh/gcc.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]"
+        ],
+        "native-c-load-controls-eh/hidden.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]"
+        ],
+        "native-c-load-controls-eh/minimal.dynamic.txt": [
+          "0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]",
+          "0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]"
+        ],
+        "native-c-load-controls-eh/results.json": [
+          {
+            "kind": "build",
+            "mode": "gcc",
+            "exit": 0
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "backtrace",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "pthread-exit",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "gcc",
+            "case": "cancel",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "build",
+            "mode": "hidden",
+            "exit": 0
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "backtrace",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "pthread-exit",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "hidden",
+            "case": "cancel",
+            "exit": -11,
+            "expected": 0,
+            "pass": false
+          },
+          {
+            "kind": "build",
+            "mode": "minimal",
+            "exit": 0
+          },
+          {
+            "kind": "runtime",
+            "mode": "minimal",
+            "case": "backtrace",
+            "exit": 0,
+            "expected": 0,
+            "pass": true
+          },
+          {
+            "kind": "runtime",
+            "mode": "minimal",
+            "case": "pthread-exit",
+            "exit": -11,
+            "expected": 0,
+            "pass": false
+          },
+          {
+            "kind": "runtime",
+            "mode": "minimal",
+            "case": "cancel",
+            "exit": -11,
+            "expected": 0,
+            "pass": false
+          }
+        ]
+      }
+    }
+  ],
+  "scope": "Read-only audited prototype host-SDK evidence, not cargo-libc runtime integration or supported-floor qualification. Minimal Rust export round trips pass, native C-fexceptions helper/personality failures still block wiring.",
+  "durable_fixture_sha256": {
+    "bridge.rs": "02eb7ddebf08810b6d25978514005801cdd6a29a0765fbb994bdf8193c72caee",
+    "host.rs": "8faa4d483e445cc06b24522b5e9abe60c433f2b72a0f08e9680862eec48c9b2b",
+    "link.py": "a32dfa166bc9d925bddd3b9bb89a1d5852f7fccd013464657cb4449b3544f79c",
+    "run.py": "a5587609011f52e0cafe6bb02e001d103d5b9c10a3fd33ca6519b04288275612",
+    "native_load_controls.c": "309df88609a84558680e544d3be77c9935077b6ac650bf0726bdca1106336766"
+  },
+  "personality_binding_sample": "native-c-load-controls-eh/minimal binds __gcc_personality_v0 [GCC_3.3.1] to /lib/x86_64-linux-gnu/libgcc_s.so.1"
+}

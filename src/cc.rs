@@ -83,11 +83,9 @@ pub(crate) enum Action {
     Query,
     /// Compile only (`-c`, `-S`, `-fsyntax-only`): no target link inputs are added.
     Compile,
-    Link {
-        shared: bool,
-    },
-    /// `-r` partial links take no startup files or libraries.
-    Relocatable,
+    /// A driver invocation that may link; its completed Clang command chooses
+    /// executable/shared/relocatable kind later, never this phase classifier.
+    Link,
 }
 
 /// Driver options whose value is the next argument.
@@ -122,8 +120,6 @@ const SEPARATE_VALUE: &[&str] = &[
 
 pub(crate) fn classify(args: &[OsString]) -> Result<Action, String> {
     let mut inputs = 0;
-    let mut shared = false;
-    let mut relocatable = false;
     let mut compile = false;
     let mut i = 0;
     while i < args.len() {
@@ -137,8 +133,6 @@ pub(crate) fn classify(args: &[OsString]) -> Result<Action, String> {
                     "static linking is not supported: providers have no static glibc".into(),
                 )
             }
-            "-shared" => shared = true,
-            "-r" => relocatable = true,
             _ if arg.starts_with("-print-") || arg.starts_with("--print-") => {
                 return Ok(Action::Query)
             }
@@ -153,10 +147,8 @@ pub(crate) fn classify(args: &[OsString]) -> Result<Action, String> {
         Action::Query
     } else if compile {
         Action::Compile
-    } else if relocatable {
-        Action::Relocatable
     } else {
-        Action::Link { shared }
+        Action::Link
     })
 }
 
@@ -284,19 +276,19 @@ mod tests {
         }
         assert_eq!(
             classify(&args(&["a.o", "-o", "cmTC_1"])).unwrap(),
-            Action::Link { shared: false }
+            Action::Link
         );
         assert_eq!(
             classify(&args(&["-shared", "a.o", "-o", "liba.so"])).unwrap(),
-            Action::Link { shared: true }
+            Action::Link
         );
         assert_eq!(
             classify(&args(&["@objects.rsp", "-o", "app"])).unwrap(),
-            Action::Link { shared: false }
+            Action::Link
         );
         assert_eq!(
             classify(&args(&["-r", "a.o", "-o", "b.o"])).unwrap(),
-            Action::Relocatable
+            Action::Link
         );
         assert!(classify(&args(&["-static", "a.o"])).is_err());
     }

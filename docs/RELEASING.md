@@ -48,7 +48,8 @@ python3 scripts/check-release-docs.py --repo rustcommons/cargo-libc --published
 The second command intentionally fails while GitHub Releases are missing; it
 must not be described as passed merely because local structure passes. No crate
 publication, tag movement or new runtime validation is part of backfilling notes.
-The [0.4.0 unwinder plan](UNWINDER-0.4.0-PLAN.md) is a proposal, not shipped scope.
+The [0.4.0 unwinder integration](UNWINDER-0.4.0-PLAN.md) is authorized development,
+not shipped/qualified scope; version/publication remain separately gated.
 
 ## Release records
 
@@ -67,6 +68,9 @@ READMEs link here without calling a pinned historical version current.
 | [0.2.0](releases/v0.2.0.md) | 2026-10-14 | Published; documented entry-point API; exact tag/archive and historical gaps in the notes. |
 | [0.1.1](releases/v0.1.1.md) | 2026-10-13 | Published; provider-backed shared libraries/Python extensions; original evidence is attributed, not newly rerun. |
 | [0.1.0](releases/v0.1.0.md) | 2026-10-13 | Published; first Cargo integration; exact archive/source identity and historical gaps in the notes. |
+
+Development only: [0.4.0 scope and pending evidence](RELEASE-0.4.0.md). This is not
+a shipped version or a dated changelog entry.
 
 ## Choosing a version
 
@@ -146,6 +150,25 @@ checks, not unrelated builds. Policy and roadmap text excluded by the package
 include list needs no new crate publication. Packaged README changes reach
 crates.io only with a later release of cargo-libc; repository edits do not alter
 an existing registry archive.
+
+## Unwinder and every-glibc-bundle gate
+
+The canonical [unwinder release checklist](UNWINDER-RELEASE-CHECKLIST.md) applies
+before every glibc ABI/source/header/library bundle or provider update, and when
+Rust/std, Clang/GCC/linker, LLVM source/config/build tools, runtime identity,
+output-kind or generated configuration changes. Upstream ABI/data/source release
+policies must obtain the named downstream evidence, including changed/new bundles
+against the selected runtime import closure and supported floors. New data is not
+a docs-only exemption. Data-identical documentation archives may justify reuse by
+exact byte comparison and scope; otherwise run affected gates and record gaps.
+
+Every release record maps U01–U22 to automated commands/fixtures/exact runs or a
+precise justified exclusion. Preserve failed probes; an absent row is incomplete.
+Do not silently drop supported DSO/extension behavior or claim no lazy load from
+absence of NEEDED. The checklist records current automation gaps, including the
+pending producer/runtime adapter; no LLVM qualification is claimed yet. Run the
+full applicable suite once on frozen final implementation, with capped workers;
+source/package equivalence can carry evidence through excluded-doc-only changes.
 
 ## Preparing and publishing
 

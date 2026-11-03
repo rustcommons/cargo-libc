@@ -10,13 +10,23 @@ GitHub Release backfill is complete for all eight existing tags; see the
 
 ## [Unreleased]
 
+### Development fixes
+
+- Classify final link outputs from the completed Clang linker stream, preserving
+  mode-looking RUNPATH values and actual PIE precedence. Align shared/partial
+  startup inputs and refuse unsupported ambiguous overrides; LLVM runtime and
+  flag/default direction remain paused.
+
 ### Documentation
 
 - Add this changelog, versioned user-facing notes for all eight existing tags,
   release-documentation checks and navigation. No runtime, dependency or crate
   version changes; existing detailed qualification reports remain evidence.
-- Document the [proposed 0.4.0 executable unwinder investigation](docs/UNWINDER-0.4.0-PLAN.md).
-  This is not an approved runtime design, flag/default decision or shipped feature.
+- Record the [authorized 0.4.0 executable LLVM unwinder development](docs/UNWINDER-0.4.0-PLAN.md)
+  and durable [every-bundle release checklist](docs/UNWINDER-RELEASE-CHECKLIST.md).
+  Initial output classification and baseline probes are implemented; the producer
+  runtime adapter/coexistence qualification are pending. No static LLVM default
+  is shipped yet, and no version bump is made in this stage.
 
 ## [0.3.0] - 2026-11-02
 

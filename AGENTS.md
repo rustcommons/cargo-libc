@@ -37,7 +37,9 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
 - The five-clock libc default belongs to the producer's derived link-profile API.
   Keep original ABI/source inputs faithful, user DSOs read-only, and descriptor v1
   unchanged. Preserve explicit old versions, real RT APIs, library order/groups,
-  caller as-needed state and the existing unwinder; there is no user clock mode.
+  caller as-needed state and non-unwind compiler helpers; there is no user clock mode.
+  The published 0.3.0 unwinder policy is unchanged historically; authorized 0.4.0
+  executable work follows the scoped rules below.
   Keep generated profile/content identity and Cargo relink fingerprints aligned
   with the [clock boundaries](docs/USER-GUIDE.md#clock-linking).
 - [docs/USER-GUIDE.md](docs/USER-GUIDE.md) is the user documentation: keep commands,
@@ -59,6 +61,37 @@ Release/version choices and qualification gaps follow the maintained
 [release policy](docs/RELEASING.md). Real old-system tier 3 qualification is
 deferred, not complete; ordinary releases require applicable automated gates
 and an explicit coverage gap, not unavailable old-system infrastructure.
+
+## Executable unwinder development
+
+Direction-dependent runtime/default/flag work is on hold pending the user decision.
+Independent classification, evidence and checklist fixes remain authorized; the
+prior LLVM-default goal below is not permission to wire it during this hold.
+
+- Implement the authorized 0.4.0 default with validated static LLVM libunwind only
+  for supported final target executables; retain panic=unwind and dynamic glibc.
+  Do not use nightly, raise Rust 1.90, substitute panic=abort/crt-static, select
+  arbitrary system archives or silently fall back to dynamic unwind.
+- Preserve shared-library/PyO3/CMake-shared and native host runtime behavior and
+  valid supported cross-DSO C-unwind round trips. Output selection alone is not
+  safety evidence; a measured regression needs an explicit decision. Preserve DSO
+  artifact selection and valid behavior, not a promise that loaded unwind calls
+  always bind GCC: qualified host LLVM interposition may change symbol ownership.
+  Hidden LLVM native round-trip failures forbid a private default. Minimal unwind
+  exports pass bounded Rust cases but native C EH cleanup failures still block
+  LLVM-default wiring; source/helper/personality compatibility must be resolved.
+  Broad Rust symbol export is diagnostic only, never a substitute for these gates.
+- Keep runtime choice out of shared intermediate code. Preserve clocks, input
+  order/groups/caller state and non-unwind compiler helpers; require complete
+  symbol/personality support and content-aware config/relink identity.
+- Apply [docs/UNWINDER-RELEASE-CHECKLIST.md](docs/UNWINDER-RELEASE-CHECKLIST.md)
+  to every glibc/ABI/source bundle and runtime/toolchain/provider/config change.
+  Record exact evidence or justified scope per case; a new data bundle is not
+  docs-only. Upstream data/source release gates must obtain downstream evidence.
+- Producer helpers own pinned runtime preparation/build/cache/provenance. Use only
+  verified disposable first-party source/data patches for pre-publication tests;
+  keep production manifests and locks registry-only. No runtime redistribution
+  or legal clearance is implied by a passing compiler/link probe.
 
 ## Documentation and requirements traceability
 
