@@ -348,7 +348,7 @@ pub(crate) fn inspect(bytes: &[u8]) -> Result<Vec<Symbol>, String> {
     // hash bound. Never accept those out-of-inventory references as no imports.
     let mut relocation_budget = MAX_SYMBOLS;
     let mut relocation_table = |address: u64, size: u64, entry: u64| -> Result<(), String> {
-        if size % entry != 0 || size / entry > relocation_budget {
+        if !size.is_multiple_of(entry) || size / entry > relocation_budget {
             return Err("dynamic relocations exceed inspection limit or have invalid size".into());
         }
         relocation_budget -= size / entry;
