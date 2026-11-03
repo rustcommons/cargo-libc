@@ -2,7 +2,8 @@
 
 User-facing changes in `cargo-libc`. Versions follow the repository's
 [release policy](docs/RELEASING.md), independently of producer/data packages.
-Dates below are original crates.io publication dates (UTC). Notes reconstructed
+Shipped-version dates below are original crates.io publication dates (UTC);
+an explicitly marked candidate uses its preparation date. Notes reconstructed
 on 2026-11-02 were not present in historical tags; see the
 [history audit](docs/releases/HISTORY.md) for provenance and evidence gaps.
 GitHub Release backfill is complete for all eight existing tags; see the
@@ -10,20 +11,35 @@ GitHub Release backfill is complete for all eight existing tags; see the
 
 ## [Unreleased]
 
+No additional changes assigned.
+
+## [0.4.0] - 2026-11-03
+
+**Candidate preparation date; not published.** Package/install qualification,
+final release review and publication are pending.
+
 ### Changed
 
 - Doctor/build diagnostics separate tool ABI provenance, bounded host observations,
-  selected target inputs and execution scope. Local execution explains a missing
-  ELF interpreter before launch; container execution requires no local GNU loader.
-  Non-glibc hosts remain unqualified, without a distro-based installation ban.
+  selected glibc inputs and execution scope. Unknown is not an unsupported distro;
+  no install-time warning, distro rejection or new host qualification is added.
+- Local execution now refuses a confirmed missing ELF PT_INTERP with status 2
+  before launch. In 0.3.0, a direct run that passed existing checks and reached a
+  failed OS launch returned helper error 1. Update scripts that distinguish these
+  statuses. Container execution does not require the host's GNU loader.
 
 ### Documentation
 
-- Add this changelog, versioned user-facing notes for all eight existing tags,
-  release-documentation checks and navigation. No runtime, dependency or crate
-  version changes; existing detailed qualification reports remain evidence.
-- Document the [proposed 0.4.0 executable unwinder investigation](docs/UNWINDER-0.4.0-PLAN.md).
-  This is not an approved runtime design, flag/default decision or shipped feature.
+- Explain deployment glibc/libgcc prerequisites, symbol-version versus package
+  versions, and capability/qualification limits. Container provider preparation
+  still requires host GCC/binutils/startup files; container execution supplies
+  userland but shares the host kernel.
+- Include maintained release-documentation guidance and records added since 0.3.0.
+  The historically named [unwinder plan](docs/UNWINDER-0.4.0-PLAN.md) is deferred,
+  unassigned future research, not this release. System unwinder, five-clock
+  policy, dependencies, MSRV and native-tool floors are unchanged.
+
+[Candidate notes](docs/releases/v0.4.0.md). Existing published records below are unchanged.
 
 ## [0.3.0] - 2026-11-02
 

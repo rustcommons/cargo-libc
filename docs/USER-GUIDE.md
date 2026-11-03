@@ -1,6 +1,7 @@
 # cargo-libc user guide
 
-Maintained guide for cargo-libc 0.3.0. See the [requirements index](REQUIREMENTS.md)
+Maintained source guide for the cargo-libc 0.4.0 candidate (not published);
+0.3.0 remains the latest verified release. See the [requirements index](REQUIREMENTS.md)
 and [release evidence](RELEASE-0.3.0.md) for scope and verification limits.
 
 cargo-libc builds Rust programs on a current x86_64 Linux machine for older glibc
@@ -56,7 +57,10 @@ helpers next to itself.
 ## Host capabilities and execution routes
 
 The additional capability messages and PT_INTERP preflight described here are
-unreleased source changes; published 0.3.0 retains its original diagnostics.
+0.4.0 candidate changes; published 0.3.0 retains its original diagnostics.
+A confirmed missing interpreter now refuses with status 2; a 0.3.0 direct run
+that passed existing checks and reached failed OS launch returned helper error 1.
+See [candidate upgrade guidance](releases/v0.4.0.md#upgrade).
 
 Managed builds retain the Linux + x86_64 gate. This gate does not check
 `target_env=gnu`, certify a distro, or establish that a GNU target can run locally.

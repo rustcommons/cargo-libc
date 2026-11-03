@@ -1,9 +1,18 @@
-# Proposed 0.4.0 executable unwinder investigation
+# Deferred executable unwinder investigation (release unassigned)
 
-Status: **proposal for review, not an approved runtime design or release**
-(2026-11-02). No implementation, flag, default, archive distribution, producer
-version or release date is committed. Current 0.3.0 behavior remains authoritative.
-This document records the requested investigation, not new accepted requirements.
+**Current disposition, 2026-11-03: deferred research, no release assigned.**
+Cargo-libc [0.4.0 candidate notes](releases/v0.4.0.md) cover capability diagnostics
+and a missing-interpreter refusal/exit-status change, **not** LLVM or another
+runtime replacement. System unwinding remains unchanged; research PR14 is separate
+and unmerged. No shipping LLVM default, selector or compatibility claim is approved
+by this release preparation.
+
+The filename retains the original 2026-11-02 tentative version label so existing
+links and historical planning references stay valid. The following investigation
+records that original proposal and its proposed gates, not accepted release scope
+or completed qualification. No implementation, flag, archive distribution,
+producer version or release date is committed by this document. Published 0.3.0
+remains the latest verified release until a later release is actually completed.
 
 ## Goal and unchanged boundaries
 
@@ -123,15 +132,18 @@ shared-library compromises, return the decision rather than ship a workaround.
 
 ## Version and scope decisions
 
-A prospective cargo-libc **0.4.0** is appropriate for an approved runtime/linking
-contract change under the existing minor-version policy; no version bump is made
-now. A producer minor release is needed only if the chosen design actually needs
+The original 2026-11-02 proposal tentatively used **0.4.0** for a possible
+runtime/linking contract change. That number was not reserved: on 2026-11-03,
+0.4.0 was assigned to the diagnostics/refusal candidate under the minor-version
+policy. This unwinder investigation is deferred with its future version unassigned.
+Any eventual approved runtime change needs its own compatibility and version review.
+A producer minor release is needed only if the chosen design actually needs
 a new public producer API. No raw ABI/source-data release, producer-wide lockstep
 bump or unrelated library update is assumed. Acceptance checks observe the
 resulting tested app closure; a general dependency-closure product feature is
 outside this proposal.
 
-Keep optional unrelated fixes out of this release unless their necessity and
+Keep optional unrelated fixes out of any future unwinder release unless their necessity and
 compatibility are independently justified. Track any approved follow-up in the
 [roadmap](ROADMAP.md), keep user-visible work in [Unreleased](../CHANGELOG.md), and
 record proposed-versus-implemented status in the [trace index](REQUIREMENTS.md).
