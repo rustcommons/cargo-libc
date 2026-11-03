@@ -20,6 +20,16 @@ jobs:
       # --all-targets leaves out doc tests.
       - run: cargo test --doc --locked --offline
       - run: cargo clippy --all-targets --locked --offline -- -D warnings
+      - name: Static target libgcc comparisons
+        if: runner.os == 'Linux'
+        run: |
+          cargo build --bin cargo-libc --locked --offline
+          python3 scripts/check-target-libgcc.py target/debug/cargo-libc "$RUNNER_TEMP/target-libgcc-fixtures"
+      - uses: actions/upload-artifact@v7
+        if: always() && runner.os == 'Linux'
+        with:
+          name: target-libgcc-fixtures
+          path: ${{ runner.temp }}/target-libgcc-fixtures
       # The crate holds the tool's source only: no examples, scripts, CI or docs.
       - name: Package contents
         if: runner.os == 'Linux'

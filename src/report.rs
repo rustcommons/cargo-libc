@@ -43,16 +43,31 @@ pub fn read_elf(path: &Path) -> Result<ElfInfo, String> {
 }
 
 pub fn read_bytes(path: &Path) -> Result<Vec<u8>, String> {
+    read_bytes_limited(path, MAX_ELF_BYTES)
+}
+
+pub(crate) fn read_bytes_limited(path: &Path, limit: u64) -> Result<Vec<u8>, String> {
+    if limit != MAX_ELF_BYTES
+        && !std::fs::metadata(path)
+            .map_err(|e| format!("cannot stat {}: {e}", path.display()))?
+            .is_file()
+    {
+        return Err("ELF input must be a regular file".into());
+    }
     let file = File::open(path).map_err(|e| format!("cannot open {}: {e}", path.display()))?;
     if !file.metadata().map_err(|e| e.to_string())?.is_file() {
         return Err("ELF input must be a regular file".into());
     }
     let mut bytes = Vec::new();
-    file.take(MAX_ELF_BYTES + 1)
+    file.take(limit + 1)
         .read_to_end(&mut bytes)
         .map_err(|e| e.to_string())?;
-    if bytes.len() as u64 > MAX_ELF_BYTES {
-        return Err("ELF input exceeds the prototype's 256 MiB limit".into());
+    if bytes.len() as u64 > limit {
+        return Err(if limit == MAX_ELF_BYTES {
+            "ELF input exceeds the prototype's 256 MiB limit".into()
+        } else {
+            format!("ELF input exceeds the {} MiB limit", limit / (1024 * 1024))
+        });
     }
     Ok(bytes)
 }
@@ -325,6 +340,16 @@ pub fn inspect_file(
     scan_options: Option<&ScanOptions>,
     json: bool,
 ) -> Result<i32, String> {
+    inspect_file_with_libgcc(path, ceiling, scan_options, json, None)
+}
+
+pub(crate) fn inspect_file_with_libgcc(
+    path: &Path,
+    ceiling: Option<Version>,
+    scan_options: Option<&ScanOptions>,
+    json: bool,
+    target_libgcc: Option<&Path>,
+) -> Result<i32, String> {
     let bytes = read_bytes(path)?;
     let info = elf::inspect(&bytes)?;
     let (ceiling, scan) = match scan_options {
@@ -335,12 +360,29 @@ pub fn inspect_file(
         None => (ceiling, None),
     };
     let assessment = assess(&info, ceiling);
-    crate::output::line(format_args!(
-        "{}",
-        render(path, &info, &assessment, ceiling, scan.as_ref(), json)
-    ))?;
-    let passed = assessment.errors.is_empty() && scan.as_ref().is_none_or(Scan::passed);
-    Ok(if passed { 0 } else { 2 })
+    let comparison =
+        target_libgcc.map(|target| crate::gcc::compare(path, &bytes, &info, target, ceiling));
+    let mut rendered = render(path, &info, &assessment, ceiling, scan.as_ref(), json);
+    if let Some(gcc) = &comparison {
+        if json {
+            rendered.pop();
+            rendered.push_str(&format!(",\"gcc_abi_comparison\":{}}}", gcc.json()));
+        } else {
+            rendered.push('\n');
+            rendered.push_str(&gcc.text());
+        }
+    }
+    crate::output::line(format_args!("{rendered}"))?;
+    let failed = !assessment.errors.is_empty()
+        || scan.as_ref().is_some_and(|s| !s.passed())
+        || comparison.as_ref().is_some_and(|c| c.failed());
+    Ok(if failed {
+        2
+    } else if comparison.as_ref().is_some_and(|c| c.unresolved()) {
+        3
+    } else {
+        0
+    })
 }
 
 #[cfg(test)]

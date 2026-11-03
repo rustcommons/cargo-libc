@@ -1,5 +1,13 @@
 # Roadmap
 
+## Explicit target libgcc comparison
+
+The [unreleased checker](TARGET-LIBGCC.md) implements explicit two-file static
+comparison. Remaining release work is companion hash-API publication, deliberate
+registry minimum/lock adoption, unpatched package/install qualification and review.
+No release version is assigned here. General runtime/dependency resolution and
+GCC/LLVM interoperability remain outside this feature.
+
 Open work and adopted policy decisions. What cargo-libc does today is in the [user guide](USER-GUIDE.md), and
 current release evidence is in the [release index](RELEASING.md#release-records).
 [VALIDATION.md](../VALIDATION.md) retains historical results; the

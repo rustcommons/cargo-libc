@@ -139,6 +139,7 @@ runtime-evidence gaps are preserved.
 The [deferred unwinder plan](UNWINDER-0.4.0-PLAN.md) has no assigned release;
 its historical filename does not describe the [0.4.0 diagnostics release](releases/v0.4.0.md).
 It is not a confirmed new runtime requirement or additional verification evidence.
+| CL-REQ-032 | Compare explicitly supplied target libgcc against exact recorded direct owner/version nodes and function imports; preserve weak distinctions, incomplete results, independent GLIBC checks and legacy inspect behavior. User-approved checker scope, 2026-11-03; [contract](TARGET-LIBGCC.md). | [gcc.rs](../src/gcc.rs), optional [exact parser](../src/elf/exact.rs), inspect-only CLI; read-only companion byte digest. | Focused matcher/parser/CLI unit tests and [native static fixtures](../scripts/check-target-libgcc.py); [source qualifier](../scripts/qualify-target-libgcc.py). | Implemented—partial verification: unreleased source candidate; requires published hash API/real registry adoption before release. No loader/runtime/plugin/transitive or old-system certification. |
 
 ## Documentation map
 
@@ -174,6 +175,7 @@ It is not a confirmed new runtime requirement or additional verification evidenc
 
 | [RELEASE-0.4.0](RELEASE-0.4.0.md), [package inventory](evals/2026-11-03-diagnostics-package-inventory.json) | Current published release / candidate and publication evidence | CL-REQ-002/005/013/020/023/031; Q40/I40 distinguish prepublication versus fresh registry installation, exact source/archive/tag/docs.rs identities and native scope/gaps. |
 | [RELEASE-0.3.0](RELEASE-0.3.0.md), [clock investigation](evals/2026-11-02-clock-linking.md) | Historical release evidence / dated investigation | CL-REQ-006–010/020/022–024/027; qualified N30/R30/P30/A30 and published I30 evidence; preserve retired prototype failures and explicit remaining scope limits. |
+| [TARGET-LIBGCC.md](TARGET-LIBGCC.md) | Maintained unreleased guide/reference | Authoritative two-file checker contract, parameters, statuses, JSON, bounds and source-only qualification; CL-REQ-032. |
 
 ## Maintenance
 

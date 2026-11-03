@@ -53,6 +53,11 @@ This installs `cargo-libc` and its helpers `libc-linker`, `libc-runner`, `libc-c
 and `libc-cxx`. Keep them together in one directory, because cargo-libc finds its
 helpers next to itself.
 
+Unreleased source work adds an explicit two-file
+[`inspect --target-libgcc` comparison](TARGET-LIBGCC.md), including exact
+symbol/version requirements, exits 0/2/3 and limits. Released 0.4.0 does not
+include this option; ordinary inspection still does not validate GCC availability.
+
 ## Host capabilities and execution routes
 
 The additional capability messages and PT_INTERP preflight described here are

@@ -27,7 +27,7 @@ USAGE
   cargo libc install (same as build, without --artifact) [-- CARGO INSTALL ARGUMENTS]
   cargo libc env    (same selection as build) [--format sh|cargo]
   cargo libc inspect FILE [--max-glibc VERSION | --distro ID] [--kernel VERSION]
-                     [--scan] [--strict] [--verbose] [--json]
+                     [--scan] [--strict] [--verbose] [--json] [--target-libgcc FILE]
   cargo libc provider prepare|list|path|verify|export|import|remove ...
 
 PROVIDERS
@@ -119,6 +119,8 @@ INSPECT OPTIONS
   --scan               Run the tier 1 scan with only the --max-glibc floor
   --strict             Scan warnings (heuristic or optional use) also fail
   --verbose            Show the scan's informational findings
+  --target-libgcc FILE Compare recorded direct GCC interfaces with this runtime ELF
+                       Exit 2: mismatch/failed floor; 3: unresolved comparison
   --json               Machine-readable report
 
 GENERAL
@@ -245,6 +247,7 @@ enum ParsedCommand {
         cargo_args: Vec<OsString>,
     },
     Inspect {
+        target_libgcc: Option<PathBuf>,
         file: PathBuf,
         ceiling: Option<Version>,
         scan: Option<ScanOptions>,
@@ -585,6 +588,7 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
 }
 
 fn parse_inspect(args: &[OsString]) -> Result<ParsedCommand, String> {
+    let mut target_libgcc = None;
     let mut file = None;
     let mut ceiling = None;
     let mut json = false;
@@ -596,6 +600,14 @@ fn parse_inspect(args: &[OsString]) -> Result<ParsedCommand, String> {
         if !positional_only {
             match args[i].to_str() {
                 Some("-h" | "--help") => return Ok(ParsedCommand::Help),
+                Some("--target-libgcc") => {
+                    let value = PathBuf::from(next_value(args, &mut i, "--target-libgcc")?);
+                    if target_libgcc.replace(value).is_some() {
+                        return Err("duplicate --target-libgcc".into());
+                    }
+                    i += 1;
+                    continue;
+                }
                 Some("--max-glibc") => {
                     ceiling = Some(parse_version(
                         next_value(args, &mut i, "--max-glibc")?,
@@ -662,6 +674,7 @@ fn parse_inspect(args: &[OsString]) -> Result<ParsedCommand, String> {
         None
     };
     Ok(ParsedCommand::Inspect {
+        target_libgcc,
         file: file.ok_or("inspect requires an ELF file path")?,
         ceiling,
         scan,
@@ -757,11 +770,17 @@ fn run_inner(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
             dry_run,
         ),
         ParsedCommand::Inspect {
+            target_libgcc,
             file,
             ceiling,
             scan,
             json,
-        } => report::inspect_file(&file, ceiling, scan.as_ref(), json),
+        } => match target_libgcc {
+            Some(target) => {
+                report::inspect_file_with_libgcc(&file, ceiling, scan.as_ref(), json, Some(&target))
+            }
+            None => report::inspect_file(&file, ceiling, scan.as_ref(), json),
+        },
         ParsedCommand::Provider(args) => {
             if args.is_empty() || matches!(args[0].to_str(), Some("-h" | "--help" | "help")) {
                 crate::output::write(format_args!(
@@ -985,6 +1004,7 @@ mod tests {
         ]))
         .unwrap();
         let ParsedCommand::Inspect {
+            target_libgcc: _,
             file,
             ceiling,
             scan,
@@ -1320,5 +1340,54 @@ mod tests {
         ] {
             assert!(parse(with_sdk("env", extra)).is_err(), "{extra:?}");
         }
+    }
+}
+
+#[cfg(test)]
+mod gcc_option_tests {
+    use super::*;
+    fn args(a: &[&str]) -> Vec<OsString> {
+        a.iter().map(OsString::from).collect()
+    }
+    #[test]
+    fn target_libgcc_is_explicit_inspect_only_and_not_repeatable() {
+        let p = parse(args(&[
+            "inspect",
+            "app",
+            "--target-libgcc",
+            "target.so",
+            "--json",
+        ]))
+        .unwrap();
+        assert!(
+            matches!(p, ParsedCommand::Inspect { target_libgcc: Some(p), json: true, .. } if p.as_os_str() == "target.so")
+        );
+        assert!(parse(args(&["inspect", "app", "--target-libgcc"])).is_err());
+        assert!(parse(args(&[
+            "inspect",
+            "app",
+            "--target-libgcc",
+            "a",
+            "--target-libgcc",
+            "b"
+        ]))
+        .is_err());
+        assert!(parse(args(&["build", "--target-libgcc", "a"])).is_err());
+    }
+    #[test]
+    #[cfg(unix)]
+    fn native_non_utf8_target_path_survives() {
+        use std::os::unix::ffi::OsStringExt;
+        let path = OsString::from_vec(b"target-\xff.so".to_vec());
+        let p = parse(vec![
+            "inspect".into(),
+            "app".into(),
+            "--target-libgcc".into(),
+            path.clone(),
+        ])
+        .unwrap();
+        assert!(
+            matches!(p, ParsedCommand::Inspect { target_libgcc: Some(p), .. } if p.as_os_str() == path)
+        );
     }
 }

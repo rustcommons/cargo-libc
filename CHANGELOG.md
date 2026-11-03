@@ -11,7 +11,13 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ## [Unreleased]
 
-No additional changes assigned.
+### Added
+
+- Unreleased `inspect --target-libgcc FILE`: bounded comparison of exact recorded
+  direct libgcc symbol/version interfaces, with separate runtime GLIBC assessment,
+  JSON evidence and explicit missing/unresolved outcomes. It does not establish
+  loader selection, dependency closure or runtime safety. Source qualification
+  uses the companion hash API; registry adoption and release remain pending.
 
 ## [0.4.0] - 2026-11-03
 
