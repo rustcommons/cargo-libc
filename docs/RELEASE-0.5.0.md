@@ -1,11 +1,12 @@
-# cargo-libc 0.5.0 candidate release record
+# cargo-libc 0.5.0 release record
 
-Prepared 2026-11-03; **not published**. Bounded real-registry candidate
-qualification passed as a documented composite sequence. Final excluded-evidence
-review, normal merge, sole-coordinator publication and later official archive/
-docs.rs/published-install/tag/GitHub Release completion remain separate steps.
-Latest published cargo-libc remains 0.4.0. No source, package-input or harness
-change follows the tested candidate in this evidence update.
+Published on crates.io 2026-11-03 from exact clean merge
+`1761260a52e192e55f774602ca05add64bd88994`, annotated tag `v0.5.0`.
+Official archive/index/API, docs.rs and the separate fresh published installation
+are verified below. The earlier candidate record remains explicitly composite;
+the published run has no failure/resume. Live GitHub Release completion follows
+the exact-committed-body procedure below, with actual final run links retained
+in the bookkeeping PR rather than pre-claimed or requiring another commit cycle.
 
 [User-facing notes](releases/v0.5.0.md), [checker contract](TARGET-LIBGCC.md) and
 [release policy](RELEASING.md) define the option/status/JSON scope and limits.
@@ -157,5 +158,94 @@ Only excluded evidence/status docs follow the tested candidate; compare source,
 package inputs and harness to `c5f41485` during narrow review. No build/install/
 unchanged runtime matrix is rerun for that delta. Parent alone publishes locally
 after normal reviewed merge, then official archive/docs.rs/published installation,
-immutable tag and GitHub Release completion follow the established policy. No
-merge, publication, tag or Release was performed by this evidence update.
+immutable tag and GitHub Release completion follow the established policy.
+Those candidate-stage boundaries are superseded only by the separate publication
+evidence below; this documentation update changes no product/package inputs.
+
+## Publication and installed verification
+
+The authorized local publisher ran `cargo +1.90 publish --locked` from clean
+release `1761260a52e192e55f774602ca05add64bd88994`, exit 0. Independently downloaded
+API/index/archive records agree on checksum and non-yanked state. The actual
+published package contains 28 files, 84,779 bytes, SHA256
+`b48ab447b632dad90e97ee03fa77ac4eabfc86712c00ccd824db3b4ad454171d`.
+All source/manifest/lock/README/legal bytes equal the released checkout and the
+normalized manifest equals qualified C5. Only `.cargo_vcs_info.json` differs from
+C5. This official archive hash is distinct from candidate hash 5ac6373f….
+
+Annotated [`v0.5.0`](https://github.com/rustcommons/cargo-libc/tree/v0.5.0),
+object `d25665dc7aefb36761a18cf2192e594c74104ddf`, peels exactly to that release
+commit. It was created only after confirming no existing local/remote tag and
+never moved. Release-commit [docs CI 41689551201](https://github.com/rustcommons/cargo-libc/actions/runs/41689551201)
+passed before completion. Docs.rs [API](https://docs.rs/cargo-libc/0.5.0/cargo_libc/),
+[actual README](https://docs.rs/crate/cargo-libc/0.5.0) and
+[build 5142829](https://docs.rs/crate/cargo-libc/0.5.0/builds/5142829) returned HTTP 200.
+A browser verified the actual README and six loaded package images, plus guide/
+checker/policy/banner targets returning HTTP 200. Docs.rs's own build toolchain is not
+the MSRV gate.
+
+### Fresh published-registry installation, no resume
+
+On native x86_64 WSL GNU with Rust 1.90 and two workers, a new work directory/
+Cargo home and isolated installation root ran the actual published command:
+
+```sh
+cargo install cargo-libc --version 0.5.0 --locked --root <isolated-root>
+bash scripts/smoke-installed.sh <isolated-root> /usr/bin/clang-18 0.5.0
+python3 scripts/check-target-libgcc.py <isolated-root>/bin/cargo-libc \
+  <fixtures> <verified-installed-0.4.0>/bin/cargo-libc
+python3 scripts/check-installed-capabilities.py \
+  <isolated-root>/bin /usr/bin/clang-18 <capabilities>
+python3 scripts/check-run-streams.py <isolated-root>/bin /usr/bin/clang-18
+```
+
+All five phases exited 0: registry install 23.71s, installed smoke 14.97s,
+checker 0.58s, capabilities 0.34s, streams 18.18s. All five executable hashes match
+the retained binaries. The actual official archive equals the independent owner
+download. This is not an unpacked/path install or reuse of candidate execution.
+The driver removes conflicting flags before execution; no original failure or
+resume occurred in this postpublication run.
+
+Actual provider 2.17, real C/CMake target headers and host proc-macro separation,
+app execution under local kernel 3.10 simulation, direct inspect/provider stdout/
+verification and target C++ refusal passed. The installed checker passed all 36
+GNU static cases including the actual released 0.4.0 ordinary text/JSON comparison.
+The static ELF/IFUNC payloads were never executed. Thirteen capability controls,
+including missing-interpreter status 2, closed diagnostic pipe and recording
+container-route/doctor cases, passed. Run/test/direct-runner exact JSON stdout,
+redirected stdin, separated diagnostics, intentional failure/pipe/error statuses
+also passed. Candidate Windows portability evidence remains separately scoped;
+no Windows published installation is invented.
+
+Proof `published-consumer-proof.tar.gz`: **7,467,920 bytes**, SHA256
+`f6d3ef73bc03bc0b5998af3519f5367792045558b213e474807a41ab04977472`;
+all **177 member hashes**, five binary identities, 36 checker/13 capability results,
+commands/driver/logs and official archive were independently checked. The
+[publication identity record](evals/2026-11-03-target-libgcc-publication.json)
+retains official payload and published-install binary/phase identities.
+
+This native result is not a hosted published-install workflow. Container controls
+use a recording engine only. No real container matrix, old-OS/tier3, musl/static
+host, LLVM replacement/interop, full loader/dependency/plugin closure or general
+safe-to-run certificate is claimed. Both input buffers remain retained; read/
+parser/report bounds are not a total-process memory cap. System unwinder, clocks,
+MSRV/native floors, unchanged dependency/data locks and prebuilt legal gate remain
+as documented. No republication, credential provisioning or product change is
+part of this completion.
+
+### GitHub Release completion procedure
+
+Use the exact reviewed committed `docs/releases/v0.5.0.md` after green docs checks
+and normal documentation merge, with existing immutable `v0.5.0`, stable/latest
+status and zero assets. Verify live exact body/tag/latest/assets, then the full
+registered release-doc workflow with `verify_published=true` and equivalent:
+
+```sh
+python3 scripts/check-release-docs.py --repo rustcommons/cargo-libc --published
+```
+
+Actual final run/result links are retained in the reviewed bookkeeping PR and
+[release-doc workflow history](https://github.com/rustcommons/cargo-libc/actions/workflows/release-docs.yml).
+This procedure does not pre-claim a future check as passed; earlier local-only
+checks are not relabeled as published-mode evidence. No source/tag movement or
+further product/package build is needed to store those final links.

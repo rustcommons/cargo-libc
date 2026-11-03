@@ -2,9 +2,9 @@
 
 ## Scope and sources
 
-This index retains historical release evidence and records published 0.4.0
-diagnostics with the unchanged 0.3.0 clock profile; it is not a backlog or universal compatibility claim. Current
-released source/tag: `aa2ea56e5d7943aeb4e0023713a089693d2103c1` / `v0.4.0`.
+This index retains historical release evidence and records published 0.5.0
+static target-libgcc inspection with unchanged diagnostics/clock/unwinder behavior; it is not a backlog or universal compatibility claim. Current
+released source/tag: `1761260a52e192e55f774602ca05add64bd88994` / `v0.5.0`.
 Published 0.2.4 runtime/API behavior is unchanged from 0.2.3/0.2.2. Documentation audit: 2026-11-01, baseline main
 `1ca27da9086ebf6cf19a6f2c0e858108b38cac46`; the immutable 0.2.4 source/tag:
 `889515b191ead51303b1321de858ec4e2209722c` / `v0.2.4`. The original 0.2.2 source
@@ -106,7 +106,18 @@ Evidence shorthand used below:
   match 0/missing 2/versionless 3/full SHA controls are separate evidence. Packet
   SHA256 `461de6aff75d0009e11cd5d038346db123012aa70acc9067d485eb9c25894322`,
   all 228 member hashes verified. No LLD/real container/musl/static/oldOS/LLVM or
-  deployment-safety qualification; no published cargo-libc 0.5.0 installation yet.
+  deployment-safety qualification. This historical candidate evidence predates the separate published installation I50.
+
+- **I50:** [0.5.0 publication and installation](RELEASE-0.5.0.md#publication-and-installed-verification),
+  released `1761260a52e192e55f774602ca05add64bd88994` / annotated `v0.5.0`.
+  Official/index/API checksum and exact payload/VCS, docs.rs API/actual README/
+  banner/navigation verified. Separate fresh Cargo-home native x86 WSL GNU
+  Rust 1.90 registry locked installation, all five helpers, checker 36 plus actual
+  0.4 legacy comparison, C/CMake/host separation/local simulation/13 capability cases/streams
+  passed, no failure/resume. Proof SHA256
+  `f6d3ef73bc03bc0b5998af3519f5367792045558b213e474807a41ab04977472`,
+  all 177 member hashes checked. Recording engine only, no hosted published-install
+  run or added real-container/musl/static/oldOS/LLVM/runtime-safety qualification.
 
 
 ## Requirements
@@ -152,7 +163,7 @@ runtime-evidence gaps are preserved.
 The [deferred unwinder plan](UNWINDER-0.4.0-PLAN.md) has no assigned release;
 its historical filename does not describe the [0.4.0 diagnostics release](releases/v0.4.0.md).
 It is not a confirmed new runtime requirement or additional verification evidence.
-| CL-REQ-032 | Compare explicitly supplied target libgcc against exact recorded direct owner/version nodes and function imports; preserve weak distinctions, incomplete results, independent GLIBC checks and legacy inspect behavior. User-approved checker scope, 2026-11-03; [contract](TARGET-LIBGCC.md). | [gcc.rs](../src/gcc.rs), optional [exact parser](../src/elf/exact.rs), inspect-only CLI; read-only companion byte digest. | Focused matcher/parser/CLI unit tests and [native static fixtures](../scripts/check-target-libgcc.py); [source qualifier](../scripts/qualify-target-libgcc.py). | Implemented—partial verification: 0.5.0 release candidate; reviewed source 972783d / source evidence below, published libc-abi-tools 0.5.0 is adopted from registry; Q50 records passing candidate registry/native/package/install and Windows controls; final evidence review/merge/publication remain pending. No loader/runtime/plugin/transitive or old-system certification. |
+| CL-REQ-032 | Compare explicitly supplied target libgcc against exact recorded direct owner/version nodes and function imports; preserve weak distinctions, incomplete results, independent GLIBC checks and legacy inspect behavior. User-approved checker scope, 2026-11-03; [contract](TARGET-LIBGCC.md). | [gcc.rs](../src/gcc.rs), optional [exact parser](../src/elf/exact.rs), inspect-only CLI; read-only companion byte digest. | Focused matcher/parser/CLI unit tests and [native static fixtures](../scripts/check-target-libgcc.py); [source qualifier](../scripts/qualify-target-libgcc.py). | Implemented—partial verification: released 0.5.0; reviewed source 972783d / source evidence below, published libc-abi-tools 0.5.0 is adopted from registry; Q50/I50 distinguish candidate composite/native Windows controls from actual fresh published-registry installation; exact release/tag/archive/docs.rs are verified with bounded scope. No loader/runtime/plugin/transitive or old-system certification. |
 
 ## Documentation map
 
@@ -186,10 +197,10 @@ It is not a confirmed new runtime requirement or additional verification evidenc
 
 | [RELEASE-0.2.4](RELEASE-0.2.4.md) | Historical release evidence | Minimal version-neutral README navigation fix; R24/I24, official archive/tag and actual docs.rs render verified; no runtime/dependency change. |
 
-| [RELEASE-0.5.0](RELEASE-0.5.0.md), [candidate identities](evals/2026-11-03-target-libgcc-candidate.json) | Candidate qualification / dated evidence | CL-REQ-032; Q50 exact registry/source/package/native Windows identities, original refusal/clean resume, bounded memory/runtime exclusions. Not published. |
-| [RELEASE-0.4.0](RELEASE-0.4.0.md), [package inventory](evals/2026-11-03-diagnostics-package-inventory.json) | Current published release / candidate and publication evidence | CL-REQ-002/005/013/020/023/031; Q40/I40 distinguish prepublication versus fresh registry installation, exact source/archive/tag/docs.rs identities and native scope/gaps. |
+| [RELEASE-0.5.0](RELEASE-0.5.0.md), [candidate identities](evals/2026-11-03-target-libgcc-candidate.json) | Current release / candidate and publication evidence | CL-REQ-032; Q50/I50 distinguish prepublication composite/native Windows from separate published installation, exact archive/tag/docs.rs/source identity, bounded memory/runtime exclusions. |
+| [RELEASE-0.4.0](RELEASE-0.4.0.md), [package inventory](evals/2026-11-03-diagnostics-package-inventory.json) | Historical release / candidate and publication evidence | CL-REQ-002/005/013/020/023/031; Q40/I40 distinguish prepublication versus fresh registry installation, exact source/archive/tag/docs.rs identities and native scope/gaps. |
 | [RELEASE-0.3.0](RELEASE-0.3.0.md), [clock investigation](evals/2026-11-02-clock-linking.md) | Historical release evidence / dated investigation | CL-REQ-006–010/020/022–024/027; qualified N30/R30/P30/A30 and published I30 evidence; preserve retired prototype failures and explicit remaining scope limits. |
-| [TARGET-LIBGCC.md](TARGET-LIBGCC.md) | Maintained unreleased guide/reference | Authoritative two-file checker contract, parameters, statuses, JSON, bounds and source-only qualification; CL-REQ-032. |
+| [TARGET-LIBGCC.md](TARGET-LIBGCC.md) | Maintained guide/reference | Authoritative two-file checker contract, parameters, statuses, JSON, bounds and bounded source/candidate/published qualification; CL-REQ-032. |
 
 ## Maintenance
 

@@ -53,7 +53,7 @@ release; its historical filename does not identify the 0.4.0 diagnostics release
 
 ## Release records
 
-Latest verified registry/source release: **0.4.0** (2026-11-03).
+Latest verified registry/source release: **0.5.0** (2026-11-03).
 Historical GitHub Release backfill is complete for the eight versions through
 0.3.0; see the [backfill completion evidence](releases/HISTORY.md#completed-backfill).
 The 0.4.0 live Release/body verification is tracked in its release record. Packaged
@@ -61,7 +61,7 @@ READMEs link here without calling a pinned historical version current.
 
 | Version / user notes | Original UTC date | Registry/source state and evidence |
 | --- | --- | --- |
-| [0.5.0 candidate](releases/v0.5.0.md) · [evidence](RELEASE-0.5.0.md) | Not published; prepared 2026-11-03 | New explicit target-libgcc inspect option. Reviewed source `972783d` / documentation `cf5e49e`; producer 0.5.0 verified/adopted only for libc-abi-tools; candidate c5f41485 passed portable/native verified package/clean install/checker36/legacy and Windows CLI controls as documented composite evidence; final evidence review, merge and publication pending. No runtime replacement or new platform qualification. |
+| [0.5.0](releases/v0.5.0.md) · [evidence](RELEASE-0.5.0.md) | 2026-11-03 | Published/non-yanked from `1761260a52e192e55f774602ca05add64bd88994`; exact official/index checksum, source/payload, annotated tag and docs.rs verified. Candidate qualification retained separately; actual fresh native registry locked installation/all-five/checker36/legacy/capability/stream verification passed without failures. Final Release documentation uses the reviewed committed body and published-mode check. No runtime replacement or new platform qualification. |
 | [0.4.0](releases/v0.4.0.md) · [evidence](RELEASE-0.4.0.md) | 2026-11-03 | Published/non-yanked; source/tag `aa2ea56e5d7943aeb4e0023713a089693d2103c1`; official 26-file archive/index checksum, docs.rs actual README/API/navigation and fresh native registry locked install verified. Diagnostics/missing-interpreter status change only; no runtime replacement or new platform qualification. |
 | [0.3.0](releases/v0.3.0.md) · [evidence](RELEASE-0.3.0.md) | 2026-11-02 | Published and verified; source/tag `a70ce9ffac6be8611b66a2829fefb3093cb41ce6`; five-clock profile, archive/docs.rs and clean published-install run 41382187049 passed; explicit coverage limits retained. |
 | [0.2.4](releases/v0.2.4.md) · [evidence](RELEASE-0.2.4.md) | 2026-11-01 | Published and verified; source/tag `889515b191ead51303b1321de858ec4e2209722c`; archive, actual README render and published-install run 41276430527 passed. |
@@ -190,7 +190,7 @@ an existing registry archive.
    explains use of the packaged lock with `--locked`. The manual workflow's
    `registry` and `installed` modes and [installed smoke script](../scripts/smoke-installed.sh)
    provide the existing sequence; review their version-specific arguments before
-   each release (installed mode currently targets 0.3.0). Record verified outcomes
+   each release (installed mode currently targets 0.5.0). Record verified outcomes
    and remaining coverage gaps in the release record and roadmap.
 7. Publish reviewed GitHub Release notes at the exact existing source tag and
    verify live text, links and latest status with release-documentation CI. No
