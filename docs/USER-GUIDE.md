@@ -1,7 +1,7 @@
 # cargo-libc user guide
 
-Maintained guide for cargo-libc 0.2.2. See the [requirements index](REQUIREMENTS.md)
-and [release evidence](RELEASE-0.2.2.md) for scope and verification limits.
+Maintained guide for cargo-libc 0.3.0. See the [requirements index](REQUIREMENTS.md)
+and [release evidence](RELEASE-0.3.0.md) for scope and verification limits.
 
 cargo-libc builds Rust programs on a current x86_64 Linux machine for older glibc
 releases. You choose the oldest glibc your users have, and cargo-libc links against
@@ -10,6 +10,7 @@ your tests under a simulation of the target's kernel.
 
 - [Install](#install)
 - [Quick start](#quick-start)
+- [Deployment runtime prerequisites](#deployment-runtime-prerequisites)
 - [Choosing a target](#choosing-a-target)
 - [Providers](#providers)
 - [Clock linking](#clock-linking)
@@ -25,7 +26,7 @@ your tests under a simulation of the target's kernel.
 
 ## Install
 
-You need:
+On the build machine, you need:
 
 - **An x86_64 Linux build machine.**
 - **Rust 1.90 or later.** CI uses 1.99.
@@ -82,6 +83,106 @@ Run the tests on your machine, with the kernel limited to what RHEL 7 has:
 ```sh
 cargo libc test --distro rhel-7 --runner local
 ```
+
+## Deployment runtime prerequisites
+
+Current GNU/Linux builds normally need a compatible **glibc and matching-architecture
+`libgcc_s.so.1`** on the deployment machine, plus any other libraries named by the
+application. These are ordinary runtime package dependencies. The GCC compiler,
+Clang, Rust and cargo-libc build tools are **not required just to run the finished
+application**. GCC's [low-level runtime](https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html)
+provides exception/unwind and compiler-support routines; it is distinct from the
+C++ `libstdc++` runtime.
+
+### Runtime names and versions
+
+The `.1` in `libgcc_s.so.1` identifies the ELF SONAME/ABI family: it does **not**
+mean GCC 1, package version 1 or a complete ABI inventory. The installed package
+version, compiler build provenance and exported `GCC_*` symbol-version labels
+are different identifiers. GCC's [ABI/versioning history](https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html)
+shows the same SONAME across compiler releases and cumulative version labels;
+`GCC_4.2.0` was introduced with GCC 4.2. That history is not a universal package
+version rule for vendor builds/backports or every architecture.
+
+GCC runtime packages are maintained and updated separately from glibc; there is
+no one-to-one GCC-runtime/glibc/distro-version mapping. For a dated example,
+[SUSE's SLES 12 SP5 Google image package changes, 2025-01-03](https://publiccloudimagechangeinfo.suse.com/google/sles-12-sp5-v20250103-x86-64/package_version_changes.html)
+list `libgcc_s1` version `13.3.0+git8781`. This describes that image, **not every
+SLES 12 SP5 installation** or a required deployment compiler version.
+
+On a SUSE target, ordinary-user, read-only package queries are:
+
+```sh
+rpm -q libgcc_s1
+rpm -ql libgcc_s1
+```
+
+These [RPM queries](https://rpm.org/docs/4.20.x/man/rpm.8) need no installation or
+`sudo`; they show the installed package label and file list. They do not prove
+which file the application loader selects or that it exports every required ABI.
+Use the target distro's supported runtime package. Copying a build-host library
+is not equivalent: that file may itself require a newer glibc or other libraries.
+
+### Check the actual executable and target runtime
+
+Read the final executable's architecture, interpreter, direct NEEDED libraries,
+RPATH/RUNPATH, version needs and undefined dynamic symbols without executing it:
+
+```sh
+readelf --wide --file-header --program-headers --dynamic ./myapp
+readelf --wide --version-info --dyn-syms ./myapp
+```
+
+Then inspect the **real runtime selected on the target**, using its actual path
+(or a copy for read-only inspection):
+
+```sh
+readelf --wide --file-header --dynamic /path/to/target/libgcc_s.so.1
+readelf --wide --version-info --dyn-syms /path/to/target/libgcc_s.so.1
+```
+
+Compare each required **symbol name + GNU version + supplying library** with a
+defined target export, not just the largest `GCC_*` label or a version-node name.
+Check ELF class/machine, the target loader's search paths/cache, RPATH/RUNPATH and
+`LD_LIBRARY_PATH`; a compatible file somewhere on disk may not be selected.
+Check the runtime's own NEEDED/version requirements and relevant transitive or
+runtime-loaded libraries too. A glibc ceiling does not cap `GCC_*` requirements
+or guarantee that libgcc is installed. Static inspection is separate from actual
+target workload testing; do not run host `ldd` on foreign/untrusted executables.
+
+Managed generated providers use a **link-only** GCC 4.8.5 reference interface
+([producer source](https://github.com/rustcommons/linux-abi-tools/blob/b5eb64899fa5e5eed2c33c7ad3e42e5df945cadc/src/libgcc.rs)):
+138 recorded definitions with version nodes through `GCC_4.8.0`. Its function
+implementations trap; **never deploy these provider stubs as runtime libraries**.
+This is the generated-provider link interface, not a compiler/package requirement
+or a blanket rule for full sysroots, which use their supplied link inputs. See
+the maintained [provider guide](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/USING-PROVIDERS.md).
+
+`cargo libc inspect --max-glibc` checks `GLIBC_*` requirements. Text/JSON list
+NEEDED names and per-library versions including `GCC_*`, but do not enforce a GCC
+floor, match target symbol exports or resolve dependency closure. JSON explicitly
+reports `transitive_dependencies_checked: false` and `runtime_tested: false`.
+The optional scanner’s glibc-version check skips `GCC_*`/`GLIBCXX_*`;
+`--strict` and `--verbose` do not enable GCC validation. Local runner host-glibc
+checks likewise do not validate GCC versions; the actual loader can still reject a missing/incompatible runtime.
+
+### Bounded application example
+
+The saved [Aero comparison](RELEASE-0.3.0.md#exact-consumer-comparison), run
+`41378111334` on 2026-11-02, records **twelve** libgcc-owned unwind imports, with
+maximum label `GCC_4.2.0` and maximum GLIBC requirement 2.18. The
+[exact symbol/version pairs and inspection evidence](evals/2026-11-03-libgcc-deployment.md)
+apply only to those binaries; they are not a universal cargo-libc guarantee or a
+recommendation to install GCC 4.2. Builds, native dependencies and full-sysroot
+choices can produce different requirements. No actual old-SLES qualification is
+implied by the modern-host comparison.
+
+For comparison, [cargo-zigbuild 0.23.4's filter](https://docs.rs/crate/cargo-zigbuild/0.23.4/source/src/zig/linker_args.rs)
+rewrites `-lgcc_s` to `-lunwind`, and [Zig constructs its bundled target unwind runtime](https://codeberg.org/ziglang/zig/src/tag/0.17.0/src/libs/libunwind.zig).
+This explains how that toolchain can link using its own runtime instead of a
+separately supplied target GCC runtime; it is a mechanism-based explanation,
+not a quotation of maintainer intent or a universal safety/libgcc-absence claim.
+It does not change cargo-libc's current deployment prerequisites.
 
 ## Choosing a target
 
@@ -337,7 +438,8 @@ includes informational scan findings. `--scan` enables scanning without a kernel
 floor, using `--max-glibc` if supplied.
 
 `GLIBCXX_*`, `CXXABI_*` and `GCC_*` requirements are listed, but they are not glibc
-and are not checked against the ceiling.
+and are not checked against the ceiling. No target GCC symbol availability or
+dependency closure is validated; see [deployment checks](#deployment-runtime-prerequisites).
 
 ### env
 
