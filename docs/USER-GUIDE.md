@@ -9,6 +9,7 @@ exactly what that glibc release defines. It then checks the result, and can run
 your tests under a simulation of the target's kernel.
 
 - [Install](#install)
+- [Host capabilities and execution routes](#host-capabilities-and-execution-routes)
 - [Quick start](#quick-start)
 - [Deployment runtime prerequisites](#deployment-runtime-prerequisites)
 - [Choosing a target](#choosing-a-target)
@@ -51,6 +52,59 @@ cargo libc --help
 This installs `cargo-libc` and its helpers `libc-linker`, `libc-runner`, `libc-cc`
 and `libc-cxx`. Keep them together in one directory, because cargo-libc finds its
 helpers next to itself.
+
+## Host capabilities and execution routes
+
+The additional capability messages and PT_INTERP preflight described here are
+unreleased source changes; published 0.3.0 retains its original diagnostics.
+
+Managed builds retain the Linux + x86_64 gate. This gate does not check
+`target_env=gnu`, certify a distro, or establish that a GNU target can run locally.
+A tool built for musl, or a statically linked tool, does not identify the running
+OS's libc. Conversely, a glibc-built tool is not a deployment-runtime certificate.
+Non-glibc build hosts remain **unqualified**: no musl-host build or execution
+matrix is claimed. Inspection, help and version do not probe host compilers,
+providers, container engines or local GNU runtime availability.
+
+Doctor distinguishes tool build ABI (provenance), bounded `/proc/self/maps`
+observations (mapped names, not verified libc identity/version), selected target
+inputs, and the execution route. Static tools, unreadable maps and conflicting
+observations remain unknown. Unknown host evidence does not itself reject a build.
+Existing selected compiler, linker, startup/header and provider checks still apply;
+failures name the tool or input operation. There is no source/container fallback.
+Host build scripts and procedural macros still use their own host toolchain.
+
+For build-input checks, use the normal build selection with doctor, for example
+`cargo libc doctor --glibc 2.22 --provider /path/to/provider.toml`. This can prepare
+a provider when automatic preparation is selected. The existing runner-only form,
+`cargo libc doctor --kernel 3.10 --runner local`, skips target input preparation.
+The local runner probe executes `/bin/sh` under seccomp; it does not prove GNU
+loader availability. A successful input or runner probe covers its named operation,
+not application dependency closure, GCC ABI availability or safety to run.
+
+Both **source and container provider preparation** currently require an x86_64
+Linux host and host GCC/binutils/startup files. Container preparation takes host
+GCC startup files too; an engine/image alone is insufficient. Source preparation
+uses GCC, recorded headers and selected GCC `include`/`include-fixed` directories
+under `-nostdinc`, followed by object verification. Named GCC 11–16 qualification
+is not qualification of non-glibc hosts. Explicit providers and full sysroots use
+the selected SDK files and Clang/linker probes instead of automatic preparation;
+SDK contents do not install a runtime on the build host.
+
+For **local execution**, libc-runner checks the validated ELF's absolute PT_INTERP
+path before launch. A reliably missing interpreter refuses execution with status 2
+and a route-specific explanation. An unreadable or ambiguous path is unknown and
+execution is attempted with a warning. A present file is only an observation:
+matching glibc, matching-architecture libgcc_s.so.1 and other runtime dependencies
+remain necessary ([deployment checks](#deployment-runtime-prerequisites)). A GNU
+loader inside a sysroot does not make that absolute path available locally.
+
+For **container execution**, the image supplies userland and the target loader;
+no local GNU loader check is applied. Selected engine/image/runtime failures still
+apply. Containers share the host kernel; kernel simulation and available syscalls
+are bounded, and image checks do not certify application dependencies or old-system
+behavior. Container execution is separate from container provider preparation and
+does not install a host loader. Tier 3 qualification remains deferred.
 
 ## Quick start
 

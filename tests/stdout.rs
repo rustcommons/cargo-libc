@@ -254,3 +254,68 @@ fn compiler_child_status_survives_unwritable_stderr() {
         }
     }
 }
+
+#[test]
+fn doctor_capabilities_preserve_closed_stdout_and_do_not_prepare_inputs() {
+    // Existing runner-only form; unavailable selected engine gives status 2,
+    // without probing target compilers or preparing a provider.
+    let doctor = || {
+        let mut cmd = command();
+        cmd.args([
+            "doctor",
+            "--kernel",
+            "3.10",
+            "--runner",
+            "container",
+            "--image",
+            "fixture",
+        ])
+        .env("PATH", "")
+        .env("CONTAINER_ENGINE", "/cargo-libc-missing-engine");
+        cmd
+    };
+    let normal = doctor().output().unwrap();
+    assert_status(&normal, 2);
+    let text = String::from_utf8_lossy(&normal.stdout);
+    assert!(text.contains("Tool build provenance:"));
+    assert!(text.contains("Host observation:"));
+    assert!(text.contains("Target input checks skipped"));
+    assert!(text.contains("no local GNU loader requirement"));
+    assert_status(&closed_stdout(&mut doctor()), 2);
+}
+
+#[test]
+fn missing_elf_interpreter_refusal_preserves_status_and_streams() {
+    let elf = Elf::new();
+    let mut bytes = fs::read(&elf.0).unwrap();
+    let dynamic = bytes[176..272].to_vec();
+    bytes.resize(800, 0);
+    bytes[560..656].copy_from_slice(&dynamic);
+    bytes[56..58].copy_from_slice(&3_u16.to_le_bytes());
+    bytes[128..136].copy_from_slice(&560_u64.to_le_bytes());
+    bytes[136..144].copy_from_slice(&560_u64.to_le_bytes());
+    bytes[96..104].copy_from_slice(&800_u64.to_le_bytes());
+    bytes[104..112].copy_from_slice(&800_u64.to_le_bytes());
+    let loader = format!(
+        "/cargo-libc-missing-interpreter-{}/ld-linux-x86-64.so.2\0",
+        std::process::id()
+    );
+    bytes[656..656 + loader.len()].copy_from_slice(loader.as_bytes());
+    bytes[176..232].fill(0);
+    bytes[176..180].copy_from_slice(&3_u32.to_le_bytes());
+    bytes[184..192].copy_from_slice(&656_u64.to_le_bytes());
+    bytes[208..216].copy_from_slice(&(loader.len() as u64).to_le_bytes());
+    fs::write(&elf.0, bytes).unwrap();
+    let runner = || {
+        let mut cmd = owned_failure(env!("CARGO_BIN_EXE_libc-runner"));
+        cmd.arg(&elf.0).env("CARGO_LIBC_RUN_GLIBC", "2.44");
+        cmd
+    };
+    let normal = runner().output().unwrap();
+    assert_status(&normal, 2);
+    assert!(normal.stdout.is_empty());
+    let error = String::from_utf8_lossy(&normal.stderr);
+    assert!(error.contains("ELF PT_INTERP"), "{error}");
+    assert!(error.contains("missing on this execution host"));
+    assert_status(&closed_stderr(&mut runner()), 2);
+}

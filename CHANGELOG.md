@@ -10,6 +10,13 @@ GitHub Release backfill is complete for all eight existing tags; see the
 
 ## [Unreleased]
 
+### Changed
+
+- Doctor/build diagnostics separate tool ABI provenance, bounded host observations,
+  selected target inputs and execution scope. Local execution explains a missing
+  ELF interpreter before launch; container execution requires no local GNU loader.
+  Non-glibc hosts remain unqualified, without a distro-based installation ban.
+
 ### Documentation
 
 - Add this changelog, versioned user-facing notes for all eight existing tags,

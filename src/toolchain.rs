@@ -291,6 +291,14 @@ impl Toolchain {
             self.ceiling
         ))?;
         line(format_args!(
+            "Selected target input route: {} (not execution-host runtime discovery)",
+            if self.provider.is_some() {
+                "provider descriptor"
+            } else {
+                "full sysroot / GCC runtime"
+            }
+        ))?;
+        line(format_args!(
             "Sysroot: {}; headers: glibc {}",
             self.sysroot.display(),
             info.header_version
@@ -503,6 +511,7 @@ fn cargo_command(
             return Err(format!("{key} is already set; use a shell without that override so the target flags are explicit"));
         }
     }
+    crate::capability::report(crate::output::diagnostic)?;
     let diagnostic = config.diagnose()?;
     config.diagnostics_to(&diagnostic, crate::output::diagnostic)?;
     let driver = sibling("libc-linker")?;

@@ -33,6 +33,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod capability;
 mod cargo_output;
 pub mod cc;
 pub mod cli;
