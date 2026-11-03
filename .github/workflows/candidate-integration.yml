@@ -27,6 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Require an exact commit
         if: inputs.integration_mode == 'source'
@@ -54,7 +55,13 @@ jobs:
             git -C candidate cat-file -e "$CANDIDATE_REF^{commit}"
           fi
           mkdir -p "$RUNNER_TEMP/consumer" "$RUNNER_TEMP/evidence"
-          git archive HEAD | tar -x -C "$RUNNER_TEMP/consumer"
+          if [ "$INTEGRATION_MODE" = source ]; then
+            git archive HEAD | tar -x -C "$RUNNER_TEMP/consumer"
+          else
+            # Keep clean exact VCS metadata for cargo package; an archive lacks .git.
+            git clone --no-hardlinks "$GITHUB_WORKSPACE" "$RUNNER_TEMP/consumer"
+            git -C "$RUNNER_TEMP/consumer" checkout --detach "$(git rev-parse HEAD)"
+          fi
           printf 'CONSUMER=%s/consumer\nEVIDENCE=%s/evidence\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
           {
             printf 'consumer=%s\n' "$(git rev-parse HEAD)"
@@ -97,7 +104,7 @@ jobs:
           data = json.loads((Path(os.environ['EVIDENCE']) / 'metadata.json').read_text())
           source_mode = os.environ['INTEGRATION_MODE'] == 'source'
           manifest_data = tomllib.loads(Path('Cargo.toml').read_text())
-          expected_versions = {'cargo-libc': '0.3.0',
+          expected_versions = {'cargo-libc': '0.4.0',
                                'libc-abi-tools': '0.4.0', 'kernel-abi-tools': '0.3.3',
                                'linux-abi-scan': '0.3.3', 'linux-targets': '0.3.3',
                                'glibc-abilists': '0.1.2', 'glibc-provider-sources': '0.1.1'}
@@ -229,6 +236,10 @@ jobs:
         run: |
           set -euo pipefail
           cd "$CONSUMER"
+          if [ "$INTEGRATION_MODE" = package ]; then
+            QUALIFY_EXPECTED_SHA="$(git rev-parse HEAD)" bash scripts/qualify-diagnostics-package.sh \
+              "$CONSUMER" /usr/bin/clang-18 "$EVIDENCE"
+          else
           {
             cargo package --locked --offline
             version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
@@ -244,6 +255,7 @@ jobs:
               CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/package-install/bin" /usr/bin/clang-18
             fi
           } 2>&1 | tee "$EVIDENCE/package-install.log"
+          fi
       - name: Verify production files are unchanged
         if: always()
         run: git diff --exit-code HEAD -- Cargo.toml Cargo.lock .github/workflows/ci.yml
@@ -255,6 +267,8 @@ jobs:
           path: ${{ runner.temp }}/evidence
           if-no-files-found: error
 
+  # Historical 0.3.0 published-install route remains unchanged. A 0.4.0
+  # published-install invocation is pending publication and is NOT part of this gate.
   installed:
     if: inputs.integration_mode == 'installed'
     runs-on: ubuntu-24.04

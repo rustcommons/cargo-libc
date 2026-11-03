@@ -27,9 +27,16 @@ five-clock default, registry/native/consumer qualification, exact archive/tag,
 actual docs.rs rendering and clean published locked installation. Strict Zig
 unwinder equivalence and actual old-system qualification remain outside that evidence.
 
-## Proposed next release investigation
+## Diagnostics release candidate and deferred research
 
-The [0.4.0 unwinder plan](UNWINDER-0.4.0-PLAN.md) proposes investigating removal
+The [0.4.0 candidate](releases/v0.4.0.md) covers merged capability diagnostics
+and local missing-interpreter refusal/status behavior. [Bounded native package/
+installation qualification](RELEASE-0.4.0.md) passed at d335f8e with explicit
+623 installation payload equivalence; final evidence review, merge and publication
+remain pending. No new host qualification is claimed.
+
+The [deferred unwinder plan](UNWINDER-0.4.0-PLAN.md), whose filename retains its
+original tentative version, has no assigned release. It proposes investigating removal
 of libgcc_s from standalone executable dependency closure while preserving
 panic=unwind and dynamic glibc. Compare selected GCC static archives with a
 validated LLVM alternative before a runtime design decision. Static opt-in versus standalone-executable default is a pending user decision;

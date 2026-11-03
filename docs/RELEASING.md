@@ -48,7 +48,8 @@ python3 scripts/check-release-docs.py --repo rustcommons/cargo-libc --published
 The second command intentionally fails while GitHub Releases are missing; it
 must not be described as passed merely because local structure passes. No crate
 publication, tag movement or new runtime validation is part of backfilling notes.
-The [0.4.0 unwinder plan](UNWINDER-0.4.0-PLAN.md) is a proposal, not shipped scope.
+The [deferred unwinder investigation](UNWINDER-0.4.0-PLAN.md) has no assigned
+release; its historical filename does not identify the 0.4.0 diagnostics candidate.
 
 ## Release records
 
@@ -59,6 +60,7 @@ READMEs link here without calling a pinned historical version current.
 
 | Version / user notes | Original UTC date | Registry/source state and evidence |
 | --- | --- | --- |
+| [0.4.0 candidate](releases/v0.4.0.md) | Not published; prepared 2026-11-03 | Diagnostics and local missing-interpreter refusal/status change. Implementation merge `748ffa23274792dd21e1cb4cd812271f1f61e1a3`; [bounded package/install qualification](RELEASE-0.4.0.md) passed at d335f8e, carrying clean installed623 payload evidence; final evidence review, merge, publication/tag/docs.rs/published install and GitHub Release are pending. No runtime replacement. |
 | [0.3.0](releases/v0.3.0.md) · [evidence](RELEASE-0.3.0.md) | 2026-11-02 | Published and verified; source/tag `a70ce9ffac6be8611b66a2829fefb3093cb41ce6`; five-clock profile, archive/docs.rs and clean published-install run 41382187049 passed; explicit coverage limits retained. |
 | [0.2.4](releases/v0.2.4.md) · [evidence](RELEASE-0.2.4.md) | 2026-11-01 | Published and verified; source/tag `889515b191ead51303b1321de858ec4e2209722c`; archive, actual README render and published-install run 41276430527 passed. |
 | [0.2.3](releases/v0.2.3.md) · [evidence](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |
@@ -94,6 +96,13 @@ borderline cases explicitly; release notes explain the old behavior, correction
 or new rule, observable impact and any migration. The 0.2.1 owned/shared stdout
 broken-pipe fixes and required `libc-abi-tools = "0.3.2"` minimum are a patch
 example: later failures and scan findings still retain their failure status.
+
+The 0.4.0 diagnostics candidate is a minor under this rule: after existing checks
+allow a direct run, a missing PT_INTERP previously reached failed OS launch and
+helper error 1; the new preflight refuses with status 2 before launch. Improved
+wording alone could be a patch, but this deliberate refusal/status change is not.
+See [candidate upgrade guidance](releases/v0.4.0.md#upgrade). This version does not
+reserve or adopt the separate unwinder proposal.
 
 A stable 1.0 contract and subsequent stable-major policy require separate
 adoption. No 1.0 schedule or stable API guarantee is implied here.

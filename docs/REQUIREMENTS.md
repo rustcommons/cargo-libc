@@ -78,6 +78,15 @@ Evidence shorthand used below:
   are verified in the [publication record](RELEASE-0.3.0.md#publication-and-installed-verification).
 
 
+- **Q40:** [0.4.0 candidate qualification](RELEASE-0.4.0.md), 2026-11-03,
+  final native package/harness `d335f8ec52a5b1e6331be57acecab01fe7f226c7`, clean
+  unpacked installation from `62347644fe1e6808b19de043c702da69077409e8` with only
+  package VCS metadata differing. Native x86 WSL/glibc 2.39, Rust 1.90, Clang 18:
+  official-baseline/registry/payload audit, all five helpers, C/CMake/host boundary,
+  thirteen capability cases and installed streams passed. Recording container
+  route only; no new musl/static-host/oldOS/LLVM qualification or published release.
+
+
 ## Requirements
 
 | ID | Requirement and source | Implementation / documentation | Verification evidence | Status and gaps |
@@ -110,7 +119,7 @@ Evidence shorthand used below:
 | CL-REQ-026 | Maintain setup-first README, authoritative guides, stable trace IDs, identifiable historical evidence and immutable package snapshots. [AGENTS documentation rules](../AGENTS.md#documentation-and-requirements-traceability). | This index/map and linked maintained guides; published README/API docs remain immutable snapshots. | Audit 2026-11-01: source/command/link/render/diff checks; shared convention page HTTP 200 and Contents API blob `1b659ff536d43bcae5b09626069e89488058ba6f` verified against central merge `c8a0b9c01aae5657dd0ef649bd37b18d81919ce5`. | Verified; bounded documentation audit only, no package release or universal behavior verification implied. |
 
 | CL-REQ-027 | Prefer libc defaults for clock_gettime, clock_getres, clock_settime, clock_nanosleep and clock_getcpuclockid without a public clock setting; retain explicit legacy versions, genuine RT APIs, linker order/state and unwinder behavior. Released 0.3.0 scope in [release record](RELEASE-0.3.0.md); [guide](USER-GUIDE.md#clock-linking). | [clock.rs](../src/clock.rs) delegates the read-only ELF copy/cache to producer `LibcClocksV1`; [clock_named.rs](../src/clock_named.rs) checks completed-Clang named selection/state and bounded standard wrappers; target prefix, controlled in-place RT substitution, generated identity and fingerprint in toolchain.rs. Raw data, user files and descriptor v1 are unchanged. | N30 all-five/mixed-version GNU/LLD ELF ownership, real RT/state/host-sysroot and upgrade cases; R30 registry/native gates; P30 final README/package/install; A30 actual consumer; I30 published installation. Rejected reordering evidence is retained in [evals](evals/2026-11-02-clock-linking.md). | Implemented—partial verification; named N30/R30/P30/A30/I30 gates passed for published 0.3.0. Opaque custom scripts/responses and unproven linker-default fallbacks refuse. Container-provider clock preparation, general dependency closure and tier 3 remain unqualified. |
-| CL-REQ-031 | Diagnose capabilities by operation, distinguishing build provenance, observed host evidence, selected glibc inputs and local/container execution; no install-time/distro rejection or silent preparation fallback. [Guide](USER-GUIDE.md#host-capabilities-and-execution-routes); approved capability-diagnostics scope, 2026-11-03. | [capability.rs](../src/capability.rs), doctor and build diagnostics, local PT_INTERP preflight in simulate.rs. Inspect/help/version retain probe-free paths. | Focused mapped-glibc/musl/unknown, missing/present/unknown interpreter and container independence fixtures; stdout/process regressions. Validation results are recorded in the PR. | Implemented—partial verification; observations are not runtime certification. Real musl/static-host operations, target dependency closure and tier 3 remain unqualified. |
+| CL-REQ-031 | Diagnose capabilities by operation, distinguishing build provenance, observed host evidence, selected glibc inputs and local/container execution; no install-time/distro rejection or silent preparation fallback. [Guide](USER-GUIDE.md#host-capabilities-and-execution-routes); approved capability-diagnostics scope, 2026-11-03. | [capability.rs](../src/capability.rs), doctor and build diagnostics, local PT_INTERP preflight in simulate.rs. Inspect/help/version retain probe-free paths. | Focused mapped-glibc/musl/unknown, missing/present/unknown interpreter and container independence fixtures; stdout/process regressions. Exact `d6b5f78fb31f7f6a5d8c604a313c78039573f9aa`: [CI 41633902033](https://github.com/rustcommons/cargo-libc/actions/runs/41633902033) and [PR CI 41633910012](https://github.com/rustcommons/cargo-libc/actions/runs/41633910012), 15/15 each plus both release-doc checks (32 total); merged `748ffa23274792dd21e1cb4cd812271f1f61e1a3` has the same tree. Q40 and [0.4.0 notes](releases/v0.4.0.md) record status migration, bounded native package/install passes and exact payload carry-forward. | Implemented—partial verification; observations are not runtime certification. Real musl/static-host operations, target dependency closure and tier 3 remain unqualified. |
 
 Release-documentation audit, 2026-11-02: official archives for all eight tags
 match registry checksums, clean VCS and tagged source; see [history](releases/HISTORY.md).
@@ -118,8 +127,9 @@ Local release-doc/syntax/link checks apply only to this documentation candidate.
 GitHub Releases were absent at the initial inspection. CL-REQ-023 now records
 successful hosted bootstrap and full live-body/latest verification; historical
 runtime-evidence gaps are preserved.
-The [0.4.0 plan](UNWINDER-0.4.0-PLAN.md) is proposed work, not a confirmed new
-runtime requirement or additional evidence for existing requirements.
+The [deferred unwinder plan](UNWINDER-0.4.0-PLAN.md) has no assigned release;
+its historical filename does not describe the [0.4.0 diagnostics candidate](releases/v0.4.0.md).
+It is not a confirmed new runtime requirement or additional verification evidence.
 
 ## Documentation map
 
@@ -134,7 +144,7 @@ runtime requirement or additional evidence for existing requirements.
 | [RELEASING](RELEASING.md) | Maintained policy | CL-REQ-023: independent versions, authorization, registry/package/install, changelog/GitHub notes and bootstrap checks; deferred tier 3. |
 | [CHANGELOG](../CHANGELOG.md), [versioned notes and history audit](releases/HISTORY.md) | Maintained user-facing history / dated reconstruction | CL-REQ-023: all eight tags, original registry dates, source identities, upgrade impact and attributed evidence/gaps; notes backfill is absent at old tags. |
 | [Release-doc checker](../scripts/check-release-docs.py), [workflow](../.github/workflows/release-docs.yml) | Executable documentation checks | CL-REQ-023: local structure/current-version coverage; published mode checks exact bodies/tags/latest. Definitions and local success do not prove hosted bootstrap or publication. |
-| [0.4.0 unwinder plan](UNWINDER-0.4.0-PLAN.md) | Planned investigation / unapproved runtime design | CL-REQ-010/011/020/023/027 are existing boundaries to preserve, not evidence for the proposal. Archive/interface/default and shared-library decisions remain open; no new requirement ID or shipped capability. |
+| [Deferred unwinder plan; historical filename](UNWINDER-0.4.0-PLAN.md) | Planned investigation / unapproved runtime design | CL-REQ-010/011/020/023/027 are existing boundaries to preserve, not evidence for the proposal. Archive/interface/default and shared-library decisions remain open; no new requirement ID or shipped capability. |
 | [ROADMAP](ROADMAP.md) | Planned/deferred work and adopted decisions | Future features remain proposals until approved; prebuilt legal and real-old-system gaps stay open. |
 | [FEATURE-REVIEW](FEATURE-REVIEW.md) | Historical decision inventory / proposed work | Preserve F/E IDs and historical dispositions; use maintained guide for implemented command scope. |
 | [VALIDATION](../VALIDATION.md) | Historical evidence index | Keep named old outcomes unchanged; current-release pointer prevents stale pending work being read as current status. |
@@ -153,6 +163,7 @@ runtime requirement or additional evidence for existing requirements.
 
 | [RELEASE-0.2.4](RELEASE-0.2.4.md) | Historical release evidence | Minimal version-neutral README navigation fix; R24/I24, official archive/tag and actual docs.rs render verified; no runtime/dependency change. |
 
+| [RELEASE-0.4.0](RELEASE-0.4.0.md), [package inventory](evals/2026-11-03-diagnostics-package-inventory.json) | Candidate qualification / dated evidence | CL-REQ-002/005/013/020/023/031; Q40 exact package/VCS/registry and clean-install identities, native fixture scope and explicit gaps. Not published. |
 | [RELEASE-0.3.0](RELEASE-0.3.0.md), [clock investigation](evals/2026-11-02-clock-linking.md) | Current published release / dated investigation | CL-REQ-006–010/020/022–024/027; qualified N30/R30/P30/A30 and published I30 evidence; preserve retired prototype failures and explicit remaining scope limits. |
 
 ## Maintenance
