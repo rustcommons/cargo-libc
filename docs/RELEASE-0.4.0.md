@@ -1,12 +1,16 @@
-# cargo-libc 0.4.0 candidate qualification record
+# cargo-libc 0.4.0 release record
 
-2026-11-03. **Candidate package/installation qualification passed within the
-scope below; not published.** Final evidence-head review, normal merge,
-publication, official archive/docs.rs verification, published installation,
-immutable tag and GitHub Release remain pending and are not authorized by this
-record. Latest verified published release remains 0.3.0.
+Published on crates.io 2026-11-03 from exact clean merge
+`aa2ea56e5d7943aeb4e0023713a089693d2103c1`, annotated tag `v0.4.0`.
+Official archive/index/API, docs.rs and a separate fresh published installation
+are verified below. GitHub Release completion uses the exact committed notes and
+live checks described below; final run links belong to the bookkeeping PR and
+release-documentation workflow history, without changing the immutable source tag.
 
-[User-facing candidate notes](releases/v0.4.0.md), [changelog](../CHANGELOG.md),
+The prepublication qualification sections retain their original tested source,
+archive and install identities; they are not relabeled as registry installation.
+
+[User-facing release notes](releases/v0.4.0.md), [changelog](../CHANGELOG.md),
 [release policy](RELEASING.md) and [requirements](REQUIREMENTS.md) distinguish
 release preparation from publication. The version is minor because a confirmed
 missing local interpreter now refuses before launch with status 2; a 0.3.0 direct
@@ -136,7 +140,7 @@ remain outside the package. No GitHub package-qualification run ID is invented.
 | `qualification040-phase2-native-proof.tar.gz` | 165058 | `7e2dd77093f0b1dcee60e34e7265d3aa06707227443b49ec86004f08220be2b5` | d335 package/re-audit and all 13 capability cases/raw outputs; all 42 listed member hashes verified. |
 | `qualification040-phase3-stream-proof.tar.gz` | 1755 | `1924fd8d68a50501b6a9f850732893a9c94eebb03e8c85737d1c4cfcf262796b` | Installed stream command/result/raw log; all three listed member hashes verified. |
 
-## Limits and remaining completion steps
+## Prepublication limits and completion boundary
 
 The recording engine proves **container routing only**; it never starts an image.
 No new actual-container package-execution claim, real musl/static-host
@@ -149,7 +153,113 @@ gates remain unchanged.
 
 Only excluded evidence/notes/index changes follow the tested candidate. Verify
 source/package-input and harness equality to `d335f8e` during narrow review.
-Normal merge, any final-commit packaging/VCS audit, publication, official
-archive/checksum/non-yanked verification, tag, actual docs.rs rendering,
-published clean installation and GitHub Release completion remain separate and
-pending. No source/package/install run was repeated for this evidence-only update.
+Those candidate-stage next steps are superseded only by the separately recorded
+publication evidence below. No source/package/install run was repeated merely
+for an excluded evidence-only update.
+
+
+## Publication and installed verification
+
+The authorized publisher completed `cargo +1.90 publish --locked` from exact
+clean merge `aa2ea56e5d7943aeb4e0023713a089693d2103c1`, exit 0. Independent
+verification downloaded the official archive and matched its full SHA256 to both
+the crates.io version API and sparse index; version 0.4.0 is non-yanked.
+
+| Published identity | Verified value |
+| --- | --- |
+| Official archive | 73,212 bytes / 26 files |
+| SHA256 | `7c6177bbd11ddc43cf2e800ea2b30050eeaf52942eebbec4e531dcbc60ba6e0b` |
+| Clean VCS / source commit | `aa2ea56e5d7943aeb4e0023713a089693d2103c1` |
+| Annotated tag | [`v0.4.0`](https://github.com/rustcommons/cargo-libc/tree/v0.4.0), tag object `fbb0382d0fbbc02a185355e7cf18329c57b99aaa`, peels to the exact release commit |
+| Release-commit docs CI | [41661380882](https://github.com/rustcommons/cargo-libc/actions/runs/41661380882), success at `aa2ea56` |
+| Docs.rs | [API](https://docs.rs/cargo-libc/0.4.0/cargo_libc/), [actual README](https://docs.rs/crate/cargo-libc/0.4.0), [build 5140751](https://docs.rs/crate/cargo-libc/0.4.0/builds/5140751), HTTP 200 |
+
+Every source, manifest, lock, README and legal-file byte equals the released
+checkout. Comparing the entire official payload with native-tested `d335f8e`
+finds only `.cargo_vcs_info.json` different; normalized manifest and all package
+payload names are unchanged. The published archive is also byte-equal to the
+clean merged package verified by the publisher. No dependency/checksum or raw-data
+change was introduced. The tag did not exist locally/remotely before creation;
+it was created annotated at the release commit and never moved.
+
+A real browser verified the actual docs.rs README, six package images including
+the banner/badges, and absolute guide navigation. API/build/readme pages and the
+actual README guide, release-policy and banner targets returned HTTP 200.
+Docs.rs uses its own documentation toolchain; it is not the Rust 1.90 MSRV gate.
+
+### Separate published registry installation
+
+A fresh Cargo home and isolated root on native x86_64 WSL/glibc 2.39 used:
+
+```sh
+cargo install cargo-libc --version 0.4.0 --locked --root <isolated-root>
+bash scripts/smoke-installed.sh <isolated-root> /usr/bin/clang-18 0.4.0
+python3 scripts/check-installed-capabilities.py   <isolated-root>/bin /usr/bin/clang-18 <capability-evidence>
+python3 scripts/check-run-streams.py <isolated-root>/bin /usr/bin/clang-18
+```
+
+Rust 1.90, two build workers, one heavy job at a time; the install took 21.68s,
+smoke 14.13s, capabilities 0.31s and streams 17.34s. All four phases exited 0.
+All five installed executable hashes were verified. The recorded driver creates
+a new work directory/Cargo home, installs registry 0.4.0 rather than a source
+path, removes conflicting test overrides and then exercises that installation.
+
+The smoke verifies source provider2.17, real C/CMake target headers and native
+host proc-macro separation, actual execution under local 3.10 simulation, inspect,
+provider stdout and target C++ refusal. All thirteen capability cases passed:
+no-probe help/version/inspect, missing local/direct PT_INTERP and closed diagnostic
+pipe status 2, recording-engine container routing/doctor failure semantics and
+host C/C++ wrapper compilation. Run/test/direct-runner stdin, exact JSON stdout,
+separate diagnostics, intended failure statuses and output-error controls passed.
+
+Published proof: `published040-native-proof.tar.gz`, **7,369,489 bytes**, SHA256
+`ba9c39009ca306758ad931607ccc0fd47bb9543190f625558808a26c597adec0`;
+all **44** member hashes, the official archive and five installed executable
+hashes were independently checked. The
+[publication identity record](evals/2026-11-03-diagnostics-publication.json) retains
+archive/payload/binary identities, tool scope and result summaries.
+
+This is native recorded verification, **not a hosted published-install run**.
+The container fixture uses a recording engine; no real container matrix was
+rerun. Real musl/static hosts, actual old OS/tier3, LLVM/runtime replacement,
+full GCC/dependency/plugin/load-path compatibility and general execution safety
+remain unqualified. System unwinder and all existing legal/qualification gaps
+are unchanged. No credential provisioning or crate republication occurred.
+
+### Automatic post-merge CI infrastructure outcome
+
+[Automatic main CI 41661380958](https://github.com/rustcommons/cargo-libc/actions/runs/41661380958)
+at exact `aa2ea56` ended with nine successful jobs and six failures during
+`install-clang.sh` compiler setup. Every failed job log independently shows
+`curl: (6) Could not resolve host: apt.llvm.org` before its product-test step.
+The affected jobs are Clang24 linking, source providers, container provider
+preparation, Python extensions and two Cargo-command release groups. No actual
+product failure was reported in those failed jobs; their tests did not run.
+
+This automatic post-merge run is **not claimed green** and is retained as
+infrastructure evidence. The approved 32-check implementation refs, separately
+qualified native package/install and actual published-registry installation
+above are the applicable named evidence. Release-commit docs CI 41661380882
+passed. The setup-only failure does not justify changing product source or
+rerunning unchanged broad matrices; no such rerun was requested or performed.
+
+### GitHub Release completion
+
+The canonical body is the exact committed `docs/releases/v0.4.0.md`, used with
+existing annotated tag `v0.4.0`, stable/latest status and zero assets after the
+publication documentation PR is reviewed, checked and normally merged. This
+record does not pre-claim a successful future API check.
+
+Completion verifies the live release's tag, exact body, latest status and asset
+count, then runs the registered release-doc workflow with `verify_published=true`
+and the equivalent full command:
+
+```sh
+python3 scripts/check-release-docs.py --repo rustcommons/cargo-libc --published
+```
+
+The final run/result links are retained in the publication bookkeeping PR and
+[release-doc workflow history](https://github.com/rustcommons/cargo-libc/actions/workflows/release-docs.yml).
+The earlier local-only docs CI is not relabeled as published-mode verification.
+No registry upload, source/tag movement, broad matrix rerun or package change is
+part of that documentation completion.

@@ -6,7 +6,7 @@ Shipped-version dates below are original crates.io publication dates (UTC);
 an explicitly marked candidate uses its preparation date. Notes reconstructed
 on 2026-11-02 were not present in historical tags; see the
 [history audit](docs/releases/HISTORY.md) for provenance and evidence gaps.
-GitHub Release backfill is complete for all eight existing tags; see the
+Historical GitHub Release backfill is complete for the eight tags through 0.3.0; see the
 [completion evidence](docs/releases/HISTORY.md#completed-backfill).
 
 ## [Unreleased]
@@ -15,10 +15,9 @@ No additional changes assigned.
 
 ## [0.4.0] - 2026-11-03
 
-**Candidate preparation date; not published.** Bounded native package/clean
-unpacked-install checks passed; [candidate evidence](docs/RELEASE-0.4.0.md) records
-tested refs, archive hashes and coverage limits. Final evidence review, merge and
-publication remain pending.
+**Published 2026-11-03.** [Release evidence](docs/RELEASE-0.4.0.md) records exact
+source/tag/archive, docs.rs and separate fresh registry-install verification,
+alongside prepublication candidate evidence and preserved coverage limits.
 
 ### Changed
 
@@ -41,7 +40,7 @@ publication remain pending.
   unassigned future research, not this release. System unwinder, five-clock
   policy, dependencies, MSRV and native-tool floors are unchanged.
 
-[Candidate notes](docs/releases/v0.4.0.md). Existing published records below are unchanged.
+[Release notes](docs/releases/v0.4.0.md) · [Source tag](https://github.com/rustcommons/cargo-libc/tree/v0.4.0). Existing historical records below are unchanged.
 
 ## [0.3.0] - 2026-11-02
 

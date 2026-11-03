@@ -27,13 +27,14 @@ five-clock default, registry/native/consumer qualification, exact archive/tag,
 actual docs.rs rendering and clean published locked installation. Strict Zig
 unwinder equivalence and actual old-system qualification remain outside that evidence.
 
-## Diagnostics release candidate and deferred research
+## Diagnostics release and deferred research
 
-The [0.4.0 candidate](releases/v0.4.0.md) covers merged capability diagnostics
-and local missing-interpreter refusal/status behavior. [Bounded native package/
-installation qualification](RELEASE-0.4.0.md) passed at d335f8e with explicit
-623 installation payload equivalence; final evidence review, merge and publication
-remain pending. No new host qualification is claimed.
+[Cargo-libc 0.4.0](RELEASE-0.4.0.md) is published and verified: exact source/tag
+`aa2ea56`, official archive/index checksum and docs.rs actual rendering/navigation,
+plus a separate fresh native Rust 1.90 registry locked installation and affected
+installed workflows. Prepublication candidate evidence is retained separately.
+No new host qualification or LLVM/runtime replacement is claimed; container
+routing in the published-install packet uses a recording engine only.
 
 The [deferred unwinder plan](UNWINDER-0.4.0-PLAN.md), whose filename retains its
 original tentative version, has no assigned release. It proposes investigating removal
