@@ -106,6 +106,8 @@ are different identifiers. GCC's [ABI/versioning history](https://gcc.gnu.org/on
 shows the same SONAME across compiler releases and cumulative version labels;
 `GCC_4.2.0` was introduced with GCC 4.2. That history is not a universal package
 version rule for vendor builds/backports or every architecture.
+For the full upstream version table and scoped architecture evidence, see the
+maintained [GCC runtime ABI history](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/GCC-RUNTIME.md#upstream-namespace-history-and-x86-evidence).
 
 GCC runtime packages are maintained and updated separately from glibc; there is
 no one-to-one GCC-runtime/glibc/distro-version mapping. For a dated example,
