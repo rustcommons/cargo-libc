@@ -578,13 +578,20 @@ mod tests {
 
     #[test]
     fn interpreter_check_is_local_and_independent_of_sdk_or_tool_abi() {
+        // Use an absolute path in the execution host's syntax. On Windows,
+        // /name is rooted but lacks a drive/UNC prefix: availability is unknown,
+        // not an established missing interpreter.
+        let missing = std::env::temp_dir()
+            .canonicalize()
+            .unwrap()
+            .join(format!("cargo-libc-missing-loader-{}", std::process::id()))
+            .join("ld-linux-x86-64.so.2");
+        assert!(missing.is_absolute());
+        assert!(!missing.exists());
         let info = ElfInfo {
             machine: 62,
             soname: None,
-            interpreter: Some(format!(
-                "/cargo-libc-missing-loader-{}/ld-linux-x86-64.so.2",
-                std::process::id()
-            )),
+            interpreter: Some(missing.to_str().unwrap().into()),
             needed: vec![],
             rpath: vec![],
             runpath: vec![],
@@ -616,6 +623,21 @@ mod tests {
             check_interpreter(&Plan::Direct, "fixture", &present).unwrap(),
             None
         );
+        #[cfg(windows)]
+        {
+            let unix_path = ElfInfo {
+                interpreter: Some("/cargo-libc-missing-loader/ld-linux-x86-64.so.2".into()),
+                ..info.clone()
+            };
+            assert!(matches!(
+                crate::capability::interpreter(unix_path.interpreter.as_ref().unwrap()),
+                crate::capability::Interpreter::Unknown(_)
+            ));
+            assert_eq!(
+                check_interpreter(&Plan::Direct, "fixture", &unix_path).unwrap(),
+                None
+            );
+        }
         let no_interp = ElfInfo {
             interpreter: None,
             ..info
