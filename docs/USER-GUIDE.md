@@ -1,6 +1,7 @@
 # cargo-libc user guide
 
-Maintained guide for cargo-libc 0.4.0, published 2026-11-03. See the [requirements index](REQUIREMENTS.md)
+Maintained source guide for the cargo-libc 0.5.0 candidate (not published);
+0.4.0 remains the latest verified release. See the [requirements index](REQUIREMENTS.md)
 and [release evidence](RELEASE-0.4.0.md) for scope and verification limits.
 
 cargo-libc builds Rust programs on a current x86_64 Linux machine for older glibc
@@ -52,6 +53,11 @@ cargo libc --help
 This installs `cargo-libc` and its helpers `libc-linker`, `libc-runner`, `libc-cc`
 and `libc-cxx`. Keep them together in one directory, because cargo-libc finds its
 helpers next to itself.
+
+The unreleased 0.5.0 candidate adds an explicit two-file
+[`inspect --target-libgcc` comparison](TARGET-LIBGCC.md), including exact
+symbol/version requirements, exits 0/2/3 and limits. Released 0.4.0 does not
+include this option; ordinary inspection still does not validate GCC availability.
 
 ## Host capabilities and execution routes
 

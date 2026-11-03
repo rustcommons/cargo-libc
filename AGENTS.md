@@ -45,6 +45,11 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
   page and links to it.
 - Present the `inspect`/`build` scan as tier 1 (least reliable) and
   `test`/`run` as tier 2 (simulation); never either as qualification.
+- Keep `inspect --target-libgcc` an explicit read-only two-file check. Version
+  nodes and symbol weakness are independent. Incomplete relevant enumeration
+  cannot prove absence or a match; preserve separately validated node failures
+  while reporting unknown symbol inventories. No loader/dependency/runtime safety
+  claim, implicit host-runtime selection or changed link policy follows.
 - Preserve upstream attribution and license notices for any reused material.
 - Ask about unresolved product decisions; do not invent compatibility claims.
 

@@ -97,6 +97,24 @@ cargo-libc delegates provider preparation to `libc-abi-tools`; it does not
 implement a second provider builder. It uses the host Clang driver, GNU `ld` and
 GCC inputs rather than implementing a compiler or linker.
 
+### Unreleased explicit runtime comparison
+
+The source candidate adds an inspect-only `--target-libgcc FILE` path in
+[gcc.rs](src/gcc.rs), with optional exact extraction in
+[elf/exact.rs](src/elf/exact.rs). It reads the primary ELF and the selected
+runtime, compares independently required version nodes and function interfaces,
+and reports the runtime's own direct glibc requirements separately. It does not
+enter the provider/link/run arrows above, discover libraries or execute either
+file. Ordinary inspect remains independent of this optional parser.
+
+Only full byte hashing is delegated to the companion's new
+`content_sha256` API; the comparator and conservative incomplete-result policy
+remain internal to Cargo. That API's real registry adoption is still pending;
+source qualification uses a disposable patch, not a production dependency
+override. [CL-REQ-032 and the checker contract](docs/TARGET-LIBGCC.md) cover this
+unreleased boundary and exclusions. No dependency closure, loader selection,
+genuine-runtime or unwinder-coexistence claim is introduced.
+
 ## Provider and sysroot inputs
 
 An automatic provider supplies the selected release's headers, startup and
