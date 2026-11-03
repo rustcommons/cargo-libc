@@ -55,9 +55,23 @@ fn hash_name(name: &str, gnu: bool) -> u32 {
     }
 }
 
-/// Returns an exhaustive dynsym inventory or an error, never a partial result.
-/// Counts come from dynamic SysV/GNU hash tables, not section headers or EOF.
-pub(crate) fn inspect(bytes: &[u8]) -> Result<Vec<Symbol>, String> {
+struct Metadata<'a> {
+    reader: Reader<'a>,
+    loads: Vec<Segment>,
+    tags: BTreeMap<u64, u64>,
+    strings: &'a [u8],
+    indexes: BTreeMap<u16, VersionIndex>,
+    budget: Budget,
+    symbol_error: Option<String>,
+}
+
+/// Strict version validation independent of optional symbol/hash enumeration.
+/// Returns whether DT_VERDEF is present, not whether symbol enumeration passed.
+pub(crate) fn validated_versions(bytes: &[u8]) -> Result<bool, String> {
+    Ok(metadata(bytes)?.tags.contains_key(&DT_VERDEF))
+}
+
+fn metadata(bytes: &[u8]) -> Result<Metadata<'_>, String> {
     super::inspect(bytes)?;
     let reader = Reader { bytes };
     let mut loads = Vec::new();
@@ -78,6 +92,7 @@ pub(crate) fn inspect(bytes: &[u8]) -> Result<Vec<Symbol>, String> {
     }
     let dynamic = dynamic.ok_or("no dynamic symbol metadata")?;
     let mut tags = BTreeMap::new();
+    let mut symbol_error = None;
     for i in 0..dynamic.filesz / DYNAMIC_ENTRY_SIZE {
         let offset = dynamic.offset + i * DYNAMIC_ENTRY_SIZE;
         let tag = reader.u64(offset)?;
@@ -110,7 +125,19 @@ pub(crate) fn inspect(bytes: &[u8]) -> Result<Vec<Symbol>, String> {
         .contains(&tag)
             && tags.insert(tag, reader.u64(offset + 8)?).is_some()
         {
-            return Err(format!("duplicate dynamic symbol tag {tag:#x}"));
+            if [
+                DT_STRTAB,
+                DT_STRSZ,
+                DT_VERNEED,
+                DT_VERNEEDNUM,
+                DT_VERDEF,
+                DT_VERDEFNUM,
+            ]
+            .contains(&tag)
+            {
+                return Err(format!("duplicate version metadata tag {tag:#x}"));
+            }
+            symbol_error = Some(format!("duplicate dynamic symbol tag {tag:#x}"));
         }
     }
     let required = |tag| {
@@ -243,6 +270,37 @@ pub(crate) fn inspect(bytes: &[u8]) -> Result<Vec<Symbol>, String> {
         }
     }
 
+    Ok(Metadata {
+        reader,
+        loads,
+        tags,
+        strings,
+        indexes,
+        budget,
+        symbol_error,
+    })
+}
+
+/// Exhaustive supported dynsym inventory, or an error, never a partial result.
+pub(crate) fn inspect(bytes: &[u8]) -> Result<Vec<Symbol>, String> {
+    let Metadata {
+        reader,
+        loads,
+        tags,
+        strings,
+        indexes,
+        mut budget,
+        symbol_error,
+    } = metadata(bytes)?;
+    if let Some(error) = symbol_error {
+        return Err(error);
+    }
+    let required = |tag| {
+        tags.get(&tag)
+            .copied()
+            .ok_or_else(|| format!("missing dynamic symbol tag {tag:#x}"))
+    };
+    let mapped = |address, length| file_offset(&loads, address, length);
     let mut count = None;
     let mut sysv = None;
     if let Some(&address) = tags.get(&4) {
@@ -598,6 +656,16 @@ mod tests {
             }
             assert!(inspect(&b).is_err(), "case {case}");
         }
+    }
+
+    #[test]
+    fn version_validation_is_independent_of_symbol_count_evidence() {
+        let mut b = fixture();
+        tag(&mut b, 4, 21, 0);
+        assert!(!validated_versions(&b).unwrap());
+        assert!(inspect(&b).is_err());
+        put32(&mut b, 0x910, 0);
+        assert!(validated_versions(&b).is_err());
     }
 
     #[test]

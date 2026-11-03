@@ -142,6 +142,33 @@ new_glibc=library("new_glibc",source="extern int new_glibc_api(void); int gcc_ap
 v=compare("candidate_glibc_floor",app,new_glibc,2,"match",["--max-glibc","2.22"])
 assert v["gcc_abi_comparison"]["target_runtime_metadata"]["direct_glibc_requirement_check"]=="fail"
 compare("independent_target_floor_despite_optional_failure",unsupported,new_glibc,2,"unresolved",["--max-glibc","2.22"])
+# Version nodes are independently validated before optional symbol enumeration.
+missing_node=library("missing_node",version="GCC_3.0")
+v=compare("node_failure_despite_artifact_symbol_failure",unsupported,missing_node,2,"missing")
+assert v["gcc_abi_comparison"]["version_enumeration_complete"] is True
+assert v["gcc_abi_comparison"]["enumeration_complete"] is False
+assert v["gcc_abi_comparison"]["version_requirements"][0]["status"]=="missing"
+data=bytearray(missing_node.read_bytes());mapped,tags=tables(data)
+for tag in [4,0x6ffffef5]:
+    if tag in tags:struct.pack_into("<Q",data,tags[tag][0],21)
+missing_bad_hash=out/"missing-node-no-hash.so";missing_bad_hash.write_bytes(data)
+v=compare("node_failure_despite_target_symbol_failure",app,missing_bad_hash,2,"missing")
+assert v["gcc_abi_comparison"]["version_enumeration_complete"] is True
+assert v["gcc_abi_comparison"]["enumeration_complete"] is False
+# No DT_VERDEF at all is distinct from a versioned runtime lacking a node:
+# unmodeled versionless lookup fallback is unresolved, not proven failure.
+versionless_c=out/"versionless.c";versionless_c.write_text("int gcc_api(void) { return 7; }\n")
+versionless=out/"versionless.so"
+command(["gcc","-shared","-fPIC","-nostdlib","-fuse-ld=bfd",str(versionless_c),"-o",str(versionless),"-Wl,--hash-style=both","-Wl,-soname,libgcc_s.so.1"])
+compare("wholly_versionless_fallback",app,versionless,3,"unresolved")
+compare("versionless_weak_import_node",weak,versionless,3,"unresolved")
+compare("versionless_zero_reference_node",zero,versionless,3,"unresolved")
+# Corrupt version metadata cannot establish an independently missing node.
+data=bytearray(missing_node.read_bytes());mapped,tags=tables(data)
+struct.pack_into("<I",data,mapped(tags[0x6ffffffc][1])+8,0)
+bad_nodes=out/"bad-node-hash.so";bad_nodes.write_bytes(data)
+v=compare("invalid_node_metadata_not_absence",app,bad_nodes,3,"unresolved")
+assert v["gcc_abi_comparison"]["version_enumeration_complete"] is False
 # Non-UTF-8 filenames and explicit symlinks refer to the same inspected bytes.
 if os.name == "posix":
     native=out/os.fsdecode(b"runtime-\xff.so");native.write_bytes(good.read_bytes())

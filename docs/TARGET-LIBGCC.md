@@ -29,7 +29,7 @@ linker scripts or arbitrary search paths. It performs no compiler/package probe,
 network lookup, `ldd`, `dlopen`, IFUNC execution or runtime test.
 
 The mandatory version nodes recorded with exact owner `libgcc_s.so.1` are checked
-independently of dynamic symbols. A missing mandatory node fails even when only
+independently of dynamic symbols. In a versioned target, a missing mandatory node fails even when only
 weak symbols, or no symbols, reference it. The symbol comparison then checks
 each owner-attributed function import against an externally visible, hash-table
 reachable definition with the exact name and version. Higher-numbered versions
@@ -43,6 +43,10 @@ FUNC/IFUNC definitions establish function-interface availability only, without
 calling a resolver or checking a function signature. Object/TLS, canonical PLT,
 copy/unsupported representations and ambiguous definitions are unresolved,
 rather than silently omitted. Versionless fallback behavior is not modeled.
+A wholly unversioned target (no DT_VERDEF) with an otherwise potentially
+matching unversioned function is therefore unresolved, not declared incompatible
+solely because its version nodes are absent. Other independently proven failures
+retain precedence.
 
 Ownership comes from recorded version indices and `vn_file`, not `_Unwind_*`
 spelling or `GCC_*` labels. Other recorded owners are listed as outside scope.
@@ -61,7 +65,7 @@ artifact. They do not change GCC matching rules.
 | Result | Meaning |
 | --- | --- |
 | `match` | All enumerated mandatory owner-attributed nodes/pairs are present in this supplied file; optional absences and exclusions remain visible. |
-| `missing` | Complete comparison proves a missing mandatory interface, or the supplied ELF's architecture, SONAME or type is incompatible. |
+| `missing` | Validated relevant metadata proves a missing mandatory interface, or the supplied ELF's architecture, SONAME or type is incompatible. |
 | `unresolved` | Inputs, attribution, representation or bounded enumeration cannot establish the comparison. No incomplete table is treated as empty. |
 
 | Exit | Meaning with this option |
@@ -76,7 +80,10 @@ GLIBC_2.34 above `--max-glibc 2.22`. GCC status stays `match`; the separately
 labeled runtime glibc assessment fails and the command returns 2. A runtime's
 own glibc failure can likewise return 2 while an optional symbol parser is
 unresolved. Missing/unreadable/malformed target files produce a structured
-unresolved result, preserving successful primary ELF inspection.
+unresolved result, preserving successful primary ELF inspection. A separately
+validated missing mandatory version node in a versioned target still returns 2
+when optional symbol enumeration fails; unknown symbol inventory is not reported
+as absence. Invalid version hashes/index records cannot establish node absence.
 
 Without `--target-libgcc`, existing inspect output and exits are preserved and
 no optional exact-symbol parsing is required.
@@ -86,7 +93,8 @@ no optional exact-symbol parsing is required.
 With `--json`, existing root fields remain and `gcc_abi_comparison` is added only
 when requested. Schema version 1 includes:
 
-- `status`, `scope`, `enumeration_complete`, and stable per-row `reason_code`s;
+- `status`, `scope`, separate `version_enumeration_complete` and symbol
+  `enumeration_complete` flags, and stable per-row `reason_code`s;
 - independent `version_requirements` and `requirements` inventories, required
   flags, binding/type/version evidence and exact matching definitions;
 - `other_owner_imports`, `unowned_imports`, and mandatory/optional node/pair counts;

@@ -50,6 +50,7 @@ pub(crate) struct Comparison {
     target_metadata: String,
     pub target_glibc_failed: bool,
     enumeration_complete: bool,
+    version_enumeration_complete: bool,
 }
 
 fn q(s: &str) -> String {
@@ -147,13 +148,13 @@ impl Comparison {
             format!("{{\"required_matched\":{},\"required_missing\":{},\"required_unresolved\":{},\"optional_matched\":{},\"optional_absent\":{}}}", count(true, Status::Match), count(true, Status::Missing), count(true, Status::Unresolved), count(false, Status::Match), count(false, Status::OptionalAbsent))
         };
         format!(concat!("{{\"schema_version\":1,\"status\":{},\"scope\":\"direct_recorded_libgcc_requirements\",",
-            "\"artifact_identity\":{},\"target_identity\":{},\"enumeration_complete\":{},",
+            "\"artifact_identity\":{},\"target_identity\":{},\"enumeration_complete\":{},\"version_enumeration_complete\":{},",
             "\"version_requirements\":[{}],\"requirements\":[{}],\"other_owner_imports\":[{}],\"unowned_imports\":[{}],",
             "\"counts\":{{\"version_nodes\":{},\"symbol_pairs\":{}}},\"target_runtime_metadata\":{},\"findings\":[{}],",
             "\"all_application_imports_checked\":false,\"selected_by_target_loader_verified\":false,",
             "\"transitive_dependencies_checked\":false,\"plugins_checked\":false,\"runtime_tested\":false,",
             "\"cpu_kernel_compatibility_checked\":false,\"runtime_implementation_authenticated\":false}}"),
-            q(self.status.name()), self.artifact_identity, self.target_identity, self.enumeration_complete,
+            q(self.status.name()), self.artifact_identity, self.target_identity, self.enumeration_complete, self.version_enumeration_complete,
             join(self.nodes.iter().collect()), join(self.rows.iter().filter(|r| r.owner.as_deref() == Some(OWNER)).collect()),
             join(self.rows.iter().filter(|r| r.owner.as_deref().is_some_and(|o| o != OWNER)).collect()),
             join(self.rows.iter().filter(|r| r.owner.is_none()).collect()),
@@ -202,12 +203,11 @@ impl Comparison {
     }
 }
 
-fn compare_symbols(
+fn compare_nodes(
     result: &mut Comparison,
     info: &elf::ElfInfo,
-    imports: &[Symbol],
-    definitions: &[Symbol],
     target: &elf::ElfInfo,
+    target_versioned: bool,
 ) {
     for node in info.versions.iter().filter(|v| v.library == OWNER) {
         let found = target.definitions.contains(&node.name);
@@ -224,17 +224,32 @@ fn compare_symbols(
                 Status::Match
             } else if node.weak {
                 Status::OptionalAbsent
+            } else if !target_versioned {
+                Status::Unresolved
             } else {
                 Status::Missing
             },
             reason: if found {
                 "version_node_present"
+            } else if !target_versioned {
+                "unversioned_fallback_not_modeled"
             } else {
                 "version_node_absent"
             },
             definition: None,
         });
     }
+    result.version_enumeration_complete = true;
+    if result
+        .nodes
+        .iter()
+        .any(|r| r.required && r.status == Status::Missing)
+    {
+        result.status = Status::Missing;
+    }
+}
+
+fn compare_symbols(result: &mut Comparison, imports: &[Symbol], definitions: &[Symbol]) {
     let mut exports: BTreeMap<&str, Vec<&Symbol>> = BTreeMap::new();
     for s in definitions.iter().filter(|s| {
         s.defined
@@ -331,6 +346,9 @@ fn compare_symbols(
     {
         Status::Missing
     } else if relevant.is_empty()
+        || relevant
+            .iter()
+            .any(|r| r.required && r.status == Status::Unresolved)
         || result
             .rows
             .iter()
@@ -365,8 +383,8 @@ pub(crate) fn compare(
         target_metadata: "null".into(),
         target_glibc_failed: false,
         enumeration_complete: false,
+        version_enumeration_complete: false,
     };
-    let imports = elf::exact::inspect(bytes);
     let target_bytes = match report::read_bytes_limited(target_path, 64 * 1024 * 1024) {
         Ok(b) => b,
         Err(e) => {
@@ -407,7 +425,19 @@ pub(crate) fn compare(
         );
         return result;
     }
-    let imports = match imports {
+    if let Err(error) = elf::exact::validated_versions(bytes) {
+        result.finding("artifact_version_metadata_unresolved", &error);
+        return result;
+    }
+    let target_versioned = match elf::exact::validated_versions(&target_bytes) {
+        Ok(value) => value,
+        Err(error) => {
+            result.finding("target_version_metadata_unresolved", &error);
+            return result;
+        }
+    };
+    compare_nodes(&mut result, info, &target, target_versioned);
+    let imports = match elf::exact::inspect(bytes) {
         Ok(s) => s,
         Err(e) => {
             result.finding("artifact_enumeration_unresolved", &e);
@@ -426,7 +456,7 @@ pub(crate) fn compare(
         return result;
     }
     result.enumeration_complete = true;
-    compare_symbols(&mut result, info, &imports, &definitions, &target);
+    compare_symbols(&mut result, &imports, &definitions);
     result
 }
 
@@ -473,6 +503,15 @@ mod tests {
         definitions: &[Symbol],
         target: &ElfInfo,
     ) -> Comparison {
+        run_with_versioning(a, imports, definitions, target, true)
+    }
+    fn run_with_versioning(
+        a: &ElfInfo,
+        imports: &[Symbol],
+        definitions: &[Symbol],
+        target: &ElfInfo,
+        versioned: bool,
+    ) -> Comparison {
         let mut c = Comparison {
             artifact_identity: "null".into(),
             target_identity: "null".into(),
@@ -483,8 +522,10 @@ mod tests {
             target_metadata: "null".into(),
             target_glibc_failed: false,
             enumeration_complete: true,
+            version_enumeration_complete: false,
         };
-        compare_symbols(&mut c, a, imports, definitions, target);
+        compare_nodes(&mut c, a, target, versioned);
+        compare_symbols(&mut c, imports, definitions);
         c
     }
     #[test]
@@ -523,6 +564,19 @@ mod tests {
         let c = run(&app, &[strong], &[], &info());
         assert_eq!(c.status, Status::Missing);
         assert!(c.rows[0].required);
+    }
+
+    #[test]
+    fn versionless_required_node_is_unresolved_with_weak_or_zero_imports() {
+        let mut target = info();
+        target.definitions.clear();
+        let mut weak = symbol(false);
+        weak.binding = 2;
+        for imports in [vec![weak], vec![]] {
+            let c = run_with_versioning(&info(), &imports, &[], &target, false);
+            assert_eq!(c.status, Status::Unresolved);
+            assert_eq!(c.nodes[0].status, Status::Unresolved);
+        }
     }
     #[test]
     fn name_node_and_version_each_matter() {
