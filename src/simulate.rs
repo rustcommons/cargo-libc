@@ -315,6 +315,32 @@ fn check_host(program: &str, info: &ElfInfo) -> Option<i32> {
     }
 }
 
+/// Missing is established from the validated ELF's exact PT_INTERP path, not
+/// inferred from a failed exec or the helper's own libc/build ABI.
+fn check_interpreter(plan: &Plan, program: &str, info: &ElfInfo) -> Result<Option<i32>, String> {
+    if matches!(plan, Plan::Container(..)) {
+        return Ok(None);
+    }
+    let Some(path) = &info.interpreter else {
+        return Ok(None);
+    };
+    match crate::capability::interpreter(path) {
+        crate::capability::Interpreter::Observed => Ok(None),
+        crate::capability::Interpreter::Missing => {
+            let _ = crate::output::diagnostic(format_args!(
+                "libc-runner: not running {program} locally: ELF PT_INTERP {path} is missing on this execution host. A loader inside a build sysroot does not install it here. Supply the matching GNU runtime through the execution host's supported packages, or select container execution with an appropriate image and kernel floor. Build-only and inspect do not require this local loader."
+            ));
+            Ok(Some(2))
+        }
+        crate::capability::Interpreter::Unknown(reason) => {
+            crate::output::diagnostic(format_args!(
+                "libc-runner: warning: local ELF PT_INTERP {path} availability unknown ({reason}); attempting execution. Loader presence alone would not verify libgcc, symbols or dependency closure."
+            ))?;
+            Ok(None)
+        }
+    }
+}
+
 /// The `libc-runner` entry point: `libc-runner PROGRAM [ARGS...]`, Cargo's target
 /// runner. Refuses a program that needs a newer glibc than the target, or one the
 /// host's libraries cannot load when it runs on the host, then runs it under the
@@ -354,7 +380,10 @@ pub fn run_program(mut args: impl Iterator<Item = OsString>) -> Result<i32, Stri
     }
 
     let (plan, target) = sim.plan()?;
-    // The container supplies its own glibc; the other plans use the host's.
+    // The container supplies its own userland, including the interpreter.
+    if let Some(code) = check_interpreter(&plan, &program, &info)? {
+        return Ok(code);
+    }
     if !matches!(plan, Plan::Container(..)) {
         if let Some(code) = check_host(&program, &info) {
             return Ok(code);
@@ -488,6 +517,14 @@ pub(crate) fn doctor(simulation: &Simulation) -> Result<bool, String> {
         "Kernel simulation for test/run: {}",
         describe(&plan)
     ))?;
+    crate::output::line(format_args!(
+        "Execution scope: {}",
+        if matches!(plan, Plan::Container(..)) {
+            "selected container supplies userland; no local GNU loader requirement. Image/runtime checks do not prove application dependencies; kernel is shared."
+        } else {
+            "local host userland; target PT_INTERP is checked per ELF before launch. GNU loader, matching glibc/libgcc and other dependencies are needed; availability is not proven by this doctor."
+        }
+    ))?;
     let Some(target) = target else {
         crate::output::line(format_args!(
             "Runner checks skipped: no kernel floor (--distro or --kernel)."
@@ -538,6 +575,78 @@ pub(crate) fn doctor(simulation: &Simulation) -> Result<bool, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn interpreter_check_is_local_and_independent_of_sdk_or_tool_abi() {
+        // Use an absolute path in the execution host's syntax. On Windows,
+        // /name is rooted but lacks a drive/UNC prefix: availability is unknown,
+        // not an established missing interpreter.
+        let missing = std::env::temp_dir()
+            .canonicalize()
+            .unwrap()
+            .join(format!("cargo-libc-missing-loader-{}", std::process::id()))
+            .join("ld-linux-x86-64.so.2");
+        assert!(missing.is_absolute());
+        assert!(!missing.exists());
+        let info = ElfInfo {
+            machine: 62,
+            soname: None,
+            interpreter: Some(missing.to_str().unwrap().into()),
+            needed: vec![],
+            rpath: vec![],
+            runpath: vec![],
+            versions: vec![],
+            definitions: vec![],
+        };
+        assert_eq!(
+            check_interpreter(&Plan::Direct, "fixture", &info).unwrap(),
+            Some(2)
+        );
+        assert_eq!(
+            check_interpreter(&Plan::Local("fixture".into()), "fixture", &info).unwrap(),
+            Some(2)
+        );
+        assert_eq!(
+            check_interpreter(
+                &Plan::Container("fixture".into(), "image".into()),
+                "fixture",
+                &info
+            )
+            .unwrap(),
+            None
+        );
+        let present = ElfInfo {
+            interpreter: Some(std::env::current_exe().unwrap().to_str().unwrap().into()),
+            ..info.clone()
+        };
+        assert_eq!(
+            check_interpreter(&Plan::Direct, "fixture", &present).unwrap(),
+            None
+        );
+        #[cfg(windows)]
+        {
+            let unix_path = ElfInfo {
+                interpreter: Some("/cargo-libc-missing-loader/ld-linux-x86-64.so.2".into()),
+                ..info.clone()
+            };
+            assert!(matches!(
+                crate::capability::interpreter(unix_path.interpreter.as_ref().unwrap()),
+                crate::capability::Interpreter::Unknown(_)
+            ));
+            assert_eq!(
+                check_interpreter(&Plan::Direct, "fixture", &unix_path).unwrap(),
+                None
+            );
+        }
+        let no_interp = ElfInfo {
+            interpreter: None,
+            ..info
+        };
+        assert_eq!(
+            check_interpreter(&Plan::Direct, "fixture", &no_interp).unwrap(),
+            None
+        );
+    }
 
     fn sim(
         distro: Option<&str>,

@@ -101,6 +101,8 @@ machine and after upgrading the tool or provider. Private clock paths and conten
 identity are generated target configuration, not policy options. Plain Cargo does
 not inspect build outputs; use inspect separately.
 
+doctor reports tool build ABI and bounded host observations separately from
+target inputs and execution capabilities (unknown is not unsupported).
 doctor with --distro or --kernel also checks both runners: it installs the
 filter and runs /bin/sh under it, and starts `true` in the image under the
 profile (which may pull the image). It exits with 2 when the runner test/run
@@ -173,7 +175,7 @@ impl RawConfig {
             let release = self.ceiling.to_string();
             let gcc = std::env::var_os("CARGO_LIBC_PROVIDER_GCC").map(PathBuf::from);
             let prepared = libc_abi_tools::provider::cli::ensure(&release, mode, gcc)
-                .map_err(|e| format!("cannot prepare the glibc {release} provider: {e}"))?;
+                .map_err(|e| format!("cannot prepare the glibc {release} provider ({mode} mode): {e}. Both source and container preparation require host GCC/binutils/startup files; container preparation additionally needs its selected engine/image. No alternate mode was attempted."))?;
             let descriptor = prepared.entry.descriptor();
             crate::output::diagnostic(format_args!(
                 "glibc {release} provider ({mode} mode, {}): {}",
@@ -693,9 +695,14 @@ fn run_inner(args: impl IntoIterator<Item = OsString>) -> Result<i32, String> {
             Ok(0)
         }
         ParsedCommand::Doctor { config, simulation } => {
+            crate::capability::report(crate::output::line)?;
             if let Some(raw) = config {
                 let config = raw.resolve()?;
                 config.print_diagnostics(&config.diagnose()?)?;
+            } else {
+                crate::output::line(format_args!(
+                    "Target input checks skipped: no build configuration selected."
+                ))?;
             }
             let runner_ok = simulate::doctor(&simulation)?;
             Ok(if runner_ok { 0 } else { 2 })
