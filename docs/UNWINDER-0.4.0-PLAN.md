@@ -1,12 +1,13 @@
 # Cargo-libc 0.4.0 executable LLVM unwinder integration
 
-Status, 2026-11-02: **implementation authorized and under development, not released
-or qualified**. The user selected statically linked LLVM libunwind by default for
-supported standalone target executables, preserving panic=unwind and dynamic
-glibc. This supersedes the earlier proposal's GCC-versus-LLVM and opt-in/default
-questions. No public runtime knob is planned. Product version and production lock
-remain unchanged until the exact implementation is reviewed and release-qualified.
-
+Status, 2026-11-03: **current default remains system unwinding; runtime and public
+selector wiring remain on hold**. The original authorized static-LLVM executable
+goal is blocked by measured mixed-runtime failures. A candidate selector proposal
+is not an adopted release policy. The technical work below records research goals,
+not implemented behavior or a compatibility promise. See the canonical
+[corner-case inventory](UNWINDER-RELEASE-CHECKLIST.md#permanent-acceptance-cases-and-current-automation)
+and [approved lifecycle v2 DESIGN](evals/2026-11-02-llvm-lifecycle-design-v2.md).
+Versions and production locks remain unchanged.
 LLVM-default wiring remains paused after native C EH failures. The
 [initial proof](evals/2026-11-02-unwind-boundaries.md#initial-native-cross-dso-proof--later-2026-11-02)
 blocked hidden LLVM; the [corrected follow-up](evals/2026-11-02-unwind-boundaries.md#corrected-minimal-exports-and-native-c-eh-follow-up--2026-11-02)
@@ -132,6 +133,13 @@ workload rather than promise that every possible process API is libgcc-free.
 No general dependency-closure product feature is added.
 
 ## Configuration, content identity and relinking
+
+The following is an integration goal, not current freshness automation. The
+[approved lifecycle v2 DESIGN](evals/2026-11-02-llvm-lifecycle-design-v2.md) separates
+static recipe R from verified input/archive I/A and invalidation E. A skipped
+linker cannot detect changed inputs; plain Cargo needs explicit refresh and
+CMake/Ninja same-directory relinking must be demonstrated. No fake all-input
+fingerprint, cache repair or eager LLVM prerequisites are implied.
 
 Export a private runtime policy/content identity alongside existing clock/provider
 fields, with a stable policy salt and complete validated archive hashes. Helpers

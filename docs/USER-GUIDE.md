@@ -232,23 +232,32 @@ and coverage limits.
 
 ## Executable unwinder development (not released)
 
-Authorized 0.4.0 work will use validated static LLVM libunwind for supported final
-standalone target executables while keeping panic=unwind and dynamic glibc. Current
-published 0.3.0 still uses its existing runtime. Shared libraries/Python extensions,
-CMake shared targets, host tools and shared intermediate libraries must retain
-prior valid behavior; no user opt-in mode or blanket static-runtime setting is planned.
-Preserving a DSO artifact’s link inputs does not promise its loaded unwind symbols
-always bind GCC: host-process LLVM interposition must be explicitly qualified.
+Current published 0.3.0 and this development branch keep existing system
+unwinding. Static LLVM executable work is experimental and **not integrated or
+qualified**. An earlier default goal is blocked by measured mixed-runtime
+failures. A candidate selector was proposed for review; it is not implemented or
+a user-selected release policy. Keep panic=unwind, dynamic glibc and existing
+shared/PyO3/Python-embedding, CMake-shared, host and shared-intermediate behavior.
 
-The runtime adapter and valid cross-DSO coexistence are not qualified yet.
-Hidden-LLVM round trips fail. Corrected minimal exports pass bounded Rust cases,
-but native C exception-cleanup controls still crash; wiring stays paused pending
-a complete helper/context design. Broad export of unrelated Rust symbols is not the final policy. Native
-libc APIs or intentionally loaded DSOs may still legitimately load GCC; eventual
-claims will name tested workloads, not every possible process API. See the
-[integration design](UNWINDER-0.4.0-PLAN.md) and permanent
-[release/glibc-bundle checklist](UNWINDER-RELEASE-CHECKLIST.md) for exact boundaries,
-required tests and open evidence. No install/version migration is prescribed yet.
+The [canonical corner-case inventory](UNWINDER-RELEASE-CHECKLIST.md#permanent-acceptance-cases-and-current-automation)
+records triggers, baseline oracles, evidence gaps and release gates. Valid
+`extern "C-unwind"` round trips catch payloads in their originating runtime;
+ordinary C entries catch internally before returning. C cleanup/cancellation
+fixtures keep all worker frames in C, never force cancellation through Rust.
+Hidden LLVM fails valid round trips; narrow exports fix only bounded Rust cases,
+while native C exception-cleanup controls still crash. A bounded Zig C reference
+also fails on host glibc 2.39; this is not a universal Zig failure or actual
+Rust/Zig-driver result. The Aero 182 behavior matches test different paths.
+
+An unchanged extension artifact can bind differently inside another host.
+Direct NEEDED and actual transitive/lazy runtime loading are distinct; no universal
+libgcc-free process claim, general loader certificate, opaque-context workaround
+or broad application-export policy is supported. Lifecycle v2 is **design only**:
+plain Cargo needs explicit refresh, native CMake/Ninja same-directory relinking
+remains to demonstrate, and changing a shared runtime package cannot update
+statically embedded unwind code. The [integration research](UNWINDER-0.4.0-PLAN.md)
+and [dated parity audit](evals/2026-11-03-zig-unwind-parity.md) retain provenance and
+open blockers. No new installation, option or version migration is prescribed.
 
 ## Commands
 
