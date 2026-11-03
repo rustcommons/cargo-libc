@@ -28,13 +28,14 @@ kind before the runtime policy executes.
 
 | Actual unit/output | Runtime selection for 0.4.0 | Isolation boundary |
 | --- | --- | --- |
-| Target bin, example, unit/integration/bench/doctest harness, install output; C/CMake executable probes | Validated static LLVM unwind at the final executable link | No Rust panic=abort or static glibc workaround. PIE/non-PIE classification is separate from executable versus DSO. |
+| Target bin, example, unit/integration/bench/doctest harness, install output; C/CMake executable probes | Blocked research: static LLVM unwind at the final executable link; shipping policy pending, current system behavior unchanged | No Rust panic=abort or static glibc workaround. PIE/non-PIE classification is separate from executable versus DSO. |
 | Target cdylib/dylib, PyO3/maturin extension, C/CMake shared output | Preserve existing artifact/runtime link inputs and exports | No executable-only policy injected into DSO links. Loaded unwind bindings can resolve to host LLVM; preserve valid behavior through qualified host-process binding. |
 | rlib/staticlib/object compile, partial/relocatable link | No executable-only runtime injection | Shared intermediate code can feed both bin and DSO in one workspace; do not contaminate compilation flags or intermediate archives. |
 | Native build script/proc macro/host C | Existing native compiler/runtime | Preserve the target-only rustflags and build-script marker; equal host/target triples do not identify a target unit. |
 
-The user-facing default is selected, but the exact link mechanism remains gated
-on the producer API and real cross-DSO evidence. Runtime changes belong only in
+Shipping runtime/default policy is pending; current behavior remains system
+unwinding. Static LLVM executable linkage is blocked research, gated on the
+producer API and real cross-DSO/native C cleanup evidence. Any future runtime changes belong only in
 final helpers (`libc-linker`, target `libc-cc`), including C's implicit default
 libraries. No global `--unwindlib`/`-static-libgcc` flag or linker search prefix may
 silently alter shared outputs or mask a named library. Preserve original input
