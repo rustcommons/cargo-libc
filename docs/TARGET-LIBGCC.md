@@ -1,11 +1,10 @@
 # Compare a target libgcc runtime
 
-**0.5.0 release candidate; not published.** This option is not in cargo-libc
-0.4.0. The reviewed implementation is unchanged; published libc-abi-tools 0.5.0
-is now the sole raised producer minimum and is adopted from the real registry.
-Other tool/data locks stay unchanged. Bounded candidate portable/native/package/
-install qualification passed; final evidence review/merge and publication are
-pending ([release record](RELEASE-0.5.0.md)). Runtime selection and link policy remain unchanged.
+**Released in cargo-libc 0.5.0 (2026-11-03).** This option is not in the
+immutable 0.4.0 package. Published libc-abi-tools 0.5.0 supplies the pure byte-hash
+API; other tool/data locks stay unchanged. The [release record](RELEASE-0.5.0.md)
+separates source/candidate qualification from publication and installed results.
+Runtime selection and link policy remain unchanged.
 
 ```sh
 cargo libc inspect ./app --target-libgcc /copied-target/libgcc_s.so.1
@@ -158,7 +157,7 @@ python3 scripts/qualify-target-libgcc.py CARGO_CHECKOUT PRODUCER_CHECKOUT EVIDEN
 It snapshots both exact Git heads, patches only a disposable consumer copy,
 records source identities and runs Rust 1.90 tests/docs, CI-pinned 1.99 formatting/Clippy plus native static
 fixtures. Its patch is development evidence, not registry release qualification.
-The 0.5.0 candidate now uses the actual published dependency minimum/checksum
+The 0.5.0 release uses the actual published dependency minimum/checksum
 and passed separately recorded unpatched package/clean-install checks, permanent
 static cases/legacy comparison and Windows CLI controls. The retained source
 qualifier is development evidence, never a production patch or substitute for

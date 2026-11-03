@@ -2,14 +2,14 @@
 
 ## Explicit target libgcc comparison
 
-The [0.5.0 candidate checker](TARGET-LIBGCC.md) implements explicit two-file
-static comparison. Published libc-abi-tools 0.5.0 supplies only the pure byte-hash
-API; actual registry adoption preserves all other tool/data locks. Remaining
-release work is final excluded-evidence review, normal merge and publication.
-The frozen registry candidate passed bounded portable/native/package/clean-install
-and Windows CLI checks as a documented composite sequence, without source changes. [Release evidence](RELEASE-0.5.0.md)
-separates the accepted source proof from pending registry gates. General runtime/
-dependency resolution and GCC/LLVM interoperability remain outside this feature.
+The [released 0.5.0 checker](TARGET-LIBGCC.md) implements explicit two-file static
+comparison with only published libc-abi-tools 0.5.0 supplying the pure byte-hash API;
+other tool/data locks are unchanged. [Release evidence](RELEASE-0.5.0.md) separates
+the historical source proof, qualified C5 composite/candidate Windows controls
+and the actual fresh published-registry installation. Official archive/index/VCS,
+annotated tag, docs.rs and bounded installed checks verify the released source.
+General runtime/dependency resolution, whole-process memory caps and GCC/LLVM
+interoperability remain outside this feature.
 
 Open work and adopted policy decisions. What cargo-libc does today is in the [user guide](USER-GUIDE.md), and
 current release evidence is in the [release index](RELEASING.md#release-records).
