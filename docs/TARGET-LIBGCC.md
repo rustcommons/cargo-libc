@@ -116,7 +116,11 @@ Primary reads retain the 256 MiB limit; explicit runtime reads are limited to
 64 MiB. Each optional parser permits at most 262,144 dynamic symbols, 65,536
 metadata records, 1,024 program headers and 16 MiB of accumulated strings. The
 comparison accepts at most 32,768 combined symbol entries to bound report size;
-larger inventories are unresolved, never truncated. SysV/GNU hash evidence must
+larger inventories are unresolved, never truncated, with separately validated
+node failures still reported. Dynamic relocation checks have a 262,144-entry
+budget across REL/RELA/PLT tables. Both bounded input buffers are currently retained
+during comparison; these are file-read limits, not a whole-process memory limit.
+Hashing, metadata and report construction need additional working memory. SysV/GNU hash evidence must
 provide a complete consistent symbol count. Section headers are not required;
 unsupported or contradictory metadata is unresolved. No count is guessed from
 EOF. SHA-256 uses the companion crate's existing std-only implementation.

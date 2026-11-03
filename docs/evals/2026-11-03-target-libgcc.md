@@ -26,8 +26,7 @@ is treated as a pass.
 
 ## Static native controls
 
-29 native checks passed on x86-64 WSL GNU userland using GCC 13.3.0, GNU bfd 2.42
-; LLD was unavailable and no LLD result is claimed. Fixtures were compiled/linked and inspected, never
+29 native checks passed on x86-64 WSL GNU userland using GCC 13.3.0, GNU bfd 2.42; LLD was unavailable and no LLD result is claimed. Fixtures were compiled/linked and inspected, never
 executed. Controls cover exact/absent/wrong-owner interfaces, weak and
 zero-reference nodes, nondefault versions, SysV/GNU hash tables, sectionless
 files, forged counts/relocation bounds, malformed version hashes, target-own
@@ -62,3 +61,48 @@ No target payload, IFUNC, loader or plugin was executed. No real old-system,
 musl/static-host, dependency closure, loader-selected-runtime, GCC/LLVM coexistence
 or general safety-to-run qualification is claimed. Versions, runtime defaults,
 provider inputs and linker behavior remain unchanged.
+
+
+## Review fixes and final exact-pair qualification
+
+Independent review found two missing controls in the first candidate: a wholly
+unversioned runtime's unmodeled fallback, and optional symbol errors masking
+independently valid node failures. The earlier v2 design itself conflicted about
+the versionless case; the unreleased contract now explicitly distinguishes no
+DT_VERDEF (fallback unresolved) from a versioned DSO missing a mandatory node.
+No loader emulation or producer parsing/matching API was added.
+
+Fixed implementation: `972783dfd1571fb8e23385b88d147ef42c7c6dfe`, with unchanged
+producer `2c70e47954f328e55950d738d5a9295de7c44d67`. Independent focused code/contract
+review passed; its seven targeted probes found both issues resolved. The strict
+version phase is independent from optional dynsym/hash/relocation validation;
+separate completion flags preserve proven node failure and unknown symbols.
+
+The full source qualifier passed again at this exact pair: 102 library tests,
+nine process tests, the zero-doctest command, 36 static native cases, Rust 1.90
+build/docs and pinned 1.99 formatting/Clippy. Legacy text/JSON also matches actual
+released 0.4.0 in the named control. The producer's default-feature `cargo test
+--locked --offline` additionally passed 72 tests including doctests, with two
+explicit ignores; default-feature Clippy passed. The no-default-feature 23-test
+result remains separately recorded rather than summed into a unique-test claim.
+
+Final source proof: 150 member hashes, 16,028,453 bytes, SHA-256
+`0b7cd40fbf354141bde0d10205f53358685be26b25dd4e2e7880dab6fecc7ef8`.
+It includes final source archives, actual command logs, default-feature producer
+checks, fixture results and installed-0.4.0 legacy comparison. LLD was not
+available locally; no LLD or Windows candidate result is claimed. The conditional
+LLD control and portable unit tests remain permanent future gates.
+
+Final implementation package-contents audit: 28 files, 84,776 bytes, clean exact
+VCS `972783d`, SHA-256
+`3fd755d1971450b3fa671c92ab9890a8a8a1a193508e253581e87bc4d96db4e1`.
+This is still `--no-verify` contents evidence, not registry compilation. Producer
+package verification passed at its exact clean API ref. Subsequent excluded
+documentation/instruction-only updates do not change the tested package inputs;
+new commit VCS metadata naturally changes an archive's overall hash.
+
+No source was merged or published, no versions/minima/lock changed, and the
+registry-only build remains intentionally blocked until hash-API publication
+and real consumer adoption. No runtime/default/old-system safety claim follows.
+Peak working-memory optimization through staged buffer release remains follow-up
+work; current bounded reads are not misrepresented as a whole-process memory cap.
