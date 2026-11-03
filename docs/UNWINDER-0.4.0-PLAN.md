@@ -1,18 +1,18 @@
 # Deferred executable unwinder investigation (release unassigned)
 
 **Current disposition, 2026-11-03: deferred research, no release assigned.**
-Cargo-libc [0.4.0 candidate notes](releases/v0.4.0.md) cover capability diagnostics
+Cargo-libc [0.4.0 release notes](releases/v0.4.0.md) cover capability diagnostics
 and a missing-interpreter refusal/exit-status change, **not** LLVM or another
 runtime replacement. System unwinding remains unchanged; research PR14 is separate
 and unmerged. No shipping LLVM default, selector or compatibility claim is approved
-by this release preparation.
+by this diagnostics release.
 
 The filename retains the original 2026-11-02 tentative version label so existing
 links and historical planning references stay valid. The following investigation
 records that original proposal and its proposed gates, not accepted release scope
 or completed qualification. No implementation, flag, archive distribution,
-producer version or release date is committed by this document. Published 0.3.0
-remains the latest verified release until a later release is actually completed.
+producer version or release date is committed by this document. Published 0.4.0
+is the diagnostics release; no unwinder research is shipped by it.
 
 ## Goal and unchanged boundaries
 
