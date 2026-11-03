@@ -86,9 +86,12 @@ cargo libc test --distro rhel-7 --runner local
 
 ## Deployment runtime prerequisites
 
-Current GNU/Linux builds normally need a compatible **glibc and matching-architecture
-`libgcc_s.so.1`** on the deployment machine, plus any other libraries named by the
-application. These are ordinary runtime package dependencies. The GCC compiler,
+cargo-libc selects the requested glibc **link-time interface** and reports the
+finished binary’s direct version requirements. When you deploy that binary, it
+uses the target OS’s real shared libraries. Normal GNU/Linux deployments need
+compatible **glibc and matching-architecture `libgcc_s.so.1`**, plus any other
+libraries the application uses. Your distro supplies these as ordinary runtime
+packages; cargo-libc manages its provider build inputs for you. The GCC compiler,
 Clang, Rust and cargo-libc build tools are **not required just to run the finished
 application**. GCC's [low-level runtime](https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html)
 provides exception/unwind and compiler-support routines; it is distinct from the
@@ -150,13 +153,14 @@ runtime-loaded libraries too. A glibc ceiling does not cap `GCC_*` requirements
 or guarantee that libgcc is installed. Static inspection is separate from actual
 target workload testing; do not run host `ldd` on foreign/untrusted executables.
 
-Managed generated providers use a **link-only** GCC 4.8.5 reference interface
-([producer source](https://github.com/rustcommons/linux-abi-tools/blob/b5eb64899fa5e5eed2c33c7ad3e42e5df945cadc/src/libgcc.rs)):
-138 recorded definitions with version nodes through `GCC_4.8.0`. Its function
-implementations trap; **never deploy these provider stubs as runtime libraries**.
-This is the generated-provider link interface, not a compiler/package requirement
-or a blanket rule for full sysroots, which use their supplied link inputs. See
-the maintained [provider guide](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/USING-PROVIDERS.md).
+**Provider implementation note:** generated providers model GCC 4.8.5’s link
+interface ([producer source](https://github.com/rustcommons/linux-abi-tools/blob/b5eb64899fa5e5eed2c33c7ad3e42e5df945cadc/src/libgcc.rs)),
+with 138 recorded definitions and version nodes through `GCC_4.8.0`. These link-only
+functions trap; they are build inputs rather than real runtime implementations.
+Ordinary users do not manage or copy these files for deployment. This describes
+generated providers, not full sysroots, which use their supplied link inputs; it
+is not an exact deployment compiler/package requirement. See the maintained
+[provider guide](https://github.com/rustcommons/linux-abi-tools/blob/main/docs/USING-PROVIDERS.md).
 
 `cargo libc inspect --max-glibc` checks `GLIBC_*` requirements. Text/JSON list
 NEEDED names and per-library versions including `GCC_*`, but do not enforce a GCC
@@ -170,7 +174,15 @@ checks likewise do not validate GCC versions; the actual loader can still reject
 
 The saved [Aero comparison](RELEASE-0.3.0.md#exact-consumer-comparison), run
 `41378111334` on 2026-11-02, records **twelve** libgcc-owned unwind imports, with
-maximum label `GCC_4.2.0` and maximum GLIBC requirement 2.18. The
+maximum label `GCC_4.2.0` and maximum GLIBC requirement 2.18:
+
+| Required GCC version label | Saved Aero imports from libgcc_s.so.1 |
+| --- | --- |
+| `GCC_3.0` | Ten `_Unwind_*` imports; exact names in the linked evidence below. |
+| `GCC_3.3` | `_Unwind_Backtrace` |
+| `GCC_4.2.0` | `_Unwind_GetIPInfo` |
+
+These are symbol-version requirements, not package or compiler versions. The
 [exact symbol/version pairs and inspection evidence](evals/2026-11-03-libgcc-deployment.md)
 apply only to those binaries; they are not a universal cargo-libc guarantee or a
 recommendation to install GCC 4.2. Builds, native dependencies and full-sysroot
