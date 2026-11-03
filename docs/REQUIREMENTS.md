@@ -95,6 +95,19 @@ Evidence shorthand used below:
   all 44 member hashes checked. Recording engine only; no hosted installed run or
   real musl/static/oldOS/LLVM qualification is claimed.
 
+- **Q50:** [0.5.0 candidate qualification](RELEASE-0.5.0.md), tested
+  `c5f41485af05bd311c15f567a6bd9310a3154237`, source equal reviewed `972783d`.
+  Actual registry graph, Rust 1.90 102 library/nine process/zero doctests,
+  pinned 1.99 fmt/Clippy, verified 28-file package, clean unpacked locked all-five
+  installation, C/CMake/host boundary/thirteen capability cases, clean-env resumed
+  streams/installed 36 GNU checker cases and real 0.4 legacy comparison passed.
+  Original driver RUSTDOCFLAGS refusal/exit 1 is retained: composite, not a single
+  all-green run. Portable Linux/Windows CI41684307122 and native Windows MSVC
+  match 0/missing 2/versionless 3/full SHA controls are separate evidence. Packet
+  SHA256 `461de6aff75d0009e11cd5d038346db123012aa70acc9067d485eb9c25894322`,
+  all 228 member hashes verified. No LLD/real container/musl/static/oldOS/LLVM or
+  deployment-safety qualification; no published cargo-libc 0.5.0 installation yet.
+
 
 ## Requirements
 
@@ -139,7 +152,7 @@ runtime-evidence gaps are preserved.
 The [deferred unwinder plan](UNWINDER-0.4.0-PLAN.md) has no assigned release;
 its historical filename does not describe the [0.4.0 diagnostics release](releases/v0.4.0.md).
 It is not a confirmed new runtime requirement or additional verification evidence.
-| CL-REQ-032 | Compare explicitly supplied target libgcc against exact recorded direct owner/version nodes and function imports; preserve weak distinctions, incomplete results, independent GLIBC checks and legacy inspect behavior. User-approved checker scope, 2026-11-03; [contract](TARGET-LIBGCC.md). | [gcc.rs](../src/gcc.rs), optional [exact parser](../src/elf/exact.rs), inspect-only CLI; read-only companion byte digest. | Focused matcher/parser/CLI unit tests and [native static fixtures](../scripts/check-target-libgcc.py); [source qualifier](../scripts/qualify-target-libgcc.py). | Implemented—partial verification: 0.5.0 release candidate; reviewed source 972783d / source evidence below, published libc-abi-tools 0.5.0 is adopted from registry; candidate portable/native/package/install gates remain pending. No loader/runtime/plugin/transitive or old-system certification. |
+| CL-REQ-032 | Compare explicitly supplied target libgcc against exact recorded direct owner/version nodes and function imports; preserve weak distinctions, incomplete results, independent GLIBC checks and legacy inspect behavior. User-approved checker scope, 2026-11-03; [contract](TARGET-LIBGCC.md). | [gcc.rs](../src/gcc.rs), optional [exact parser](../src/elf/exact.rs), inspect-only CLI; read-only companion byte digest. | Focused matcher/parser/CLI unit tests and [native static fixtures](../scripts/check-target-libgcc.py); [source qualifier](../scripts/qualify-target-libgcc.py). | Implemented—partial verification: 0.5.0 release candidate; reviewed source 972783d / source evidence below, published libc-abi-tools 0.5.0 is adopted from registry; Q50 records passing candidate registry/native/package/install and Windows controls; final evidence review/merge/publication remain pending. No loader/runtime/plugin/transitive or old-system certification. |
 
 ## Documentation map
 
@@ -173,6 +186,7 @@ It is not a confirmed new runtime requirement or additional verification evidenc
 
 | [RELEASE-0.2.4](RELEASE-0.2.4.md) | Historical release evidence | Minimal version-neutral README navigation fix; R24/I24, official archive/tag and actual docs.rs render verified; no runtime/dependency change. |
 
+| [RELEASE-0.5.0](RELEASE-0.5.0.md), [candidate identities](evals/2026-11-03-target-libgcc-candidate.json) | Candidate qualification / dated evidence | CL-REQ-032; Q50 exact registry/source/package/native Windows identities, original refusal/clean resume, bounded memory/runtime exclusions. Not published. |
 | [RELEASE-0.4.0](RELEASE-0.4.0.md), [package inventory](evals/2026-11-03-diagnostics-package-inventory.json) | Current published release / candidate and publication evidence | CL-REQ-002/005/013/020/023/031; Q40/I40 distinguish prepublication versus fresh registry installation, exact source/archive/tag/docs.rs identities and native scope/gaps. |
 | [RELEASE-0.3.0](RELEASE-0.3.0.md), [clock investigation](evals/2026-11-02-clock-linking.md) | Historical release evidence / dated investigation | CL-REQ-006–010/020/022–024/027; qualified N30/R30/P30/A30 and published I30 evidence; preserve retired prototype failures and explicit remaining scope limits. |
 | [TARGET-LIBGCC.md](TARGET-LIBGCC.md) | Maintained unreleased guide/reference | Authoritative two-file checker contract, parameters, statuses, JSON, bounds and source-only qualification; CL-REQ-032. |

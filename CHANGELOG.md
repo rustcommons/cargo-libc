@@ -16,8 +16,9 @@ No additional changes assigned.
 ## [0.5.0] - 2026-11-03
 
 **Candidate preparation date; not published.** Producer 0.5.0 is verified and
-adopted from the real registry; candidate portable/native/package/install
-qualification is pending.
+adopted from the real registry; bounded candidate portable/native/package/install
+and Windows CLI qualification passed. Final evidence review, merge and publication
+remain pending ([candidate record](docs/RELEASE-0.5.0.md)).
 Latest published cargo-libc remains 0.4.0.
 
 ### Added

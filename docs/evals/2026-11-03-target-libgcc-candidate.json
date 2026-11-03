@@ -1,0 +1,222 @@
+{
+  "scope": "Unpublished cargo-libc0.5.0 candidate; composite native qualification, not a published-install proof",
+  "candidate": "c5f41485af05bd311c15f567a6bd9310a3154237",
+  "reviewed_source": "972783dfd1571fb8e23385b88d147ef42c7c6dfe",
+  "proof": {
+    "file": "candidate-c5f41485-proof.tar.gz",
+    "bytes": 14930341,
+    "sha256": "461de6aff75d0009e11cd5d038346db123012aa70acc9067d485eb9c25894322",
+    "verified_member_hashes": 228
+  },
+  "package": {
+    "sha256": "5ac6373f445fceb8b0ffd0549cd9f33ff61de51f70d296ac4949f3dcc028a441",
+    "bytes": 84781,
+    "files": 28,
+    "vcs": {
+      "git": {
+        "sha1": "c5f41485af05bd311c15f567a6bd9310a3154237"
+      },
+      "path_in_vcs": ""
+    },
+    "contents": {
+      ".cargo_vcs_info.json": "8fd0f3570359491ab2e7745aa0c1d2a1c95aeb7185339e9d40f1c31e42ee386a",
+      "Cargo.lock": "89e10d64670c9835062cba35fa58db148ab0dd55cf069dbc4c71678087d03f07",
+      "Cargo.toml": "189cbc389b00eb6ec608f085fe1cdc8c2b474044fde9ef1f01bc06d2b980c9cc",
+      "Cargo.toml.orig": "2f1e7bf31eb374b85e6296ee93b9a70f9b4248cdb930226b055018e7abae3756",
+      "LICENSE": "89475db110bcc794f26a005e44ebd8bbd323659448a290c1ff29a249fe7ccd63",
+      "NOTICE.md": "b7f4ff5b93960a70bad48bb0580acadef5a37fd9e2a32930d892817849123a18",
+      "README.md": "3e2b1a87947ac547491a9212f934632dd0be072dd4b7d377606eadb11ae4530c",
+      "src/bin/libc-cc.rs": "dbf65f845a40dd603a20b98495cd054a0f975b15cf57aadf85feccc8e977bc53",
+      "src/bin/libc-cxx.rs": "e3dad465ecaff53b14519e45ef1925f5e9b219efdce98dafb499321eee6b1fdd",
+      "src/bin/libc-linker.rs": "70fbf1308f67dc123b4e18f060ace25d61c27c41b2facfa496c1c249e216e4a7",
+      "src/bin/libc-runner.rs": "fc6365c7b5dfad3ea1257bf3a52bf9b97f192288871809052e57f70416f7d898",
+      "src/capability.rs": "698988d6da436bc855b69a5657200e32fdddb3d47201f5d3d1726def58b71ce6",
+      "src/cargo_output.rs": "9a88b99bf46ef246900d457ff10c7b59485081ad48d8991a4ce7aed0095c45a4",
+      "src/cc.rs": "6bfbfe6e223566996d89ad2f5ba0eef2ccae479f8bc18f2bacd50d1e946d585e",
+      "src/cli.rs": "42063d65fb5e21582f1e66514ed66c85eec27d2f93383c16fb0990abdb1d253d",
+      "src/clock.rs": "ceca9cc9555fb5dd11a29795dd3bc27978509e7bedd5af8101279e1db05af4d4",
+      "src/clock_named.rs": "18302289386b0a228573469e34acc3640f91e46fe802724de3290f08334fa77f",
+      "src/elf/exact.rs": "a5e9fd8dbaf99f14b8609822319d0450a32baf000a94e4183302cfaba08a2465",
+      "src/elf.rs": "e95c473c323f525c0779f1ab7a00835b6bf086971d33ef29df8b7553e27991fe",
+      "src/gcc.rs": "277b495a04fb1942b2d76d216e5b5762eef4533f343722d439cddf1aabc78579",
+      "src/lib.rs": "bea4b745d9173dce7d9928540bae52f13b5ee454f890b9d3fd1f14d52fbcfac7",
+      "src/main.rs": "24784fcd50451e6b32dee77ee0ba51ca956a396d216c8741b4f3dde9d39d20b1",
+      "src/output.rs": "a7f38d05584036504d93fcad397358576d6aa264b1b5e6369f9e2762ec5c7cd2",
+      "src/provider.rs": "1d6857acf1242a81d70ddd6c6723a91bc9582c2e43b0940ad8412c1c8e567848",
+      "src/report.rs": "6e0387319488e95ce1004384249a6fd118f51dc320fa7673b45b062ab7cb1126",
+      "src/simulate.rs": "ccbac69fa6e3e17f7cd73996c45079085df9364959e89d44cd006aab24b8a7c9",
+      "src/toolchain.rs": "3443d7fef48210da3b963aea9a4d0d5ec90e17ee87820ef6e398ae24006c1505",
+      "src/version.rs": "244bc8fd1df8bfbf7b2d1bedca8cfe5cfcad2bed0d15b783f84b769a6c013427"
+    }
+  },
+  "registry": {
+    "glibc-abilists": {
+      "version": "0.1.2",
+      "checksum": "0f76191d504fe7944029bf5ac1e3ee901b050e7ce3fc946fa2661a9094045287"
+    },
+    "glibc-provider-sources": {
+      "version": "0.1.1",
+      "checksum": "da10605d1cab20eb0ab8cf7ebe19b619737618578dc8c74e6c62a57e1a7ec440"
+    },
+    "kernel-abi-tools": {
+      "version": "0.3.3",
+      "checksum": "0feddf7e5e33b15df1b279e3ba99c6a0743aae7edb91dd654e3a69ac01234dd3"
+    },
+    "libc-abi-tools": {
+      "version": "0.5.0",
+      "checksum": "c598bccdec99a399cc8ea639c69ffd59a58dd3dc7904ea5cc586afd01dcea469"
+    },
+    "linux-abi-scan": {
+      "version": "0.3.3",
+      "checksum": "eedffc57c88f27dee9bd28c3f177f39a457a694ddbe2678d9ba9e6078702028e"
+    },
+    "linux-targets": {
+      "version": "0.3.3",
+      "checksum": "9138ccb80a4467c37c805b9ed7bfab8a574bd749a52fe42c4e00921e24affcb1"
+    }
+  },
+  "linux_command_results": [
+    {
+      "name": "tools",
+      "exit": 0,
+      "seconds": 0.06916850700508803
+    },
+    {
+      "name": "fetch",
+      "exit": 0,
+      "seconds": 1.4610004329879303
+    },
+    {
+      "name": "metadata",
+      "exit": 0,
+      "seconds": 0.07220212300308049
+    },
+    {
+      "name": "format",
+      "exit": 0,
+      "seconds": 0.6757312460104004
+    },
+    {
+      "name": "tests",
+      "exit": 0,
+      "seconds": 13.698913764994359
+    },
+    {
+      "name": "doctests",
+      "exit": 0,
+      "seconds": 0.2033466610009782
+    },
+    {
+      "name": "clippy",
+      "exit": 0,
+      "seconds": 3.5409348020039033
+    },
+    {
+      "name": "docs",
+      "exit": 0,
+      "seconds": 3.731374062015675
+    },
+    {
+      "name": "package",
+      "exit": 0,
+      "seconds": 4.013709163991734
+    },
+    {
+      "name": "unpacked-fetch",
+      "exit": 0,
+      "seconds": 1.140522506000707
+    },
+    {
+      "name": "unpacked-install",
+      "exit": 0,
+      "seconds": 23.104605725005968
+    },
+    {
+      "name": "installed-smoke",
+      "exit": 0,
+      "seconds": 19.199379536992637
+    },
+    {
+      "name": "installed-capabilities",
+      "exit": 0,
+      "seconds": 0.36250476699206047
+    },
+    {
+      "name": "installed-streams",
+      "exit": 1,
+      "seconds": 11.295424403011566
+    },
+    {
+      "name": "installed-streams-resumed",
+      "exit": 0,
+      "seconds": 21.52649804801331
+    },
+    {
+      "name": "installed-checker",
+      "exit": 0,
+      "seconds": 0.7365406219905708
+    },
+    {
+      "name": "release-docs",
+      "exit": 0,
+      "seconds": 0.1486852570087649
+    }
+  ],
+  "composite_resume_reason": "Parent driver leaked docs-only RUSTDOCFLAGS=-D warnings into installed test environment. Product correctly refused; original failure retained. Resume clears overrides; no source/package/install change.",
+  "installed_binary_sha256": {
+    "cargo-libc": "6ecb6418d50f18ac0d1a09fab900d33dd38e73a9432b41636cfde125768bb938",
+    "libc-runner": "c3a4519201c8e47202ee68cf8772ec2e7b95f2da6a0b0d0c8c5871db371fcd01",
+    "libc-cc": "73fcb2bc3fab7c5bb4ce8351f0ff0b1e051807a848ddcd634f372eafc4bf0baa",
+    "libc-cxx": "1ff711e833ebfda1638ff544da0a8a9fc19130280eaf2618dcc45e474ff5d9f9",
+    "libc-linker": "f8b5218a222535ca77b058aea209530f0d026479d8f116c80a29d6df5ac19471"
+  },
+  "checker_cases": 36,
+  "capability_cases": 13,
+  "windows": {
+    "platform": "native Windows x86_64 MSVC",
+    "toolchain": "1.99.0",
+    "binary_sha256": "fb78dea10c5195f9bc07e6dd6652b106a50b0e8b05d9012d2fc917e038b362b1",
+    "portable_gates_repeated": false,
+    "cli_results": {
+      "inspect-match": 0,
+      "inspect-missing": 2,
+      "inspect-versionless": 3
+    },
+    "scope": "Actual Windows CLI reading three Linux ELF fixtures with real registry dependencies; portable CI results remain separately scoped; no Linux runtime execution or provider/build platform qualification"
+  },
+  "official_baseline_audit": {
+    "baseline": {
+      "version": "0.4.0",
+      "sha256": "7c6177bbd11ddc43cf2e800ea2b30050eeaf52942eebbec4e531dcbc60ba6e0b",
+      "bytes": 73212,
+      "files": 26,
+      "commit": "aa2ea56e5d7943aeb4e0023713a089693d2103c1",
+      "yanked": false
+    },
+    "changed_from_official": [
+      ".cargo_vcs_info.json",
+      "Cargo.lock",
+      "Cargo.toml",
+      "Cargo.toml.orig",
+      "src/cli.rs",
+      "src/elf.rs",
+      "src/lib.rs",
+      "src/report.rs"
+    ],
+    "added": [
+      "src/elf/exact.rs",
+      "src/gcc.rs"
+    ],
+    "readme_delta": "unchanged versus official 0.4.0",
+    "registry_checksums_verified": true,
+    "provider_link_unwinder_body_unchanged": true
+  },
+  "portable_ci": 41684307122,
+  "local_mode_docs_ci": 41684311480,
+  "limitations": [
+    "no real container execution in candidate packet",
+    "no real musl/static-host or old-OS/tier3 qualification",
+    "no LLVM/runtime replacement qualification",
+    "no whole-process memory cap or runtime/dependency/loader safety certificate"
+  ]
+}

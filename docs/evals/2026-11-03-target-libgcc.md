@@ -108,3 +108,19 @@ registry-only build remains intentionally blocked until hash-API publication
 and real consumer adoption. No runtime/default/old-system safety claim follows.
 Peak working-memory optimization through staged buffer release remains follow-up
 work; current bounded reads are not misrepresented as a whole-process memory cap.
+
+
+## Later real-registry candidate qualification
+
+The source-stage outcomes above are retained unchanged. After actual producer
+0.5.0 publication, candidate `c5f41485af05bd311c15f567a6bd9310a3154237` adopted
+only libc-abi-tools 0.5.0 while preserving all other tool/data locks. Its source
+bytes equal reviewed `972783d`. [Q50 release evidence](../RELEASE-0.5.0.md) records
+unpatched verified package/clean-unpacked install, source/registry checks, 36
+installed static cases and actual0.4 legacy comparison plus native Windows CLI
+controls. The initial stream refusal caused by a driver RUSTDOCFLAGS leak is
+retained separately from the clean-environment resume; no source/package/install
+change was needed. The later 228-member packet SHA256 is
+`461de6aff75d0009e11cd5d038346db123012aa70acc9067d485eb9c25894322`.
+This is candidate qualification, not an official cargo-libc 0.5.0 archive or
+published installation. All runtime/platform and memory limitations remain.

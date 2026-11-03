@@ -5,8 +5,9 @@
 The [0.5.0 candidate checker](TARGET-LIBGCC.md) implements explicit two-file
 static comparison. Published libc-abi-tools 0.5.0 supplies only the pure byte-hash
 API; actual registry adoption preserves all other tool/data locks. Remaining
-release work is candidate portable/native/package/clean-install qualification
-and final review, not another implementation change. [Release evidence](RELEASE-0.5.0.md)
+release work is final excluded-evidence review, normal merge and publication.
+The frozen registry candidate passed bounded portable/native/package/clean-install
+and Windows CLI checks as a documented composite sequence, without source changes. [Release evidence](RELEASE-0.5.0.md)
 separates the accepted source proof from pending registry gates. General runtime/
 dependency resolution and GCC/LLVM interoperability remain outside this feature.
 
