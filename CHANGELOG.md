@@ -15,8 +15,10 @@ No additional changes assigned.
 
 ## [0.4.0] - 2026-11-03
 
-**Candidate preparation date; not published.** Package/install qualification,
-final release review and publication are pending.
+**Candidate preparation date; not published.** Bounded native package/clean
+unpacked-install checks passed; [candidate evidence](docs/RELEASE-0.4.0.md) records
+tested refs, archive hashes and coverage limits. Final evidence review, merge and
+publication remain pending.
 
 ### Changed
 

@@ -60,7 +60,7 @@ READMEs link here without calling a pinned historical version current.
 
 | Version / user notes | Original UTC date | Registry/source state and evidence |
 | --- | --- | --- |
-| [0.4.0 candidate](releases/v0.4.0.md) | Not published; prepared 2026-11-03 | Diagnostics and local missing-interpreter refusal/status change. Implementation merge `748ffa23274792dd21e1cb4cd812271f1f61e1a3`; package/install qualification, final review, publication/tag/docs.rs/published install and GitHub Release are pending. No runtime replacement. |
+| [0.4.0 candidate](releases/v0.4.0.md) | Not published; prepared 2026-11-03 | Diagnostics and local missing-interpreter refusal/status change. Implementation merge `748ffa23274792dd21e1cb4cd812271f1f61e1a3`; [bounded package/install qualification](RELEASE-0.4.0.md) passed at d335f8e, carrying clean installed623 payload evidence; final evidence review, merge, publication/tag/docs.rs/published install and GitHub Release are pending. No runtime replacement. |
 | [0.3.0](releases/v0.3.0.md) · [evidence](RELEASE-0.3.0.md) | 2026-11-02 | Published and verified; source/tag `a70ce9ffac6be8611b66a2829fefb3093cb41ce6`; five-clock profile, archive/docs.rs and clean published-install run 41382187049 passed; explicit coverage limits retained. |
 | [0.2.4](releases/v0.2.4.md) · [evidence](RELEASE-0.2.4.md) | 2026-11-01 | Published and verified; source/tag `889515b191ead51303b1321de858ec4e2209722c`; archive, actual README render and published-install run 41276430527 passed. |
 | [0.2.3](releases/v0.2.3.md) · [evidence](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |

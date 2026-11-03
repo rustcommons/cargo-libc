@@ -30,8 +30,10 @@ unwinder equivalence and actual old-system qualification remain outside that evi
 ## Diagnostics release candidate and deferred research
 
 The [0.4.0 candidate](releases/v0.4.0.md) covers merged capability diagnostics
-and local missing-interpreter refusal/status behavior. Package/install qualification,
-final review and publication remain pending; no new host qualification is claimed.
+and local missing-interpreter refusal/status behavior. [Bounded native package/
+installation qualification](RELEASE-0.4.0.md) passed at d335f8e with explicit
+623 installation payload equivalence; final evidence review, merge and publication
+remain pending. No new host qualification is claimed.
 
 The [deferred unwinder plan](UNWINDER-0.4.0-PLAN.md), whose filename retains its
 original tentative version, has no assigned release. It proposes investigating removal

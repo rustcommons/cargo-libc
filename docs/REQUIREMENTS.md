@@ -78,6 +78,15 @@ Evidence shorthand used below:
   are verified in the [publication record](RELEASE-0.3.0.md#publication-and-installed-verification).
 
 
+- **Q40:** [0.4.0 candidate qualification](RELEASE-0.4.0.md), 2026-11-03,
+  final native package/harness `d335f8ec52a5b1e6331be57acecab01fe7f226c7`, clean
+  unpacked installation from `62347644fe1e6808b19de043c702da69077409e8` with only
+  package VCS metadata differing. Native x86 WSL/glibc 2.39, Rust 1.90, Clang 18:
+  official-baseline/registry/payload audit, all five helpers, C/CMake/host boundary,
+  thirteen capability cases and installed streams passed. Recording container
+  route only; no new musl/static-host/oldOS/LLVM qualification or published release.
+
+
 ## Requirements
 
 | ID | Requirement and source | Implementation / documentation | Verification evidence | Status and gaps |
@@ -110,7 +119,7 @@ Evidence shorthand used below:
 | CL-REQ-026 | Maintain setup-first README, authoritative guides, stable trace IDs, identifiable historical evidence and immutable package snapshots. [AGENTS documentation rules](../AGENTS.md#documentation-and-requirements-traceability). | This index/map and linked maintained guides; published README/API docs remain immutable snapshots. | Audit 2026-11-01: source/command/link/render/diff checks; shared convention page HTTP 200 and Contents API blob `1b659ff536d43bcae5b09626069e89488058ba6f` verified against central merge `c8a0b9c01aae5657dd0ef649bd37b18d81919ce5`. | Verified; bounded documentation audit only, no package release or universal behavior verification implied. |
 
 | CL-REQ-027 | Prefer libc defaults for clock_gettime, clock_getres, clock_settime, clock_nanosleep and clock_getcpuclockid without a public clock setting; retain explicit legacy versions, genuine RT APIs, linker order/state and unwinder behavior. Released 0.3.0 scope in [release record](RELEASE-0.3.0.md); [guide](USER-GUIDE.md#clock-linking). | [clock.rs](../src/clock.rs) delegates the read-only ELF copy/cache to producer `LibcClocksV1`; [clock_named.rs](../src/clock_named.rs) checks completed-Clang named selection/state and bounded standard wrappers; target prefix, controlled in-place RT substitution, generated identity and fingerprint in toolchain.rs. Raw data, user files and descriptor v1 are unchanged. | N30 all-five/mixed-version GNU/LLD ELF ownership, real RT/state/host-sysroot and upgrade cases; R30 registry/native gates; P30 final README/package/install; A30 actual consumer; I30 published installation. Rejected reordering evidence is retained in [evals](evals/2026-11-02-clock-linking.md). | Implemented—partial verification; named N30/R30/P30/A30/I30 gates passed for published 0.3.0. Opaque custom scripts/responses and unproven linker-default fallbacks refuse. Container-provider clock preparation, general dependency closure and tier 3 remain unqualified. |
-| CL-REQ-031 | Diagnose capabilities by operation, distinguishing build provenance, observed host evidence, selected glibc inputs and local/container execution; no install-time/distro rejection or silent preparation fallback. [Guide](USER-GUIDE.md#host-capabilities-and-execution-routes); approved capability-diagnostics scope, 2026-11-03. | [capability.rs](../src/capability.rs), doctor and build diagnostics, local PT_INTERP preflight in simulate.rs. Inspect/help/version retain probe-free paths. | Focused mapped-glibc/musl/unknown, missing/present/unknown interpreter and container independence fixtures; stdout/process regressions. Exact `d6b5f78fb31f7f6a5d8c604a313c78039573f9aa`: [CI 41633902033](https://github.com/rustcommons/cargo-libc/actions/runs/41633902033) and [PR CI 41633910012](https://github.com/rustcommons/cargo-libc/actions/runs/41633910012), 15/15 each plus both release-doc checks (32 total); merged `748ffa23274792dd21e1cb4cd812271f1f61e1a3` has the same tree. [0.4.0 notes](releases/v0.4.0.md) record status migration and pending candidate package/install gates. | Implemented—partial verification; observations are not runtime certification. Real musl/static-host operations, target dependency closure and tier 3 remain unqualified. |
+| CL-REQ-031 | Diagnose capabilities by operation, distinguishing build provenance, observed host evidence, selected glibc inputs and local/container execution; no install-time/distro rejection or silent preparation fallback. [Guide](USER-GUIDE.md#host-capabilities-and-execution-routes); approved capability-diagnostics scope, 2026-11-03. | [capability.rs](../src/capability.rs), doctor and build diagnostics, local PT_INTERP preflight in simulate.rs. Inspect/help/version retain probe-free paths. | Focused mapped-glibc/musl/unknown, missing/present/unknown interpreter and container independence fixtures; stdout/process regressions. Exact `d6b5f78fb31f7f6a5d8c604a313c78039573f9aa`: [CI 41633902033](https://github.com/rustcommons/cargo-libc/actions/runs/41633902033) and [PR CI 41633910012](https://github.com/rustcommons/cargo-libc/actions/runs/41633910012), 15/15 each plus both release-doc checks (32 total); merged `748ffa23274792dd21e1cb4cd812271f1f61e1a3` has the same tree. Q40 and [0.4.0 notes](releases/v0.4.0.md) record status migration, bounded native package/install passes and exact payload carry-forward. | Implemented—partial verification; observations are not runtime certification. Real musl/static-host operations, target dependency closure and tier 3 remain unqualified. |
 
 Release-documentation audit, 2026-11-02: official archives for all eight tags
 match registry checksums, clean VCS and tagged source; see [history](releases/HISTORY.md).
@@ -154,6 +163,7 @@ It is not a confirmed new runtime requirement or additional verification evidenc
 
 | [RELEASE-0.2.4](RELEASE-0.2.4.md) | Historical release evidence | Minimal version-neutral README navigation fix; R24/I24, official archive/tag and actual docs.rs render verified; no runtime/dependency change. |
 
+| [RELEASE-0.4.0](RELEASE-0.4.0.md), [package inventory](evals/2026-11-03-diagnostics-package-inventory.json) | Candidate qualification / dated evidence | CL-REQ-002/005/013/020/023/031; Q40 exact package/VCS/registry and clean-install identities, native fixture scope and explicit gaps. Not published. |
 | [RELEASE-0.3.0](RELEASE-0.3.0.md), [clock investigation](evals/2026-11-02-clock-linking.md) | Current published release / dated investigation | CL-REQ-006–010/020/022–024/027; qualified N30/R30/P30/A30 and published I30 evidence; preserve retired prototype failures and explicit remaining scope limits. |
 
 ## Maintenance

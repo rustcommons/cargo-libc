@@ -1,0 +1,143 @@
+{
+  "scope": "Native candidate archive inventory and installed binary identities, not an official published archive",
+  "candidate_ref": "d335f8ec52a5b1e6331be57acecab01fe7f226c7",
+  "archive": {
+    "version": "0.4.0",
+    "sha256": "fe29474d3075e14b00c2e454a6ce04c819bb7b86d6b24580d45b1d607233871e",
+    "bytes": 73212,
+    "files": 26
+  },
+  "vcs_ref": "d335f8ec52a5b1e6331be57acecab01fe7f226c7",
+  "payload": {
+    ".cargo_vcs_info.json": {
+      "bytes": 94,
+      "sha256": "17420a9541b33e4cf231e33617ec931121abaae4648cc766eb5d4096d5807315"
+    },
+    "Cargo.lock": {
+      "bytes": 1607,
+      "sha256": "b8e84a3e4d9f75ed204b7b97733dbf6928ce65ec143ac959e811c02e3ccfcc44"
+    },
+    "Cargo.toml": {
+      "bytes": 1863,
+      "sha256": "063908e86d7acab725ca7fd65da7ecf1bb99dfe01af9125006b40053e3130b34"
+    },
+    "Cargo.toml.orig": {
+      "bytes": 1561,
+      "sha256": "2303e7e7f2a959595d2a85933442643c3e4c2e22834c821920aea5c4723b466e"
+    },
+    "LICENSE": {
+      "bytes": 1081,
+      "sha256": "89475db110bcc794f26a005e44ebd8bbd323659448a290c1ff29a249fe7ccd63"
+    },
+    "NOTICE.md": {
+      "bytes": 2374,
+      "sha256": "b7f4ff5b93960a70bad48bb0580acadef5a37fd9e2a32930d892817849123a18"
+    },
+    "README.md": {
+      "bytes": 8159,
+      "sha256": "3e2b1a87947ac547491a9212f934632dd0be072dd4b7d377606eadb11ae4530c"
+    },
+    "src/bin/libc-cc.rs": {
+      "bytes": 113,
+      "sha256": "dbf65f845a40dd603a20b98495cd054a0f975b15cf57aadf85feccc8e977bc53"
+    },
+    "src/bin/libc-cxx.rs": {
+      "bytes": 115,
+      "sha256": "e3dad465ecaff53b14519e45ef1925f5e9b219efdce98dafb499321eee6b1fdd"
+    },
+    "src/bin/libc-linker.rs": {
+      "bytes": 422,
+      "sha256": "70fbf1308f67dc123b4e18f060ace25d61c27c41b2facfa496c1c249e216e4a7"
+    },
+    "src/bin/libc-runner.rs": {
+      "bytes": 422,
+      "sha256": "fc6365c7b5dfad3ea1257bf3a52bf9b97f192288871809052e57f70416f7d898"
+    },
+    "src/capability.rs": {
+      "bytes": 4262,
+      "sha256": "698988d6da436bc855b69a5657200e32fdddb3d47201f5d3d1726def58b71ce6"
+    },
+    "src/cargo_output.rs": {
+      "bytes": 15775,
+      "sha256": "9a88b99bf46ef246900d457ff10c7b59485081ad48d8991a4ce7aed0095c45a4"
+    },
+    "src/cc.rs": {
+      "bytes": 10641,
+      "sha256": "6bfbfe6e223566996d89ad2f5ba0eef2ccae479f8bc18f2bacd50d1e946d585e"
+    },
+    "src/cli.rs": {
+      "bytes": 49690,
+      "sha256": "d59026cd32cc92c8caeaa3e7ce36395c82341d79c9bab73679b5d255c2b83815"
+    },
+    "src/clock.rs": {
+      "bytes": 31477,
+      "sha256": "ceca9cc9555fb5dd11a29795dd3bc27978509e7bedd5af8101279e1db05af4d4"
+    },
+    "src/clock_named.rs": {
+      "bytes": 20335,
+      "sha256": "18302289386b0a228573469e34acc3640f91e46fe802724de3290f08334fa77f"
+    },
+    "src/elf.rs": {
+      "bytes": 34689,
+      "sha256": "2ad206bc8e2a52e2bc67953e5c46e8314d3ad6d7805a712adf7307f27718729a"
+    },
+    "src/lib.rs": {
+      "bytes": 1916,
+      "sha256": "8098e13ef2943e831a43f8c400c8e3ca91979c7714e39a811f5341420dea2092"
+    },
+    "src/main.rs": {
+      "bytes": 429,
+      "sha256": "24784fcd50451e6b32dee77ee0ba51ca956a396d216c8741b4f3dde9d39d20b1"
+    },
+    "src/output.rs": {
+      "bytes": 2789,
+      "sha256": "a7f38d05584036504d93fcad397358576d6aa264b1b5e6369f9e2762ec5c7cd2"
+    },
+    "src/provider.rs": {
+      "bytes": 9474,
+      "sha256": "1d6857acf1242a81d70ddd6c6723a91bc9582c2e43b0940ad8412c1c8e567848"
+    },
+    "src/report.rs": {
+      "bytes": 16587,
+      "sha256": "2c104d8ea8eb1eea80a09ec17b40f3e269e55810b665b48b457d898459b8bd81"
+    },
+    "src/simulate.rs": {
+      "bytes": 30870,
+      "sha256": "ccbac69fa6e3e17f7cd73996c45079085df9364959e89d44cd006aab24b8a7c9"
+    },
+    "src/toolchain.rs": {
+      "bytes": 46791,
+      "sha256": "3443d7fef48210da3b963aea9a4d0d5ec90e17ee87820ef6e398ae24006c1505"
+    },
+    "src/version.rs": {
+      "bytes": 3101,
+      "sha256": "244bc8fd1df8bfbf7b2d1bedca8cfe5cfcad2bed0d15b783f84b769a6c013427"
+    }
+  },
+  "installed_source": "62347644fe1e6808b19de043c702da69077409e8",
+  "installed_binaries": {
+    "cargo-libc": {
+      "sha256": "ab3d83f66c3ec87e442e674f2bada08f0032ae5954c749a55dcda05a345b4f5d",
+      "bytes": 8717328
+    },
+    "libc-linker": {
+      "sha256": "bfb39fcab5caf9ff876742d9ca7c06d49ad5f0db4bf23565025f4484445d7efd",
+      "bytes": 783272
+    },
+    "libc-runner": {
+      "sha256": "46b8c86ddde7faece0d639e28579e4a1a5acb796f8ae7e4ee59a0635a11e1876",
+      "bytes": 650512
+    },
+    "libc-cc": {
+      "sha256": "8167046fe7e251fc384c67c0743ada98d4f0461b55ac5393ba872988c8deb27f",
+      "bytes": 789656
+    },
+    "libc-cxx": {
+      "sha256": "1756033a7baa09700c75c6ac72c0462aaee82dd74b07663b79e6d82e9fba7409",
+      "bytes": 789656
+    }
+  },
+  "archive_delta_from_installed_source": [
+    ".cargo_vcs_info.json"
+  ]
+}
