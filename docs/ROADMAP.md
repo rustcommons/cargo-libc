@@ -126,10 +126,14 @@ After the above:
 
 ## CLI consistency review
 
-- [ ] Review duplicate `--sysroot`, `--gcc-runtime`, `--cc`, `--ld` and inspect
-  `--max-glibc` handling: these currently accept the last value. Rejecting them
-  would change accepted CLI behavior; decide the contract and release scope before
-  changing it. This is not a blocker for the stdout diagnostic correction.
+- [x] Complete duplicate value-option checks, including `--sysroot`,
+  `--gcc-runtime`, `--cc`, `--ld`, `--artifact` and inspect's `--max-glibc`.
+  The unreleased parser rejects repeated identical or different values with
+  argument-error status 1 before doing work. Repeated switches, defaults,
+  delegated provider parsing and the existing `--` boundary are unchanged.
+  [Migration and scope](USER-GUIDE.md#unreleased-duplicate-value-options);
+  CL-REQ-033. This changes accepted 0.5.0 CLI behavior and must ship in a
+  minor release under the release policy; no version is assigned here.
 
 ## Presentation
 

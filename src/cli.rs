@@ -156,6 +156,9 @@ keep the host compiler (HOST_CC, CC, else cc). C++ for the target is refused
 libraries found on the host are not configured for the target.
 
 Use separate values for options, e.g. --glibc 2.22 (not --glibc=2.22).
+Value options may appear only once, even with identical values. Repeated switches
+are harmless. Arguments after -- keep their command-specific meaning; provider
+subcommands use the producer's parser.
 Direct invocation as `cargo-libc ...` is also supported.
 "#;
 
@@ -326,8 +329,8 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     let mut gcc_runtime = None;
     let mut ceiling = None;
     let mut target = None;
-    let mut cc = PathBuf::from("/usr/bin/clang");
-    let mut ld = PathBuf::from("/usr/bin/ld.bfd");
+    let mut cc = None;
+    let mut ld = None;
     let mut artifact = None;
     let mut dry_run = false;
     let mut cargo_args = Vec::new();
@@ -351,14 +354,18 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
                     return Err("duplicate --provider-mode".into());
                 }
             }
-            Some("--sysroot") => {
-                sysroot = Some(PathBuf::from(next_value(&args, &mut i, "--sysroot")?))
+            Some(flag @ ("--sysroot" | "--gcc-runtime" | "--cc" | "--ld")) => {
+                let slot = match flag {
+                    "--sysroot" => &mut sysroot,
+                    "--gcc-runtime" => &mut gcc_runtime,
+                    "--cc" => &mut cc,
+                    _ => &mut ld,
+                };
+                if slot.is_some() {
+                    return Err(format!("duplicate {flag}"));
+                }
+                *slot = Some(PathBuf::from(next_value(&args, &mut i, flag)?));
             }
-            Some("--gcc-runtime") => {
-                gcc_runtime = Some(PathBuf::from(next_value(&args, &mut i, "--gcc-runtime")?))
-            }
-            Some("--cc") => cc = PathBuf::from(next_value(&args, &mut i, "--cc")?),
-            Some("--ld") => ld = PathBuf::from(next_value(&args, &mut i, "--ld")?),
             Some("--target") => {
                 if target.is_some() {
                     return Err("duplicate --target".into());
@@ -390,6 +397,9 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
                 )?)
             }
             Some("--artifact") if build => {
+                if artifact.is_some() {
+                    return Err("duplicate --artifact".into());
+                }
                 artifact = Some(PathBuf::from(next_value(&args, &mut i, "--artifact")?))
             }
             Some(flag @ ("--distro" | "--kernel")) => {
@@ -515,8 +525,8 @@ fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
         } else {
             PathBuf::new()
         },
-        cc,
-        ld,
+        cc: cc.unwrap_or_else(|| PathBuf::from("/usr/bin/clang")),
+        ld: ld.unwrap_or_else(|| PathBuf::from("/usr/bin/ld.bfd")),
         ceiling: ceiling.ok_or("--glibc is required")?,
     };
     if checks {
@@ -609,6 +619,9 @@ fn parse_inspect(args: &[OsString]) -> Result<ParsedCommand, String> {
                     continue;
                 }
                 Some("--max-glibc") => {
+                    if ceiling.is_some() {
+                        return Err("duplicate --max-glibc".into());
+                    }
                     ceiling = Some(parse_version(
                         next_value(args, &mut i, "--max-glibc")?,
                         "--max-glibc",
@@ -945,6 +958,125 @@ mod tests {
 
     fn args(values: &[&str]) -> Vec<OsString> {
         values.iter().map(OsString::from).collect()
+    }
+
+    #[test]
+    fn singleton_paths_reject_same_and_different_values_on_every_config_command() {
+        for command in [
+            "doctor", "build", "check", "test", "run", "clippy", "doc", "rustc", "install", "env",
+        ] {
+            for flag in ["--sysroot", "--gcc-runtime", "--cc", "--ld"] {
+                for second in ["first path", "second path"] {
+                    let argv = args(&[command, flag, "first path", flag, second]);
+                    assert_eq!(parse(argv).unwrap_err(), format!("duplicate {flag}"));
+                }
+                // A duplicate is still a duplicate when its second value is absent.
+                assert_eq!(
+                    parse(args(&[command, flag, "first path", flag])).unwrap_err(),
+                    format!("duplicate {flag}")
+                );
+            }
+        }
+        for second in ["app", "other app"] {
+            assert_eq!(
+                parse(args(&["build", "--artifact", "app", "--artifact", second])).unwrap_err(),
+                "duplicate --artifact"
+            );
+        }
+        for second in ["2.17", "2.22"] {
+            assert_eq!(
+                parse(args(&[
+                    "inspect",
+                    "app",
+                    "--max-glibc",
+                    "2.17",
+                    "--max-glibc",
+                    second
+                ]))
+                .unwrap_err(),
+                "duplicate --max-glibc"
+            );
+        }
+    }
+
+    #[test]
+    fn single_paths_keep_defaults_and_explicit_values() {
+        for explicit in [false, true] {
+            let mut argv = with_sdk("doctor", &["--glibc", "2.17"]);
+            if explicit {
+                argv.extend(args(&["--cc", "clang path", "--ld", "linker path"]));
+            }
+            let ParsedCommand::Doctor {
+                config: Some(config),
+                ..
+            } = parse(argv).unwrap()
+            else {
+                panic!("wrong command")
+            };
+            assert_eq!(config.sysroot, PathBuf::from("/sdk"));
+            assert_eq!(config.gcc_runtime, PathBuf::from("/sdk/gcc"));
+            assert_eq!(
+                config.cc,
+                PathBuf::from(if explicit {
+                    "clang path"
+                } else {
+                    "/usr/bin/clang"
+                })
+            );
+            assert_eq!(
+                config.ld,
+                PathBuf::from(if explicit {
+                    "linker path"
+                } else {
+                    "/usr/bin/ld.bfd"
+                })
+            );
+        }
+    }
+
+    #[test]
+    fn repeated_switches_and_passthrough_remain_unchanged() {
+        let ParsedCommand::Inspect {
+            json,
+            scan: Some(scan),
+            ..
+        } = parse(args(&[
+            "inspect",
+            "app",
+            "--json",
+            "--json",
+            "--scan",
+            "--scan",
+            "--strict",
+            "--strict",
+            "--verbose",
+            "--verbose",
+        ]))
+        .unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert!(json && scan.strict && scan.verbose);
+        let forwarded = ["--cc", "one", "--cc", "two", "--", "--max-glibc", "2.22"];
+        let mut argv = with_sdk("run", &["--glibc", "2.17", "--dry-run", "--dry-run", "--"]);
+        argv.extend(args(&forwarded));
+        let ParsedCommand::Test {
+            cargo_args,
+            dry_run,
+            ..
+        } = parse(argv).unwrap()
+        else {
+            panic!("wrong command")
+        };
+        assert!(dry_run);
+        assert_eq!(cargo_args, args(&forwarded));
+        let rest = ["prepare", "--gcc", "one", "--gcc", "two"];
+        let mut argv = args(&["provider"]);
+        argv.extend(args(&rest));
+        let ParsedCommand::Provider(actual) = parse(argv).unwrap() else {
+            panic!("wrong command")
+        };
+        assert_eq!(actual, args(&rest));
     }
 
     #[test]
