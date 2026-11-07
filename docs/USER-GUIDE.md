@@ -1,6 +1,7 @@
 # cargo-libc user guide
 
-Maintained guide for cargo-libc 0.5.0, published 2026-11-03. See the [requirements index](REQUIREMENTS.md)
+Maintained guide for cargo-libc 0.5.0, published 2026-11-03, with explicitly marked
+unreleased changes. See the [requirements index](REQUIREMENTS.md)
 and [release evidence](RELEASE-0.5.0.md) for scope and verification limits.
 
 cargo-libc builds Rust programs on a current x86_64 Linux machine for older glibc
@@ -24,6 +25,28 @@ your tests under a simulation of the target's kernel.
 - [Limits](#limits)
 - [How the build is controlled](#how-the-build-is-controlled)
 - [Reference](#reference)
+
+### Unreleased: duplicate value options
+
+The next minor release rejects repeated value options owned by cargo-libc,
+even when their values are identical. This completes the existing duplicate
+checks by covering `--sysroot`, `--gcc-runtime`, `--cc`, `--ld`, `--artifact`
+and inspect's `--max-glibc`. Released 0.5.0 silently keeps the last value for
+these six options. Invalid arguments return **1**, with an error on stderr and
+no report on stdout, before provider preparation, compiler execution or ELF reads.
+
+For example, `cargo libc inspect app --max-glibc 2.17 --max-glibc 2.22`
+now reports `duplicate --max-glibc`. Scripts that append overrides must instead
+choose one value before invoking cargo-libc. Repeating a value to reaffirm it is
+also an error. The compiler/linker defaults stay unchanged when omitted.
+
+Repeated switches such as `--json`, `--strict`, `--scan`, `--verbose` and
+`--dry-run` remain idempotent where supported. The `--` boundary retains its
+existing meaning: Cargo commands forward the remaining arguments unchanged
+before their existing Cargo-argument validation; inspect treats them as literal
+file operands. `cargo libc provider ...` still delegates parsing to
+libc-abi-tools; this change does not alter that parser or helper environment
+variables. Existing conflicts between different selection options are unchanged.
 
 ## Install
 

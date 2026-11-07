@@ -43,6 +43,10 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
 - [docs/USER-GUIDE.md](docs/USER-GUIDE.md) is the user documentation: keep commands,
   options, messages and limits in it in step with the code. The README is the front
   page and links to it.
+- Cargo-libc-owned value options must reject duplicates, including identical
+  values, before resolving inputs. Keep switches idempotent, preserve the `--`
+  boundary and delegated provider parsing, and test these boundaries when adding
+  options. Do not silently introduce last-value-wins overrides.
 - Present the `inspect`/`build` scan as tier 1 (least reliable) and
   `test`/`run` as tier 2 (simulation); never either as qualification.
 - Keep `inspect --target-libgcc` an explicit read-only two-file check. Version

@@ -11,7 +11,16 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ## [Unreleased]
 
-No additional changes assigned.
+### Changed
+
+- Reject duplicate `--sysroot`, `--gcc-runtime`, `--cc`, `--ld`, `--artifact`
+  and inspect `--max-glibc` values, including identical repeats, before doing
+  work. Previously the last value won. Invalid arguments exit 1 with a stderr
+  diagnostic and no stdout report. Scripts must select one value instead of
+  appending an override. Repeated switches and Cargo argument forwarding are
+  unchanged. This stricter CLI contract requires the next minor release;
+  no version or publication is assigned. See the
+  [migration guidance](docs/USER-GUIDE.md#unreleased-duplicate-value-options).
 
 ## [0.5.0] - 2026-11-03
 
