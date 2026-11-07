@@ -128,12 +128,12 @@ After the above:
 
 - [x] Complete duplicate value-option checks, including `--sysroot`,
   `--gcc-runtime`, `--cc`, `--ld`, `--artifact` and inspect's `--max-glibc`.
-  The unreleased parser rejects repeated identical or different values with
+  The 0.6.0 parser rejects repeated identical or different values with
   argument-error status 1 before doing work. Repeated switches, defaults,
   delegated provider parsing and the existing `--` boundary are unchanged.
-  [Migration and scope](USER-GUIDE.md#unreleased-duplicate-value-options);
+  [Migration and scope](USER-GUIDE.md#duplicate-value-options-060);
   CL-REQ-033. This changes accepted 0.5.0 CLI behavior and must ship in a
-  minor release under the release policy; no version is assigned here.
+  minor release under the release policy; 0.6.0 is in preparation.
 
 ## Presentation
 

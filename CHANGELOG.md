@@ -11,6 +11,13 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ## [Unreleased]
 
+No additional changes assigned.
+
+## [0.6.0] - 2026-11-07
+
+**Release candidate; not yet published.** [Notes](docs/releases/v0.6.0.md) and
+[qualification record](docs/RELEASE-0.6.0.md).
+
 ### Changed
 
 - Reject duplicate `--sysroot`, `--gcc-runtime`, `--cc`, `--ld`, `--artifact`
@@ -18,9 +25,8 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
   work. Previously the last value won. Invalid arguments exit 1 with a stderr
   diagnostic and no stdout report. Scripts must select one value instead of
   appending an override. Repeated switches and Cargo argument forwarding are
-  unchanged. This stricter CLI contract requires the next minor release;
-  no version or publication is assigned. See the
-  [migration guidance](docs/USER-GUIDE.md#unreleased-duplicate-value-options).
+  unchanged. This stricter CLI contract requires a minor release. See the
+  [migration guidance](docs/USER-GUIDE.md#duplicate-value-options-060).
 
 ## [0.5.0] - 2026-11-03
 

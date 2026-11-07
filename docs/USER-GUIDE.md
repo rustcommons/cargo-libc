@@ -1,7 +1,6 @@
 # cargo-libc user guide
 
-Maintained guide for cargo-libc 0.5.0, published 2026-11-03, with explicitly marked
-unreleased changes. See the [requirements index](REQUIREMENTS.md)
+Maintained guide for cargo-libc 0.6.0 (release candidate). See the [requirements index](REQUIREMENTS.md)
 and [release evidence](RELEASE-0.5.0.md) for scope and verification limits.
 
 cargo-libc builds Rust programs on a current x86_64 Linux machine for older glibc
@@ -26,9 +25,9 @@ your tests under a simulation of the target's kernel.
 - [How the build is controlled](#how-the-build-is-controlled)
 - [Reference](#reference)
 
-### Unreleased: duplicate value options
+### Duplicate value options (0.6.0)
 
-The next minor release rejects repeated value options owned by cargo-libc,
+Release 0.6.0 rejects repeated value options owned by cargo-libc,
 even when their values are identical. This completes the existing duplicate
 checks by covering `--sysroot`, `--gcc-runtime`, `--cc`, `--ld`, `--artifact`
 and inspect's `--max-glibc`. Released 0.5.0 silently keeps the last value for
