@@ -23,10 +23,42 @@ unchanged. No producer release, LLVM wiring or new platform support is included.
 
 ## Candidate qualification
 
-Pending exact committed package, clean-home unpacked locked installation,
-all-five helper smoke and installed duplicate-option/stream checks. Official
-0.5.0 payload and registry graph comparison must show only the reviewed cli.rs
-delta plus root version/VCS metadata, with the same file inventory.
+Exact candidate `1d74aea48f686654bebdb62e2a25ac6676260a74` passed native
+Rust 1.90 tests (105 library, ten process, zero doctests), registry-only metadata,
+verified `cargo package --locked --offline`, and clean Cargo-home unpacked
+`cargo install --path ... --locked --offline` into an isolated root.
+
+The 28-file candidate archive is 85,623 bytes, SHA256
+`6b7b1e7b35d1f3799d78a51461ed4b47e226a60bbce3df83d46ca0d08885c046`,
+with clean exact-candidate VCS identity. Comparison with official 0.5.0
+(`b48ab447b632dad90e97ee03fa77ac4eabfc86712c00ccd824db3b4ad454171d`)
+verified the same inventory; changes are only reviewed `src/cli.rs`, root
+version/lock metadata and VCS. README, legal files, helper/linker/runtime sources,
+dependency versions and checksums are unchanged. All six registry records were
+checked against the lock; metadata contains only the root plus registry inputs.
+
+Installed results: 89 CLI cases (84 identical/different duplicate refusals and
+five positive help/version/inspection controls), all five helpers through real
+provider 2.17/C/CMake/host separation/local kernel simulation and target C++
+refusal, exact run/test/direct-runner stdout/stdin/status checks and the bounded
+capability suite passed. The first stream attempt failed because the driver
+leaked its installation `CARGO_TARGET_DIR` into a fixture that expects a default
+target directory. The original exit 1/log remains; clearing only that driver
+setting allowed stream and capability phases to pass with the same installed
+binaries. This is **composite evidence**, not one all-green initial run.
+
+Candidate proof: 244 member hashes, 126,225 bytes, SHA256
+`320d75965944bd17de756ba64558c598f711f85b7a52558a4226ae801aa30336`.
+The packet and per-phase logs are retained in coordinator thread storage
+(`release060-evidence/candidate-proof.tar.gz`); no new distribution assets are
+attached. Source-equivalent excluded docs can reuse this evidence; a merged
+package must still have its exact VCS identity verified.
+
+[Candidate docs CI](https://github.com/rustcommons/cargo-libc/actions/runs/42427367825)
+passed. [Portable Linux/Windows/MSRV CI](https://github.com/rustcommons/cargo-libc/actions/runs/42427491408)
+passed at exact `1d74aea`: Linux and Windows Rust 1.99 tests/fmt/Clippy/docs,
+plus Linux Rust 1.90 all-target checking. Package inputs and release scripts
+are frozen to that tested candidate; later evidence-only docs do not alter them.
 
 ## Publication
 
