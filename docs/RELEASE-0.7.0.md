@@ -6,7 +6,7 @@ Published 2026-11-08 UTC under explicit maintainer authorization to finish the
 producer-to-consumer hand-off. Exact release source:
 `6317117a2bea3644fa0cba11df5ac61448fd7408`. Official archive, annotated tag,
 docs.rs and fresh registry installations are verified below. GitHub Release and
-full published-docs completion remain pending this bookkeeping candidate. Cargo
+full published-documentation verification are complete; final closeout follows. Cargo
 0.6.0 cannot be replaced. Producer workspace 0.6.0 is already released and needs
 no republishing. No glibc data/source release is included.
 
@@ -186,3 +186,28 @@ Only excluded docs and stream-test infrastructure change during bookkeeping;
 released product inputs remain exact. Exact-head docs review/checks precede
 normal merge and publishing the exact committed Release body, latest/zero assets,
 then full published-docs verification and final matrix/local-checkout alignment.
+
+## Final Release closeout
+
+Completed 2026-11-08 UTC. [PR27](https://github.com/rustcommons/cargo-libc/pull/27)
+merged normally as `9052df87fcf9154875a6957821e8c2d585f9a2e2`, preserving reviewed
+`bb0676b057c477511c32af0d373640f79d4f78fd` exactly. Its
+[exact-head docs CI42527357980](https://github.com/rustcommons/cargo-libc/actions/runs/42527357980)
+passed before normal merge and note publication. Protected package inputs remain
+byte-identical to the released source; only excluded docs and the tested
+stream-fixture target-directory isolation changed in publication bookkeeping.
+
+The [live v0.7.0 Release](https://github.com/rustcommons/cargo-libc/releases/tag/v0.7.0)
+has the exact committed notes, is stable/latest and has zero assets. Committed
+note SHA-256: `0d1e71cb2b9b53535c7db3d39b0a22e6c5bf164cd379f47d25e359e512fb858a`.
+The annotated tag remains at source `6317117a2bea3644fa0cba11df5ac61448fd7408`.
+Authenticated local `--published` and
+[full twelve-version verification CI42527435394](https://github.com/rustcommons/cargo-libc/actions/runs/42527435394)
+passed; [release-event CI42527435111](https://github.com/rustcommons/cargo-libc/actions/runs/42527435111)
+also passed. No crate republishing or tag movement occurred.
+
+The [current organization matrix](https://github.com/rustcommons/.github/blob/main/docs/RELEASE-STATUS.md)
+tracks delivered producer/consumer versions separately from dated adoption
+snapshots. Its final Cargo row and the clean normal Cargo checkout are updated
+as part of the same coordination closeout. Mirror prototype work and the four
+held LLVM/checklist drafts are unchanged; all qualification limits above remain.
