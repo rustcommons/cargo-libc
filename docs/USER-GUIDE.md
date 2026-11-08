@@ -335,6 +335,25 @@ entries are not silently reused. Source mode uses embedded inputs but still need
 host GCC/native tools; container preparation may need source downloads and image
 access. See [0.2.2 cache refresh](RELEASE-0.2.2.md#provider-cache-refresh).
 
+The unreleased provider-cache update requires `libc-abi-tools 0.6.0`; published
+cargo-libc 0.6.0 does not include it. Preparation writes complete immutable
+generations and atomically selects one. `prepare --force` retains old returned
+paths, so in-flight builds, explicit descriptors and saved plain-Cargo settings
+can keep using their generation. A new automatic selection uses the current
+generation; its paths enter Cargo's fingerprint and can cause rebuilding.
+To switch saved settings, regenerate them with `cargo libc env`; a saved file
+does not follow future cache selections automatically. Use returned paths rather
+than constructing cache directories from input hashes.
+
+Retained generations cost disk until explicit removal. Stop builds and other
+cache operations before `provider remove` or manual deletion. No automatic GC,
+reader leases, crash-durable transaction, distributed-filesystem or authenticated
+cache guarantee is added. Host GCC startup files outside the generation remain
+independently managed. New version keys still require fresh preparation; imported
+old entries are not an automatic offline migration. See the
+[adoption evidence](evals/2026-11-08-provider-cache-adoption.md) and producer
+[cache contract](https://github.com/rustcommons/linux-abi-tools/blob/v0.6.0/docs/USING-PROVIDERS.md#cache-concurrency).
+
 | Mode | How | When |
 | --- | --- | --- |
 | `source` (default) | Compiles glibc's startup sources, which are built into cargo-libc, with your GCC, then verifies every object against the qualified build. Offline, seconds. | Almost always. |

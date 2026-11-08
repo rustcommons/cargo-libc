@@ -18,6 +18,7 @@ cargo libc --help > "$test_dir/help"
 grep -F 'libraries (cdylib)' "$test_dir/help"
 cargo libc inspect /bin/true --max-glibc "$(getconf GNU_LIBC_VERSION | cut -d ' ' -f2)"
 python3 "$repo_dir/scripts/check-provider-stdout.py" "$install_root/bin/cargo-libc"
+python3 "$repo_dir/scripts/check-provider-cache.py" "$install_root/bin" "$test_cc" "$test_dir/provider-cache"
 # Use the installed linker, runner and C wrappers through a real C/CMake fixture.
 manifest="$repo_dir/examples/c-deps/Cargo.toml"
 cargo fetch --manifest-path "$manifest" --locked

@@ -34,6 +34,11 @@ work. Its companion repository is `rustcommons/linux-abi-tools`.
 - Provider preparation lives in `libc-abi-tools` (`provider::cli`); cargo-libc
   exposes it (`cargo libc provider`, automatic providers) and must not
   reimplement it. Never fall back silently from one provider mode to another.
+- Use returned provider-generation paths, never reconstruct physical cache paths.
+  Forced preparation must retain descriptors already used by builds or saved
+  settings. Keep installed-tool coverage for managed refresh/fingerprints, old
+  explicit descriptors and plain-Cargo/C adapters; removal requires stopped
+  readers/writers and is not covered by preparation's retention guarantee.
 - The five-clock libc default belongs to the producer's derived link-profile API.
   Keep original ABI/source inputs faithful, user DSOs read-only, and descriptor v1
   unchanged. Preserve explicit old versions, real RT APIs, library order/groups,

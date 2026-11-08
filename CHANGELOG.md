@@ -11,7 +11,15 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ## [Unreleased]
 
-No additional changes assigned.
+### Fixed
+
+- Require `libc-abi-tools 0.6.0` for immutable provider generations. Forced
+  preparation retains paths already returned to builds; new automatic selections
+  use the new generation and Cargo fingerprint. Old explicit descriptors and
+  saved settings keep their original generation. Other dependency locks, glibc
+  inputs, tool floors, clock policy and the system unwinder are unchanged.
+  [Adoption and limits](docs/evals/2026-11-08-provider-cache-adoption.md).
+  This is unreleased; published cargo-libc 0.6.0 still uses the older producer.
 
 ## [0.6.0] - 2026-11-07
 

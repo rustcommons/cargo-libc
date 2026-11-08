@@ -35,9 +35,9 @@ dependencies = [
 
 [[package]]
 name = "libc-abi-tools"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c598bccdec99a399cc8ea639c69ffd59a58dd3dc7904ea5cc586afd01dcea469"
+checksum = "368579c7f6401ead63390c8c273da9d9840a905438b62e603917bb169e084d6e"
 dependencies = [
  "glibc-abilists",
  "glibc-provider-sources",
