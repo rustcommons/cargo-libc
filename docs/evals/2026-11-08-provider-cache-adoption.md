@@ -37,7 +37,11 @@ forced generation refresh; held descriptor/manifest/header/startup/stub hashes;
 new managed fingerprint rebuild and reuse; old saved config execution; explicit
 old-descriptor Rust and native C/CMake; current provider verification. It writes
 bounded command logs and a JSON summary. `smoke-installed.sh` includes it, so
-unpacked-package and actual published-install qualification use the same gate.
+unpacked-package and future published-install qualification use the same gate.
+The workflow's historical published cargo-libc 0.6.0 install still uses producer
+0.5.0, so it explicitly skips the new-layout gate. That test exception refuses
+any other version: future release preparation must restore the default gate;
+it cannot silently carry the historical exception into a new release.
 
 The package audit is updated to compare against official cargo-libc 0.6.0:
 same 28 files and source/README/legal bytes, only the intended dependency metadata

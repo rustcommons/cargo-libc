@@ -252,7 +252,7 @@ jobs:
             export CARGO_HOME="$RUNNER_TEMP/package-cargo-home"
             cargo fetch --manifest-path "$package/Cargo.toml" --locked
             cargo install --path "$package" --locked --offline --root "$RUNNER_TEMP/package-install"
-            bash scripts/smoke-installed.sh "$RUNNER_TEMP/package-install" /usr/bin/clang-18 "$version"
+            CHECK_PROVIDER_CACHE_GENERATIONS=1 bash scripts/smoke-installed.sh "$RUNNER_TEMP/package-install" /usr/bin/clang-18 "$version"
             if [ "$INTEGRATION_MODE" = registry ]; then
               python3 scripts/check-cli-options.py "$RUNNER_TEMP/package-install/bin/cargo-libc" "$EVIDENCE/cli-options"
               CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/package-install/bin" /usr/bin/clang-18
@@ -337,7 +337,10 @@ jobs:
             git rev-parse HEAD
             export CARGO_HOME="$RUNNER_TEMP/published-cargo-home"
             cargo install cargo-libc --version 0.6.0 --locked --root "$RUNNER_TEMP/published-install"
-            bash scripts/smoke-installed.sh "$RUNNER_TEMP/published-install" /usr/bin/clang-18 0.6.0
+            # This immutable published baseline still uses producer 0.5.0.
+            # The exception refuses other versions, forcing future release
+            # preparation to restore the default generation gate.
+            CHECK_PROVIDER_CACHE_GENERATIONS=0 bash scripts/smoke-installed.sh "$RUNNER_TEMP/published-install" /usr/bin/clang-18 0.6.0
             python3 scripts/check-cli-options.py "$RUNNER_TEMP/published-install/bin/cargo-libc" "$RUNNER_TEMP/evidence/cli-options"
             CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/published-install/bin" /usr/bin/clang-18
           } 2>&1 | tee "$RUNNER_TEMP/evidence/published-install.log"
