@@ -62,16 +62,15 @@ artifact = target / "x86_64-unknown-linux-gnu/debug/provider-cache-probe"
 
 
 def build(label):
-    output = run(label, [tool, "build", *selection, "--artifact", artifact, "--",
-                         *manifest, "--target-dir", target, "--message-format=json"])
-    events = []
-    for line in output.splitlines():
-        if line.startswith(b"{"):
-            event = json.loads(line)
-            if event.get("reason") == "compiler-artifact" and event.get("executable"):
-                events.append(event)
-    assert len(events) == 1, (label, events)
-    return events[0]["fresh"]
+    before = artifact.stat().st_mtime_ns if artifact.exists() else None
+    run(label, [tool, "build", *selection, "--artifact", artifact, "--",
+                *manifest, "--target-dir", target, "--verbose"])
+    diagnostics = (root / (label + ".stderr")).read_bytes()
+    compiled = b"Compiling provider-cache-probe " in diagnostics
+    fresh = b"Fresh provider-cache-probe " in diagnostics
+    assert compiled != fresh, (label, diagnostics.decode(errors="replace"))
+    assert fresh == (before == artifact.stat().st_mtime_ns), label
+    return fresh
 
 
 assert build("managed-first") is False

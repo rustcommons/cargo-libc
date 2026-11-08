@@ -171,7 +171,7 @@ It is not a confirmed new runtime requirement or additional verification evidenc
 
 | Path / surface | Classification | Authority, scope and update rule |
 | --- | --- | --- |
-| [Provider-cache adoption](evals/2026-11-08-provider-cache-adoption.md) | Unreleased real-registry minimum/lock adoption, permanent installed refresh gate, migration and qualification limits. |
+| [Provider-cache adoption](evals/2026-11-08-provider-cache-adoption.md) | Dated unreleased qualification | Real-registry minimum/lock adoption, permanent installed refresh gate, migration and qualification limits. |
 | [README](../README.md) | Maintained entry guide | Purpose, prerequisites, registry setup, guide/trace links; packaged, so excluded-doc links use absolute GitHub URLs. |
 | [AGENTS](../AGENTS.md), [CLAUDE shim](../CLAUDE.md) | Maintained repository instructions | AGENTS is primary; shim points only to it, never a second authority. |
 | [USER-GUIDE](USER-GUIDE.md) | Maintained guide/reference | CLI, build setup versus deployment runtime, targets/providers, C/Python, both plain-Cargo formats, streams/status and limits. CL-REQ-002/013 deployment claims have [dated source/command evidence](evals/2026-11-03-libgcc-deployment.md). |
