@@ -28,7 +28,7 @@ for key in list(env):
         env.pop(key, None)
 env.update(PATH=str(tools) + os.pathsep + env["PATH"],
            CARGO_LIBC_PROVIDER_DIR=str(root / "cache"),
-           CARGO_BUILD_JOBS="2", RUST_TEST_THREADS="2")
+           CARGO_BUILD_JOBS="2", RUST_TEST_THREADS="2", CARGO_TERM_COLOR="never")
 tool = str(tools / "cargo-libc")
 commands = []
 

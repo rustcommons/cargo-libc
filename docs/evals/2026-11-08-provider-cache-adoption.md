@@ -115,3 +115,27 @@ Six GitHub GFM renders, 244 local links/anchors, shell syntax, release-doc check
 and diff checks passed. Final evidence-only docs preserve package and harness
 inputs. Applicable hosted checks and review remain separate; release version,
 merge and publication are not performed by this record.
+
+## Merge-review follow-up
+
+The installed workflow still checks the immutable published cargo-libc 0.6.0
+baseline, whose producer is 0.5.0. It now explicitly uses the historical test
+exception; the unpacked candidate explicitly requires the generation gate. Five
+actual shell decision controls passed: default/required mode invokes the gate;
+legacy mode skips only version 0.6.0, rejects a future version, and rejects an
+unknown setting. This is test infrastructure, not a public runtime option.
+
+The new harness disables Cargo colour for deterministic verbose-status parsing.
+All sixteen native generation commands passed again with forced colour in the
+incoming environment. The first invocation lacked Cargo on PATH and failed
+before building; supplying the declared Cargo prerequisite fixed that setup
+error. Both attempts are retained separately from the original proof packet.
+No production code, graph or package payload changed in this review delta.
+The existing real-registry install and source qualification carry forward.
+
+Exact `02651cebe59a9da7f013b9bceb39ea240785f234` hosted
+[Linux/Windows/MSRV checks](https://github.com/rustcommons/cargo-libc/actions/runs/42501588430)
+and [documentation check](https://github.com/rustcommons/cargo-libc/actions/runs/42501585500)
+passed. The final colour/evidence-only delta does not change their Rust/package
+inputs. All 30 existing requirement IDs and the original proof's 297 hashes were
+rechecked; no gap or unmerged research requirement was silently renumbered.
