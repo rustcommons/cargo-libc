@@ -1,6 +1,6 @@
 # cargo-libc user guide
 
-Maintained guide for cargo-libc 0.6.0 (release candidate). See the [requirements index](REQUIREMENTS.md)
+Maintained guide for cargo-libc 0.6.0, published 2026-11-07. See the [requirements index](REQUIREMENTS.md)
 and [release evidence](RELEASE-0.5.0.md) for scope and verification limits.
 
 cargo-libc builds Rust programs on a current x86_64 Linux machine for older glibc

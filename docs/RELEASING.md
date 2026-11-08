@@ -53,8 +53,7 @@ release; its historical filename does not identify the 0.4.0 diagnostics release
 
 ## Release records
 
-Release candidate: **0.6.0** (2026-11-07); package/install and publication gates pending.
-Latest verified registry/source release: **0.5.0** (2026-11-03).
+Latest verified registry/source release: **0.6.0** (2026-11-07).
 Historical GitHub Release backfill is complete for the eight versions through
 0.3.0; see the [backfill completion evidence](releases/HISTORY.md#completed-backfill).
 The 0.4.0 live Release/body verification is tracked in its release record. Packaged
@@ -62,7 +61,7 @@ READMEs link here without calling a pinned historical version current.
 
 | Version / user notes | Original UTC date | Registry/source state and evidence |
 | --- | --- | --- |
-| [0.6.0](releases/v0.6.0.md) ? [evidence](RELEASE-0.6.0.md) | Candidate 2026-11-07 | Duplicate-option consistency; qualification and publication pending. |
+| [0.6.0](releases/v0.6.0.md) / [evidence](RELEASE-0.6.0.md) | 2026-11-07 | Published from `460bca52512658df8fea8d76578cd83dd0c2cb84`; duplicate-option contract, unchanged dependency graph, qualified package and clean installation. Official archive/index/VCS, annotated tag, docs.rs and fresh registry installation verified; full scope and Release closeout are recorded separately. |
 | [0.5.0](releases/v0.5.0.md) · [evidence](RELEASE-0.5.0.md) | 2026-11-03 | Published/non-yanked from `1761260a52e192e55f774602ca05add64bd88994`; exact official/index checksum, source/payload, annotated tag and docs.rs verified. Candidate qualification retained separately; actual fresh native registry locked installation/all-five/checker36/legacy/capability/stream verification passed without failures. Final Release documentation uses the reviewed committed body and published-mode check. No runtime replacement or new platform qualification. |
 | [0.4.0](releases/v0.4.0.md) · [evidence](RELEASE-0.4.0.md) | 2026-11-03 | Published/non-yanked; source/tag `aa2ea56e5d7943aeb4e0023713a089693d2103c1`; official 26-file archive/index checksum, docs.rs actual README/API/navigation and fresh native registry locked install verified. Diagnostics/missing-interpreter status change only; no runtime replacement or new platform qualification. |
 | [0.3.0](releases/v0.3.0.md) · [evidence](RELEASE-0.3.0.md) | 2026-11-02 | Published and verified; source/tag `a70ce9ffac6be8611b66a2829fefb3093cb41ce6`; five-clock profile, archive/docs.rs and clean published-install run 41382187049 passed; explicit coverage limits retained. |

@@ -15,7 +15,7 @@ No additional changes assigned.
 
 ## [0.6.0] - 2026-11-07
 
-**Release candidate; not yet published.** [Notes](docs/releases/v0.6.0.md) and
+**Published 2026-11-07.** [Notes](docs/releases/v0.6.0.md) and
 [qualification record](docs/RELEASE-0.6.0.md).
 
 ### Changed
