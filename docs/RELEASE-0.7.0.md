@@ -9,9 +9,10 @@ no republishing. No glibc data/source release is included.
 
 The adoption merged as `b2db2daa13f5658ea406c55e67c59f5e371c7143`, preserving
 reviewed `3a7ef25a1b1c501d6ab23d50ca9505a9aebf05d2`. User approval now selects
-consumer 0.7.0. This preparation changes only root version/lock metadata, expected
-workflow versions and excluded documentation; Rust source, tests, scripts,
-packaged README/legal files and dependency graph must remain equal to that merge.
+consumer 0.7.0. Preparation changes root version/lock metadata, workflow versions,
+excluded documentation and the qualification scripts described below. Rust source,
+tests, packaged README/legal files and the dependency graph remain equal to the
+adoption merge; the fixture-fetch/evidence-retention correction is test-only.
 
 ## Version and graph review
 
@@ -61,17 +62,48 @@ identities must be measured rather than inferred from old source evidence.
 
 ## Final candidate gates
 
-Pending exact committed candidate: portable/MSRV checks, all-target tests,
-package verification, comparison against the official Cargo 0.6.0 archive,
-clean unpacked locked installation and generation/capability/stream/helper
-checks. Use the maintained
-[native package driver](../scripts/qualify-diagnostics-package.sh) with an exact
-candidate SHA, real crates.io inputs and evidence outside the checkout. All
-previous failures must stay distinguishable from corrected results.
+Qualified package inputs: `4caa88cccbae9dc4cfb5c3ba7b52d54bcfb415b8`.
+Rust 1.90 on modern x86_64 Linux/WSL passed 105 library and ten process tests,
+doctests (zero examples), clean package verification and all-six registry
+archive/checksum checks. A fresh Cargo home installed the clean unpacked package
+with `--locked --offline`, including all five helpers. Recorded metadata contains
+only the root path and the six locked crates.io dependencies; no overrides.
 
-Source-equivalent broad kernel/provider/clock qualification keeps its original
-scope. No unchanged full matrix or new platform/LLVM claim follows. Final
-recorded results and exact-head documentation checks precede normal merge.
+The first native package-driver attempt exited 1 in the new generation fixture:
+`cmake` was missing from the fresh Cargo home before its offline C fixture build.
+The smoke script fetched that fixture only afterward. Qualification correction
+`49c0ceea2d6b6bdadb24951e77bc8eeb91fb583e` moves the existing locked fetch before
+the gate and retains its logs outside temporary cleanup. Product source/package
+inputs did not change. The original failure is preserved; it is not a pass.
+
+The same installed package passed the corrected resume: all sixteen generation
+commands, managed rebuild/reuse, five retained file hashes, saved plain-Cargo and
+explicit Rust/C/CMake inputs, native host-header separation and target C++ refusal.
+Provider verification, capability13, CLI singleton regressions and actual run/test
+stdout/stdin/status plus direct-runner controls passed. All 36 target-libgcc static
+cases passed; no checker fixture was executed. No container flag was enabled.
+
+A clean repackaged `49c0cee` archive has 28 files and 85,627 bytes, SHA-256
+`b4a8982665ed1c80bae38422f2e0120921658869cbdc1225b183fa25ac1b3693`.
+Only VCS metadata differs from the actual installed package; source, manifest,
+lock, README and legal payloads match. The audit against official Cargo 0.6.0
+allows only root-version/producer metadata and VCS differences. The official
+archive at publication will identify the merge and can have a different checksum.
+
+[Exact source portable CI42525285531](https://github.com/rustcommons/cargo-libc/actions/runs/42525285531)
+passed Linux/Windows and MSRV; [docs CI42525288184](https://github.com/rustcommons/cargo-libc/actions/runs/42525288184)
+passed on `4caa88c`. The later qualification-only ordering/retention correction
+has identical Rust/package inputs and passed the resumed native checks; those
+portable results carry within that scope. Final exact-head docs CI precedes merge.
+
+The qualification packet contains 407 hashed regular files, actual candidate
+archives, raw original/resume logs, graph, audits and installed-helper hashes:
+350,264 bytes, SHA-256
+`c33188bc53026de68cf1aa1db945a0729442f75eccc90ab3abb649b5eb826a82`.
+Special static-test inputs such as the FIFO are recorded as special fixtures,
+not read or copied as regular payload. Source-equivalent broad kernel/provider/
+clock evidence keeps its original scope; no old-system/container/Python or LLVM
+qualification is inferred from these checks.
 
 ## Publication and coordination
 
