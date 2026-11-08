@@ -104,7 +104,7 @@ jobs:
           data = json.loads((Path(os.environ['EVIDENCE']) / 'metadata.json').read_text())
           source_mode = os.environ['INTEGRATION_MODE'] == 'source'
           manifest_data = tomllib.loads(Path('Cargo.toml').read_text())
-          expected_versions = {'cargo-libc': '0.6.0',
+          expected_versions = {'cargo-libc': '0.7.0',
                                'libc-abi-tools': '0.6.0', 'kernel-abi-tools': '0.3.3',
                                'linux-abi-scan': '0.3.3', 'linux-targets': '0.3.3',
                                'glibc-abilists': '0.1.2', 'glibc-provider-sources': '0.1.1'}
@@ -252,7 +252,7 @@ jobs:
             export CARGO_HOME="$RUNNER_TEMP/package-cargo-home"
             cargo fetch --manifest-path "$package/Cargo.toml" --locked
             cargo install --path "$package" --locked --offline --root "$RUNNER_TEMP/package-install"
-            CHECK_PROVIDER_CACHE_GENERATIONS=1 bash scripts/smoke-installed.sh "$RUNNER_TEMP/package-install" /usr/bin/clang-18 "$version"
+            CHECK_PROVIDER_CACHE_GENERATIONS=1 PROVIDER_CACHE_EVIDENCE_DIR="$EVIDENCE/provider-cache" bash scripts/smoke-installed.sh "$RUNNER_TEMP/package-install" /usr/bin/clang-18 "$version"
             if [ "$INTEGRATION_MODE" = registry ]; then
               python3 scripts/check-cli-options.py "$RUNNER_TEMP/package-install/bin/cargo-libc" "$EVIDENCE/cli-options"
               CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/package-install/bin" /usr/bin/clang-18
@@ -312,7 +312,7 @@ jobs:
       - run: cargo fetch --locked
       - run: cargo check --all-targets --locked --offline
 
-  # Published 0.6.0 installation is a later gate, never invoked before the
+  # Published 0.7.0 installation is a later gate, never invoked before the
   # coordinator confirms publication. Native qualification is separately recorded.
   installed:
     if: inputs.integration_mode == 'installed'
@@ -325,7 +325,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@1.90.0
-      - name: Install published 0.6.0 into a clean root and exercise helpers
+      - name: Install published 0.7.0 into a clean root and exercise helpers
         run: |
           set -euo pipefail
           test "$(uname -m)" = x86_64
@@ -336,11 +336,9 @@ jobs:
           {
             git rev-parse HEAD
             export CARGO_HOME="$RUNNER_TEMP/published-cargo-home"
-            cargo install cargo-libc --version 0.6.0 --locked --root "$RUNNER_TEMP/published-install"
-            # This immutable published baseline still uses producer 0.5.0.
-            # The exception refuses other versions, forcing future release
-            # preparation to restore the default generation gate.
-            CHECK_PROVIDER_CACHE_GENERATIONS=0 bash scripts/smoke-installed.sh "$RUNNER_TEMP/published-install" /usr/bin/clang-18 0.6.0
+            cargo install cargo-libc --version 0.7.0 --locked --root "$RUNNER_TEMP/published-install"
+            # Require the new generation gate for the actual 0.7.0 install.
+            CHECK_PROVIDER_CACHE_GENERATIONS=1 PROVIDER_CACHE_EVIDENCE_DIR="$RUNNER_TEMP/evidence/provider-cache" bash scripts/smoke-installed.sh "$RUNNER_TEMP/published-install" /usr/bin/clang-18 0.7.0
             python3 scripts/check-cli-options.py "$RUNNER_TEMP/published-install/bin/cargo-libc" "$RUNNER_TEMP/evidence/cli-options"
             CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/published-install/bin" /usr/bin/clang-18
           } 2>&1 | tee "$RUNNER_TEMP/evidence/published-install.log"

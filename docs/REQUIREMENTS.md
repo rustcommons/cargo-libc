@@ -171,6 +171,7 @@ It is not a confirmed new runtime requirement or additional verification evidenc
 
 | Path / surface | Classification | Authority, scope and update rule |
 | --- | --- | --- |
+| [0.7.0 candidate](RELEASE-0.7.0.md), [user notes](releases/v0.7.0.md) | Release preparation and bounded evidence | Minor provider-cache contract adoption; versioned package/install, registry graph and publication gates are tracked separately from historical 0.6.0. |
 | [Provider-cache adoption](evals/2026-11-08-provider-cache-adoption.md) | Dated unreleased qualification | Real-registry minimum/lock adoption, permanent installed refresh gate, migration and qualification limits. |
 | [README](../README.md) | Maintained entry guide | Purpose, prerequisites, registry setup, guide/trace links; packaged, so excluded-doc links use absolute GitHub URLs. |
 | [AGENTS](../AGENTS.md), [CLAUDE shim](../CLAUDE.md) | Maintained repository instructions | AGENTS is primary; shim points only to it, never a second authority. |

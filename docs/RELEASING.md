@@ -54,6 +54,8 @@ release; its historical filename does not identify the 0.4.0 diagnostics release
 ## Release records
 
 Latest verified registry/source release: **0.6.0** (2026-11-07).
+**0.7.0 is a release candidate, not published**; see its
+[preparation and qualification record](RELEASE-0.7.0.md).
 Historical GitHub Release backfill is complete for the eight versions through
 0.3.0; see the [backfill completion evidence](releases/HISTORY.md#completed-backfill).
 The 0.4.0 live Release/body verification is tracked in its release record. Packaged
@@ -61,6 +63,7 @@ READMEs link here without calling a pinned historical version current.
 
 | Version / user notes | Original UTC date | Registry/source state and evidence |
 | --- | --- | --- |
+| [0.7.0](releases/v0.7.0.md) / [evidence](RELEASE-0.7.0.md) | 2026-11-08 preparation | Candidate only: provider-cache generations through the published 0.6.0 producer. Final versioned package/install and publication gates pending. |
 | [0.6.0](releases/v0.6.0.md) / [evidence](RELEASE-0.6.0.md) | 2026-11-07 | Published from `460bca52512658df8fea8d76578cd83dd0c2cb84`; duplicate-option contract, unchanged dependency graph, qualified package and clean installation. Official archive/index/VCS, annotated tag, docs.rs and fresh registry installation verified; full scope and Release closeout are recorded separately. |
 | [0.5.0](releases/v0.5.0.md) · [evidence](RELEASE-0.5.0.md) | 2026-11-03 | Published/non-yanked from `1761260a52e192e55f774602ca05add64bd88994`; exact official/index checksum, source/payload, annotated tag and docs.rs verified. Candidate qualification retained separately; actual fresh native registry locked installation/all-five/checker36/legacy/capability/stream verification passed without failures. Final Release documentation uses the reviewed committed body and published-mode check. No runtime replacement or new platform qualification. |
 | [0.4.0](releases/v0.4.0.md) · [evidence](RELEASE-0.4.0.md) | 2026-11-03 | Published/non-yanked; source/tag `aa2ea56e5d7943aeb4e0023713a089693d2103c1`; official 26-file archive/index checksum, docs.rs actual README/API/navigation and fresh native registry locked install verified. Diagnostics/missing-interpreter status change only; no runtime replacement or new platform qualification. |
@@ -191,7 +194,7 @@ an existing registry archive.
    explains use of the packaged lock with `--locked`. The manual workflow's
    `registry` and `installed` modes and [installed smoke script](../scripts/smoke-installed.sh)
    provide the existing sequence; review their version-specific arguments before
-   each release (installed mode currently targets 0.6.0). Record verified outcomes
+   each release (installed mode targets 0.7.0 only after registry availability). Record verified outcomes
    and remaining coverage gaps in the release record and roadmap.
 7. Publish reviewed GitHub Release notes at the exact existing source tag and
    verify live text, links and latest status with release-documentation CI. No

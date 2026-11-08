@@ -11,6 +11,13 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ## [Unreleased]
 
+No additional changes assigned.
+
+## [0.7.0] - 2026-11-08
+
+**Release candidate; not published.** [Notes](docs/releases/v0.7.0.md) and
+[qualification record](docs/RELEASE-0.7.0.md). Date is the UTC preparation date.
+
 ### Fixed
 
 - Require `libc-abi-tools 0.6.0` for immutable provider generations. Forced
@@ -19,7 +26,7 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
   saved settings keep their original generation. Other dependency locks, glibc
   inputs, tool floors, clock policy and the system unwinder are unchanged.
   [Adoption and limits](docs/evals/2026-11-08-provider-cache-adoption.md).
-  This is unreleased; published cargo-libc 0.6.0 still uses the older producer.
+  Prepared for 0.7.0; published cargo-libc 0.6.0 still uses the older producer.
 
 ## [0.6.0] - 2026-11-07
 
