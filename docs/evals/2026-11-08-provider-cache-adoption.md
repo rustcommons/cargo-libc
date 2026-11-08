@@ -43,8 +43,8 @@ The package audit is updated to compare against official cargo-libc 0.6.0:
 same 28 files and source/README/legal bytes, only the intended dependency metadata
 and future root-version metadata may differ. It checks all actual registry
 dependency archive checksums and preserves unrelated lock entries. Registry-mode
-CI expects the new graph and minimum. Candidate source/native/package evidence
-is pending; none of the proposed checks is yet claimed passed here.
+CI expects the new graph and minimum. Local qualification is recorded below;
+no hosted integration or new publication is implied.
 
 ## Migration and limits
 
@@ -58,3 +58,56 @@ Stop readers/writers before destructive removal; no automatic reclamation,
 authenticated cache, crash durability or network-filesystem transaction is promised.
 Native modern-host tests do not establish real old-system, musl/static-host or
 new container compatibility. LLVM research remains held and unwired.
+
+## Local qualification results
+
+Package-input commit `65f7a67f2b5053bab142315102be27954d76b457` uses only the
+published registry dependency. Rust 1.90 on x86_64 Linux/WSL passed 105 library
+and ten process tests, doctests (zero examples), package verification and audit.
+A fresh Cargo home fetched the unpacked package's locked registry dependencies,
+then `cargo install --path UNPACKED --locked --offline` installed all five
+helpers. This is an unpatched candidate installation, not an installation of a
+newly published Cargo version.
+
+The first new fixture failed because it requested `--message-format=json`, which
+Cargo-libc reserves for artifact checking. Production behavior was correct; that
+failed attempt remains in the proof. Harness-only correction `fcb555d1966bdbabc602d2fdec03d9393bd779e4`
+uses supported verbose Cargo diagnostics and artifact timestamps. It also fixes
+one documentation-map row. Source, dependency and package inputs are identical;
+no production rebuild or reinstall was needed for the resumed tests.
+
+The installed-tool resume passed all sixteen generation-gate commands:
+managed initial/reused/new-generation/reused states were respectively nonfresh,
+fresh, nonfresh, fresh; five old files retained their hashes after forced refresh;
+old saved plain-Cargo configuration and old explicit Rust/C/CMake inputs remained
+runnable. Provider stdout, ordinary run/test stream contracts, capability13 and
+singleton-option regressions passed against the same installed helpers. These
+stream results do not claim a new Docker/Podman run.
+
+An additional upgrade control used the actual previously published cargo-libc
+0.6.0 installation to prepare a legacy producer-0.5.0 entry. The candidate refused
+to treat that old version key as current (path exit 1), prepared a new 0.6.0 key,
+retained the legacy descriptor bytes, and successfully ran a Rust fixture using
+that explicit legacy descriptor. This checks an actual old-to-new layout/key
+transition rather than only two new-format generations.
+
+Windows Rust 1.99 owner checks passed: fmt, 100 library plus one process test,
+all-target Clippy and rustdoc with warnings denied. The first offline attempt
+found the new registry archive absent locally; `cargo fetch --locked` resolved
+that setup prerequisite before the checks passed. Windows provider preparation
+is not claimed.
+
+Repackaging clean `fcb555d` verified 28 files, 85,711 bytes, SHA-256
+`bd12e37fcfc4fe38d060caea79c446a078f6cc4e7d0376958b409729a860d685`.
+Only VCS metadata differs from the installed candidate archive. Compared with
+actual published Cargo 0.6.0, only manifests, lock and VCS metadata change; all
+Rust source, README and legal bytes match. All six dependency archive checksums
+were verified against crates.io; the unrelated graph is unchanged.
+
+The proof packet contains both candidate archives, raw initial/resume/upgrade
+logs, graph, audits, helper hashes and summaries: 297 hashed files, 390,959 bytes,
+SHA-256 `c184d9c772f9f57449ae914b600fb00713ff14de48f3da49865786dfc149cec6`.
+Six GitHub GFM renders, 244 local links/anchors, shell syntax, release-doc checker
+and diff checks passed. Final evidence-only docs preserve package and harness
+inputs. Applicable hosted checks and review remain separate; release version,
+merge and publication are not performed by this record.
