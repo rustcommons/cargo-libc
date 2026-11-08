@@ -73,7 +73,7 @@ PY
   for name in cargo-libc libc-linker libc-runner libc-cc libc-cxx; do test -x "$work/install/bin/$name"; done
   "$work/install/bin/cargo-libc" --version | grep -Fx "cargo-libc $version"
   python3 scripts/check-installed-capabilities.py "$work/install/bin" "$test_cc" "$evidence/capabilities"
-  bash scripts/smoke-installed.sh "$work/install" "$test_cc" "$version" 2>&1 | tee "$evidence/installed-smoke.log"
+  PROVIDER_CACHE_EVIDENCE_DIR="$evidence/provider-cache" bash scripts/smoke-installed.sh "$work/install" "$test_cc" "$version" 2>&1 | tee "$evidence/installed-smoke.log"
   # The host C proc macro must see native host headers, not the 2.17 target's.
   host_minor=$(printf '#include <features.h>\n__GLIBC_MINOR__\n' | gcc -E -P -x c - | tail -1)
   grep -Fx "host proc macro: glibc 2.$host_minor headers" "$evidence/installed-smoke.log"
