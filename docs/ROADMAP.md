@@ -1,5 +1,12 @@
 # Roadmap
 
+## Provider-cache dependency adoption
+
+The [unreleased update](evals/2026-11-08-provider-cache-adoption.md) requires
+libc-abi-tools 0.6.0 and adds installed managed/explicit/plain-Cargo/native-C
+refresh coverage. Published cargo-libc 0.6.0 is unchanged. Consumer qualification,
+review and a separately versioned release remain pending; no LLVM change.
+
 ## Explicit target libgcc comparison
 
 The [released 0.5.0 checker](TARGET-LIBGCC.md) implements explicit two-file static
