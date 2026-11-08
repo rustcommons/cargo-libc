@@ -62,9 +62,41 @@ are frozen to that tested candidate; later evidence-only docs do not alter them.
 
 ## Publication
 
-Pending normal release merge, clean merged-VCS package, crates.io publication,
-official archive/index verification, fresh locked registry installation,
-annotated source tag, docs.rs and exact-body GitHub Release/published-docs checks.
+PR23 merged normally as `460bca52512658df8fea8d76578cd83dd0c2cb84`, with a
+tree identical to qualified evidence head `f813c5a6a0378d201460146d9892719c99682e1b`.
+All package inputs equal tested `1d74aea`. The clean merged package rebuilt and
+verified under Rust 1.90; its only difference from the candidate archive is
+`.cargo_vcs_info.json` identifying the merge commit.
+
+Published on crates.io at `2026-11-07T23:58:49.655684Z`. The official 28-file,
+85,625-byte archive has SHA256
+`63d7071aa96774b159405e0d6b295e4762f8d0ea0c84d4d69818e4de9c84c62a`.
+API and sparse-index checksums match the downloaded archive; it is non-yanked,
+and all payload bytes match the clean merge package. The annotated `v0.6.0`
+peels to exactly `460bca52512658df8fea8d76578cd83dd0c2cb84`.
+
+A separate fresh Cargo home installed actual crates.io 0.6.0 with
+`cargo install cargo-libc --version 0.6.0 --locked` into an isolated root under
+native x86-64 GNU/WSL Rust 1.90. All five binary identities were recorded. The
+installed tools passed all 89 CLI cases, real provider/C/CMake/host isolation/
+local kernel simulation/C++ refusal smoke, run/test/direct-runner stream checks
+and bounded capabilities. Every phase exited 0 **without failure or resume**;
+this is distinct from the composite prepublication candidate evidence.
+
+Published proof: 236 verified member hashes, 122,135 bytes, SHA256
+`3a5cb8c2d3dd5ccd1ca6f4435e00f093356a742cb88dc89eaea8554e66a7b0bb`,
+retained in coordinator storage as `release060-evidence/published-proof.tar.gz`.
+No standalone binaries or proof assets are attached to the GitHub Release.
+
+docs.rs initially listed cargo-libc 0.6.0 in its build queue and versioned pages
+returned 404. The build subsequently completed: versioned `status.json` reports
+`doc_status: true`, and both API and crate README pages return 200 for 0.6.0.
+The actual README's guide and banner destinations were fetched successfully.
+
+GitHub Release creation uses the exact committed user notes after the normal
+bookkeeping merge and green docs CI. Live body/latest/zero-assets and full
+published-docs verification are recorded in the bookkeeping PR completion
+comment; this is separate from the already verified registry installation.
 
 ## Limits
 

@@ -53,8 +53,7 @@ release; its historical filename does not identify the 0.4.0 diagnostics release
 
 ## Release records
 
-Release candidate: **0.6.0** (2026-11-07); package/install and publication gates pending.
-Latest verified registry/source release: **0.5.0** (2026-11-03).
+Latest verified registry/source release: **0.6.0** (2026-11-07).
 Historical GitHub Release backfill is complete for the eight versions through
 0.3.0; see the [backfill completion evidence](releases/HISTORY.md#completed-backfill).
 The 0.4.0 live Release/body verification is tracked in its release record. Packaged
@@ -62,14 +61,14 @@ READMEs link here without calling a pinned historical version current.
 
 | Version / user notes | Original UTC date | Registry/source state and evidence |
 | --- | --- | --- |
-| [0.6.0](releases/v0.6.0.md) ? [evidence](RELEASE-0.6.0.md) | Candidate 2026-11-07 | Duplicate-option consistency; qualification and publication pending. |
-| [0.5.0](releases/v0.5.0.md) · [evidence](RELEASE-0.5.0.md) | 2026-11-03 | Published/non-yanked from `1761260a52e192e55f774602ca05add64bd88994`; exact official/index checksum, source/payload, annotated tag and docs.rs verified. Candidate qualification retained separately; actual fresh native registry locked installation/all-five/checker36/legacy/capability/stream verification passed without failures. Final Release documentation uses the reviewed committed body and published-mode check. No runtime replacement or new platform qualification. |
-| [0.4.0](releases/v0.4.0.md) · [evidence](RELEASE-0.4.0.md) | 2026-11-03 | Published/non-yanked; source/tag `aa2ea56e5d7943aeb4e0023713a089693d2103c1`; official 26-file archive/index checksum, docs.rs actual README/API/navigation and fresh native registry locked install verified. Diagnostics/missing-interpreter status change only; no runtime replacement or new platform qualification. |
-| [0.3.0](releases/v0.3.0.md) · [evidence](RELEASE-0.3.0.md) | 2026-11-02 | Published and verified; source/tag `a70ce9ffac6be8611b66a2829fefb3093cb41ce6`; five-clock profile, archive/docs.rs and clean published-install run 41382187049 passed; explicit coverage limits retained. |
-| [0.2.4](releases/v0.2.4.md) · [evidence](RELEASE-0.2.4.md) | 2026-11-01 | Published and verified; source/tag `889515b191ead51303b1321de858ec4e2209722c`; archive, actual README render and published-install run 41276430527 passed. |
-| [0.2.3](releases/v0.2.3.md) · [evidence](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |
-| [0.2.2](releases/v0.2.2.md) · [evidence](RELEASE-0.2.2.md) | 2026-11-01 | Published and verified; source/tag `b87563c6be6faf89ac26055f88fb520991125b8b`. |
-| [0.2.1](releases/v0.2.1.md) · [evidence](RELEASE-0.2.1.md) | 2026-10-31 | Published and verified; source/tag `767c16aef0e49c37018b3907be480363dfdb9175`. |
+| [0.6.0](releases/v0.6.0.md) ? [evidence](RELEASE-0.6.0.md) | 2026-11-07 | Published from `460bca52512658df8fea8d76578cd83dd0c2cb84`; duplicate-option contract, unchanged dependency graph, qualified package and clean installation. Official archive/index/VCS, annotated tag, docs.rs and fresh registry installation verified; full scope and Release closeout are recorded separately. |
+| [0.5.0](releases/v0.5.0.md) Â· [evidence](RELEASE-0.5.0.md) | 2026-11-03 | Published/non-yanked from `1761260a52e192e55f774602ca05add64bd88994`; exact official/index checksum, source/payload, annotated tag and docs.rs verified. Candidate qualification retained separately; actual fresh native registry locked installation/all-five/checker36/legacy/capability/stream verification passed without failures. Final Release documentation uses the reviewed committed body and published-mode check. No runtime replacement or new platform qualification. |
+| [0.4.0](releases/v0.4.0.md) Â· [evidence](RELEASE-0.4.0.md) | 2026-11-03 | Published/non-yanked; source/tag `aa2ea56e5d7943aeb4e0023713a089693d2103c1`; official 26-file archive/index checksum, docs.rs actual README/API/navigation and fresh native registry locked install verified. Diagnostics/missing-interpreter status change only; no runtime replacement or new platform qualification. |
+| [0.3.0](releases/v0.3.0.md) Â· [evidence](RELEASE-0.3.0.md) | 2026-11-02 | Published and verified; source/tag `a70ce9ffac6be8611b66a2829fefb3093cb41ce6`; five-clock profile, archive/docs.rs and clean published-install run 41382187049 passed; explicit coverage limits retained. |
+| [0.2.4](releases/v0.2.4.md) Â· [evidence](RELEASE-0.2.4.md) | 2026-11-01 | Published and verified; source/tag `889515b191ead51303b1321de858ec4e2209722c`; archive, actual README render and published-install run 41276430527 passed. |
+| [0.2.3](releases/v0.2.3.md) Â· [evidence](RELEASE-0.2.3.md) | 2026-11-01 | Published and verified; source/tag `289f28d161027e86decc808fc1745ec4a5b74d39`. |
+| [0.2.2](releases/v0.2.2.md) Â· [evidence](RELEASE-0.2.2.md) | 2026-11-01 | Published and verified; source/tag `b87563c6be6faf89ac26055f88fb520991125b8b`. |
+| [0.2.1](releases/v0.2.1.md) Â· [evidence](RELEASE-0.2.1.md) | 2026-10-31 | Published and verified; source/tag `767c16aef0e49c37018b3907be480363dfdb9175`. |
 | [0.2.0](releases/v0.2.0.md) | 2026-10-14 | Published; documented entry-point API; exact tag/archive and historical gaps in the notes. |
 | [0.1.1](releases/v0.1.1.md) | 2026-10-13 | Published; provider-backed shared libraries/Python extensions; original evidence is attributed, not newly rerun. |
 | [0.1.0](releases/v0.1.0.md) | 2026-10-13 | Published; first Cargo integration; exact archive/source identity and historical gaps in the notes. |
