@@ -2,6 +2,10 @@
 
 ## Scope and status
 
+Historical pre-release adoption snapshot below. The later
+[published 0.7.0 record](../RELEASE-0.7.0.md) supersedes its pending release state;
+original source refs, failures and qualification boundaries remain intact.
+
 Unreleased consumer update, not a new Cargo publication. The root version remains
 0.6.0 until separate release preparation; the official cargo-libc 0.6.0 archive
 is unchanged and still uses the older producer. The producer's published

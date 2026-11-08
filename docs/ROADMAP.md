@@ -2,11 +2,11 @@
 
 ## Provider-cache dependency adoption
 
-The [0.7.0 candidate](RELEASE-0.7.0.md) adopts the
+The [published 0.7.0 release](RELEASE-0.7.0.md) delivers the
 [qualified dependency update](evals/2026-11-08-provider-cache-adoption.md), requiring
-libc-abi-tools 0.6.0 and adds installed managed/explicit/plain-Cargo/native-C
-refresh coverage. Published cargo-libc 0.6.0 is unchanged. Consumer qualification,
-review and a separately versioned release remain pending; no LLVM change.
+libc-abi-tools 0.6.0. Installed managed/explicit/plain-Cargo/native-C refresh
+checks and real registry installations passed with the recorded limits.
+Immutable cargo-libc 0.6.0 is unchanged; no LLVM runtime replacement is included.
 
 ## Explicit target libgcc comparison
 

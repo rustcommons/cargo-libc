@@ -2,8 +2,11 @@
 
 ## Scope and status
 
-Prepared 2026-11-08 UTC under explicit maintainer authorization to finish the
-producer-to-consumer hand-off. **Candidate only, not published.** Published Cargo
+Published 2026-11-08 UTC under explicit maintainer authorization to finish the
+producer-to-consumer hand-off. Exact release source:
+`6317117a2bea3644fa0cba11df5ac61448fd7408`. Official archive, annotated tag,
+docs.rs and fresh registry installations are verified below. GitHub Release and
+full published-docs completion remain pending this bookkeeping candidate. Cargo
 0.6.0 cannot be replaced. Producer workspace 0.6.0 is already released and needs
 no republishing. No glibc data/source release is included.
 
@@ -130,3 +133,56 @@ hermetic compiler closure or distributed-filesystem guarantee. No new container,
 Python/shared-library, old-system/tier 3 or musl/static-host qualification. Prebuilt
 legal review remains required; system libgcc_s and the deferred LLVM blockers
 are unchanged.
+
+## Official publication and installed verification
+
+[PR26](https://github.com/rustcommons/cargo-libc/pull/26) merged normally as
+`6317117a2bea3644fa0cba11df5ac61448fd7408`, preserving approved
+`3e38c6aa0fe15ecf957390b340e8c78098246ace` exactly. Final
+[docs CI42526153269](https://github.com/rustcommons/cargo-libc/actions/runs/42526153269)
+passed. The sole publisher used Cargo 1.90 `publish --locked` from the clean
+merge; no crate was republished and no older tag moved.
+
+Official archive: 85,624 bytes, 28 files, SHA-256
+`b6b7d6a7e43d76a3a22b19c784b97f234eb9e1538a3341a222b42d7ebd0c3b5d`.
+API and sparse-index checksums agree, it is non-yanked, and clean VCS names the
+exact merge. Every payload byte matches the audited merged archive. Source,
+README/legal and six dependency checksums match the qualified candidate; only
+merge VCS metadata differs from the earlier clean candidate archive. Annotated
+[v0.7.0](https://github.com/rustcommons/cargo-libc/tree/v0.7.0) peels to that source.
+docs.rs build succeeded and actual versioned README/API pages load.
+
+Actual fresh registry `cargo install cargo-libc --version 0.7.0 --locked` passed
+with isolated Cargo/install roots. All five helpers, generation16, C/CMake,
+target C++ refusal, capability13, singleton options and libgcc36 were exercised.
+The first local streams invocation passed run/test but its direct-runner fixture
+looked under the wrong target directory inherited from installation. A test-only
+change to `scripts/check-run-streams.py` explicitly selects its own temporary
+target directory; the same installed binaries passed the corrected resume while
+the conflicting outer target-dir value remained set. No runtime product or
+package source changed. Both attempts remain in the evidence.
+
+[Hosted actual published-install run42526522128](https://github.com/rustcommons/cargo-libc/actions/runs/42526522128)
+passed at exact release source with a fresh Cargo home, the 0.7.0 registry tool,
+producer 0.6.0 and the unchanged remaining graph. Its raw logs confirm all five
+helpers, generation16 and both Docker/Podman run/test cases (stdin, exact stdout,
+spaced environment and exit7). Container checks share a modern host kernel;
+they do not establish tier3. That hosted run already passed under its clean
+default target directory; no product fix was inferred from the local harness issue.
+
+Hosted artifact13635497888: 25,261,969 bytes, ZIP SHA-256
+`bccedfde902411e5490c4d1f03d070e5fe42316ae640fbb732ea263cd1da808e` matching GitHub's advertised digest. Its selected
+raw log, generation summary and all sixteen zero-exit command records were
+inspected. This is not a claim that every artifact member was individually
+audited or that the hosted tests were rerun independently.
+
+The local published proof contains 407 hashed regular files,
+247,808 bytes, SHA-256
+`6574a26400d0ab728d622c63496f137590b499b8575f36d46d7da82d4c645b85`; it includes the official archive, initial and resumed
+logs, helper hashes, selected hosted verification and docs.rs status. Special
+fixtures are recorded rather than treated as regular readable files.
+
+Only excluded docs and stream-test infrastructure change during bookkeeping;
+released product inputs remain exact. Exact-head docs review/checks precede
+normal merge and publishing the exact committed Release body, latest/zero assets,
+then full published-docs verification and final matrix/local-checkout alignment.

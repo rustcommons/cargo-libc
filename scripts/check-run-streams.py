@@ -43,6 +43,9 @@ fn main() {
                     str(root / 'Cargo.toml')], check=True)
     env = os.environ.copy()
     env['PATH'] = str(bin_dir) + os.pathsep + env['PATH']
+    # The direct-runner check below names this fixture's artifact explicitly.
+    # Do not inherit an install driver's unrelated build target directory.
+    env['CARGO_TARGET_DIR'] = str(root / 'target')
     env.setdefault('CARGO_LIBC_PROVIDER_DIR', str(root / 'providers'))
 
     def invoke(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, *, environment=None):

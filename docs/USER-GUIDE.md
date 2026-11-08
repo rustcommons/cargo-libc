@@ -335,7 +335,7 @@ entries are not silently reused. Source mode uses embedded inputs but still need
 host GCC/native tools; container preparation may need source downloads and image
 access. See [0.2.2 cache refresh](RELEASE-0.2.2.md#provider-cache-refresh).
 
-The 0.7.0 candidate provider-cache update requires `libc-abi-tools 0.6.0`; published
+Cargo-libc 0.7.0 requires `libc-abi-tools 0.6.0`; immutable
 cargo-libc 0.6.0 does not include it. Preparation writes complete immutable
 generations and atomically selects one. `prepare --force` retains old returned
 paths, so in-flight builds, explicit descriptors and saved plain-Cargo settings
