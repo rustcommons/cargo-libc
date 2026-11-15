@@ -243,9 +243,18 @@ No long-lived registry credential is stored in this workflow. See the
 The manual local process remains available until explicitly retired. GitHub
 Release documentation and postpublication verification remain separate steps.
 
-PR security checks run zizmor and cargo-deny. Dependabot proposes weekly grouped
-minor/patch Cargo/action updates; updates still require review and applicable
-validation. The license policy preserves the existing embedded glibc/Linux input
+PR security checks run zizmor and cargo-deny. Dependabot proposes monthly grouped
+minor/patch Cargo/action version updates, with a seven-day cooldown and at most
+two open PRs per ecosystem. Security updates remain immediate and are independent
+of this version-update schedule. Dependabot-authored PRs run core fmt/Clippy/tests,
+cargo-deny, zizmor, lf-only and managed CodeQL checks; expensive native matrices
+and qualification jobs are skipped, including on human reruns. Core green is not
+dependency compatibility or release qualification: maintainers must still review
+and arrange applicable evidence before adoption. Human PRs and main retain full
+CI. PR workflows cancel superseded runs for the same PR; non-PR runs stay
+independent. CI and release-doc push triggers cover main and release tags,
+avoiding duplicate branch-push/PR runs. The license policy preserves the existing
+embedded glibc/Linux input
 licenses and syscall exceptions, with permissions scoped to their reviewed crate
 versions; it does not waive NOTICE or redistribution duties. RustSec checks cannot
 establish the absence of unknown vulnerabilities or audit embedded native code.

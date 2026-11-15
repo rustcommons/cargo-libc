@@ -12,7 +12,7 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 ## [Unreleased]
 
 - Add maintainer security gates (zizmor, RustSec/license/source checks), pinned
-  Actions, weekly dependency updates and owner-gated Trusted Publishing alongside
+  Actions, monthly dependency version updates and owner-gated Trusted Publishing alongside
   the existing manual process. Scorecard publication starts after main adoption.
   No runtime, dependency, version or platform-support change.
 
