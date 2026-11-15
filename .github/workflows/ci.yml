@@ -1,5 +1,14 @@
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+# Only newer runs of the same PR supersede each other. Preserve independent
+# main, release, scheduled and manual runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -23,18 +32,18 @@ jobs:
       - run: cargo test --doc --locked --offline
       - run: cargo clippy --all-targets --locked --offline -- -D warnings
       - name: Static target libgcc comparisons
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]')
         run: |
           cargo build --bin cargo-libc --locked --offline
           python3 scripts/check-target-libgcc.py target/debug/cargo-libc "$RUNNER_TEMP/target-libgcc-fixtures"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always() && runner.os == 'Linux'
+        if: always() && runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]')
         with:
           name: target-libgcc-fixtures
           path: ${{ runner.temp }}/target-libgcc-fixtures
       # The crate holds the tool's source only: no examples, scripts, CI or docs.
       - name: Package contents
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && (github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]')
         run: |
           cargo package --list --locked > "$RUNNER_TEMP/package.txt"
           cat "$RUNNER_TEMP/package.txt"
@@ -42,6 +51,8 @@ jobs:
             echo 'unexpected file in the package' >&2; exit 1
           fi
   docs:
+    # Dependency PRs keep core tests; qualification remains a maintainer gate.
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,6 +65,8 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
   linux-link:
+    # Dependency PRs keep core tests; qualification remains a maintainer gate.
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -75,6 +88,8 @@ jobs:
           name: sysroot-clang-${{ matrix.clang }}-toolchain
           path: ${{ runner.temp }}/modern-toolchain.txt
   providers:
+    # Dependency PRs keep core tests; qualification remains a maintainer gate.
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     name: Automatic providers, every release (Clang ${{ matrix.clang }})
     runs-on: ubuntu-24.04
     strategy:
@@ -90,6 +105,8 @@ jobs:
       - run: bash scripts/install-clang.sh "${{ matrix.clang }}"
       - run: bash scripts/smoke-providers.sh /usr/bin/clang-${{ matrix.clang }}
   c-dependencies:
+    # Dependency PRs keep core tests; qualification remains a maintainer gate.
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     name: C dependencies (cc, CMake), every release (Clang ${{ matrix.clang }})
     runs-on: ubuntu-24.04
     strategy:
@@ -106,6 +123,8 @@ jobs:
       - run: cmake --version
       - run: bash scripts/smoke-c-deps.sh /usr/bin/clang-${{ matrix.clang }}
   python-extension:
+    # Dependency PRs keep core tests; qualification remains a maintainer gate.
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     name: Python extension (maturin), every release, CentOS 7 and AlmaLinux 8 imports (Clang 21)
     runs-on: ubuntu-24.04
     steps:
@@ -120,6 +139,8 @@ jobs:
           PYTHON_EXT_CONTAINERS: 1
           CONTAINER_ENGINE: docker
   commands:
+    # Dependency PRs keep core tests; qualification remains a maintainer gate.
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     name: clippy, doc, rustc, install and plain Cargo, glibc ${{ matrix.releases }} (Clang 21)
     runs-on: ubuntu-24.04
     strategy:
@@ -141,6 +162,8 @@ jobs:
       - run: bash scripts/install-clang.sh 21
       - run: bash scripts/smoke-commands.sh /usr/bin/clang-21 ${{ matrix.releases }}
   container-runner:
+    # Dependency PRs keep core tests; qualification remains a maintainer gate.
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     name: Container runner in SLES 12 SP5 userland (glibc 2.22, Linux 4.12)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -158,6 +181,8 @@ jobs:
         env:
           KERNEL_ABI_ENGINE_ARGS: --runtime ${{ runner.temp }}/crun
   container-provider:
+    # Dependency PRs keep core tests; qualification remains a maintainer gate.
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     name: Automatic provider in container mode (glibc 2.28)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -189,6 +214,8 @@ jobs:
             | tee "$RUNNER_TEMP/run.log"
           grep -F 'target executable ran; thread result = 42' "$RUNNER_TEMP/run.log"
   msrv:
+    # Dependency PRs keep core tests; qualification remains a maintainer gate.
+    if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

@@ -99,6 +99,15 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
   toolchain tag in a trailing comment. Keep workflow permissions read-only and
   grant additional permissions only to the job that needs them. Disable checkout
   credential persistence. Review Dependabot action updates as executable code.
+- Schedule routine Dependabot version updates monthly, grouped with a seven-day
+  cooldown and at most two open PRs per ecosystem. Security updates stay immediate.
+- Dependabot-authored PRs run core fmt/Clippy/tests, cargo-deny, zizmor, lf-only
+  and managed CodeQL checks; skip native matrices and qualification jobs even on
+  human reruns. Core success is not dependency-adoption/release qualification.
+  Maintainers must review compatibility and arrange applicable qualification
+  before accepting a dependency change. Do not auto-merge dependency updates.
+- Every repository-owned PR workflow must cancel superseded runs per PR. Keep
+  non-PR release/manual/main runs independent; avoid duplicate branch-push CI.
 - Keep the PR zizmor and cargo-deny security gates passing. Any suppression or
   dependency-policy exception needs a narrow inline explanation and review.
 - Keep RustSec, license, duplicate-version and registry-source policy in
