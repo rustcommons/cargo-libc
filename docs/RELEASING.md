@@ -213,7 +213,7 @@ unverified release complete.
 
 ## Trusted Publishing
 
-The [tag-triggered publishing workflow](../.github/workflows/publish.yml) adds an
+The [tag-triggered publishing workflow](../.github/workflows/trusted-publishing.yml) adds an
 OIDC route alongside the existing owner-local publication process. It does not
 publish any existing tag merely by being merged. Do not recreate/move tags or
 publish the same version through both routes. Future release authorization and
@@ -232,7 +232,7 @@ Trusted Publisher with these exact values:
 | Crate | `cargo-libc` |
 | GitHub repository owner | `rustcommons` |
 | GitHub repository | `cargo-libc` |
-| Workflow filename | `publish.yml` |
+| Workflow filename | `trusted-publishing.yml` |
 | Environment | `crates-io` |
 
 The environment must retain its owner reviewer and `v*` tag restrictions. Only
