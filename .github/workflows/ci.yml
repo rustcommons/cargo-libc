@@ -9,8 +9,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
         with:
           components: rustfmt, clippy
       # Download crates.io dependencies before the --offline steps.
@@ -25,7 +27,7 @@ jobs:
         run: |
           cargo build --bin cargo-libc --locked --offline
           python3 scripts/check-target-libgcc.py target/debug/cargo-libc "$RUNNER_TEMP/target-libgcc-fixtures"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always() && runner.os == 'Linux'
         with:
           name: target-libgcc-fixtures
@@ -42,8 +44,10 @@ jobs:
   docs:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
       - run: cargo fetch --locked
       # Broken intra-doc links and malformed docs fail the build.
       - run: cargo doc --no-deps --locked --offline
@@ -56,14 +60,16 @@ jobs:
       matrix:
         clang: [21, 24]
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
       - run: cargo fetch --locked
       - run: bash scripts/install-clang.sh "${{ matrix.clang }}"
       - run: bash scripts/smoke-linux.sh
         env:
           CARGO_LIBC_SMOKE_CC: /usr/bin/clang-${{ matrix.clang }}
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: sysroot-clang-${{ matrix.clang }}-toolchain
@@ -76,8 +82,10 @@ jobs:
       matrix:
         clang: [21]
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
       - run: cargo fetch --locked
       - run: bash scripts/install-clang.sh "${{ matrix.clang }}"
       - run: bash scripts/smoke-providers.sh /usr/bin/clang-${{ matrix.clang }}
@@ -89,8 +97,10 @@ jobs:
       matrix:
         clang: [21]
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
       - run: cargo fetch --locked
       - run: bash scripts/install-clang.sh "${{ matrix.clang }}"
       - run: cmake --version
@@ -99,8 +109,10 @@ jobs:
     name: Python extension (maturin), every release, CentOS 7 and AlmaLinux 8 imports (Clang 21)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
       - run: cargo fetch --locked
       - run: bash scripts/install-clang.sh 21
       - run: bash scripts/smoke-python-ext.sh /usr/bin/clang-21
@@ -119,8 +131,10 @@ jobs:
           - 2.31 2.32 2.33 2.34 2.35 2.36 2.37
           - 2.38 2.39 2.40 2.41 2.42 2.43 2.44
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
         with:
           components: clippy
       - run: cargo fetch --locked
@@ -131,8 +145,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
       - run: cargo fetch --locked
       - run: bash scripts/install-clang.sh 21
       - run: sudo apt-get install -y podman curl cmake
@@ -146,8 +162,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
       - run: cargo fetch --locked
       - run: bash scripts/install-clang.sh 21
       - run: sudo apt-get install -y podman curl
@@ -173,7 +191,9 @@ jobs:
   msrv:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
       - run: cargo fetch --locked
       - run: cargo check --all-targets --locked --offline

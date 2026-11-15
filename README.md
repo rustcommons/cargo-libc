@@ -5,6 +5,7 @@
 **Build for the libc you choose.**
 
 [![CI](https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml/badge.svg)](https://github.com/rustcommons/cargo-libc/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/rustcommons/cargo-libc/badge)](https://scorecard.dev/viewer/?uri=github.com/rustcommons/cargo-libc)
 ![Rust 1.90+](https://img.shields.io/badge/Rust-1.90%2B-orange)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![crates.io](https://img.shields.io/crates/v/cargo-libc)](https://crates.io/crates/cargo-libc)

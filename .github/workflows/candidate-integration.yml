@@ -25,7 +25,7 @@ jobs:
       CANDIDATE_REF: ${{ inputs.candidate_ref }}
       INTEGRATION_MODE: ${{ inputs.integration_mode }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -37,14 +37,14 @@ jobs:
             echo 'Producer ref is review-blocked; supply the corrected reviewed ref.' >&2
             exit 1
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: inputs.integration_mode == 'source'
         with:
           repository: rustcommons/linux-abi-tools
           ref: ${{ inputs.candidate_ref }}
           path: candidate
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
         with:
           components: rustfmt, clippy
       - name: Prepare disposable consumer and source overrides
@@ -264,7 +264,7 @@ jobs:
         run: git diff --exit-code HEAD -- Cargo.toml Cargo.lock .github/workflows/ci.yml
       - name: Upload integration evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: candidate-integration-${{ github.run_id }}
           path: ${{ runner.temp }}/evidence
@@ -282,10 +282,10 @@ jobs:
       CARGO_BUILD_JOBS: 2
       RUST_TEST_THREADS: 2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
         with:
           components: rustfmt, clippy
       - run: cargo fetch --locked
@@ -305,10 +305,10 @@ jobs:
     env:
       CARGO_BUILD_JOBS: 2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
       - run: cargo fetch --locked
       - run: cargo check --all-targets --locked --offline
 
@@ -321,10 +321,10 @@ jobs:
     env:
       CARGO_BUILD_JOBS: 2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
       - name: Install published 0.7.0 into a clean root and exercise helpers
         run: |
           set -euo pipefail
@@ -342,7 +342,7 @@ jobs:
             python3 scripts/check-cli-options.py "$RUNNER_TEMP/published-install/bin/cargo-libc" "$RUNNER_TEMP/evidence/cli-options"
             CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/published-install/bin" /usr/bin/clang-18
           } 2>&1 | tee "$RUNNER_TEMP/evidence/published-install.log"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: published-install-${{ github.run_id }}
@@ -357,11 +357,11 @@ jobs:
       CARGO_BUILD_JOBS: 2
       RUST_TEST_THREADS: 2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
         with:
           components: rustfmt, clippy
       - name: Native prerequisites
@@ -388,7 +388,7 @@ jobs:
           set -o pipefail
           git rev-parse HEAD | tee "$RUNNER_TEMP/evidence/consumer.txt"
           python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$RUNNER_TEMP/evidence/fixed.log"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: run-streams-${{ github.run_id }}
@@ -405,18 +405,18 @@ jobs:
       RUST_TEST_THREADS: 2
       CARGO_HOME: ${{ github.workspace }}/clock-cargo-home
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           path: clock-tool
           persist-credentials: false
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: joey-huckabee/aero1553
           ref: 9c248300f1e2ab20ce34dc4b227eb322e33e4c93
           path: consumer
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@263313d2989f864a2b8613f97277288638e7d8f8 # 1.99.1
         with:
           toolchain: 1.99.1
       - name: Prepare exact tools and record public source identities
@@ -647,7 +647,7 @@ jobs:
               raise SystemExit('; '.join(errors))
           PYASSESS
           git -C clock-tool diff --exit-code HEAD
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: aero1553-three-way-clock-${{ github.run_id }}

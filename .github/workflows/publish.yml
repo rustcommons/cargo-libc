@@ -1,0 +1,41 @@
+name: Publish crate
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment: crates-io
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CARGO_BUILD_JOBS: 2
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
+      - name: Validate tag, release documentation and clean package
+        run: |
+          python3 - <<'PY'
+          import os, tomllib
+          from pathlib import Path
+          package = tomllib.loads(Path('Cargo.toml').read_text())['package']
+          assert package['name'] == 'cargo-libc'
+          assert os.environ['RELEASE_TAG'] == 'v' + package['version']
+          PY
+          python3 scripts/check-release-docs.py --repo "$GITHUB_REPOSITORY"
+          test -z "$(git status --porcelain)"
+          cargo package --locked
+      - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+        id: auth
+      - name: Publish cargo-libc
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+        run: cargo publish --locked
+      - name: Verify official checksum, index and source identity
+        run: python3 scripts/verify-published-crate.py --archive target/package/cargo-libc-${RELEASE_TAG#v}.crate --commit "$GITHUB_SHA"

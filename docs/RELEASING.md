@@ -210,3 +210,46 @@ or installations. Any yank requires explicit authorization; publish a corrective
 version through the same process when necessary. Record partial publication,
 docs.rs or installation failures honestly until resolved; do not label an
 unverified release complete.
+
+## Trusted Publishing
+
+The [tag-triggered publishing workflow](../.github/workflows/publish.yml) adds an
+OIDC route alongside the existing owner-local publication process. It does not
+publish any existing tag merely by being merged. Do not recreate/move tags or
+publish the same version through both routes. Future release authorization and
+qualification still precede tag creation and the owner's environment approval.
+The workflow checks tag/version agreement and release documentation, verifies a
+clean locked package, obtains a short-lived crates.io token, publishes the single
+`cargo-libc` crate, and checks the official archive against both API and sparse
+index checksums and the exact clean source commit. Upstream dependencies must
+already be published; this repository does not publish their workspace.
+
+Before enabling a future publication, the owner must configure a crates.io
+Trusted Publisher with these exact values:
+
+| Field | Value |
+| --- | --- |
+| Crate | `cargo-libc` |
+| GitHub repository owner | `rustcommons` |
+| GitHub repository | `cargo-libc` |
+| Workflow filename | `publish.yml` |
+| Environment | `crates-io` |
+
+The environment must retain its owner reviewer and `v*` tag restrictions. Only
+this publishing job receives publishing OIDC permission; Scorecard separately
+uses OIDC to authenticate public security results and cannot publish crates.
+No long-lived registry credential is stored in this workflow. See the
+[crates.io Trusted Publishing documentation](https://crates.io/docs/trusted-publishing).
+The manual local process remains available until explicitly retired. GitHub
+Release documentation and postpublication verification remain separate steps.
+
+PR security checks run zizmor and cargo-deny. Dependabot proposes weekly grouped
+minor/patch Cargo/action updates; updates still require review and applicable
+validation. The license policy preserves the existing embedded glibc/Linux input
+licenses and syscall exceptions, with permissions scoped to their reviewed crate
+versions; it does not waive NOTICE or redistribution duties. RustSec checks cannot
+establish the absence of unknown vulnerabilities or audit embedded native code.
+Scorecard runs on main and weekly, publishes its public results and uploads SARIF.
+Its first live publication is pending this workflow's reviewed main merge. No
+SLSA level, binary provenance or reproducible-build claim is made: this repository
+currently distributes a source crate, not GitHub Release binary assets.

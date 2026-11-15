@@ -92,6 +92,22 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
 - When backfilling history, reconstruct facts from existing tags, registry records and source/evidence. Preserve original source identities, distinguish original release dates from documentation backfill dates, and state unavailable historical validation. Never fabricate checks, move tags, republish versions, or imply that repository edits change immutable published archives.
 - For an organization profile, placeholder or project with no shipped version, record release verification as not applicable until its first authorized release. Do not invent versions, features, changelog history or GitHub Releases to satisfy this convention.
 
+## Security and CI
+
+- All main changes go through reviewed pull requests; never push directly to main.
+- Pin every external GitHub Action to a full commit SHA with its release or
+  toolchain tag in a trailing comment. Keep workflow permissions read-only and
+  grant additional permissions only to the job that needs them. Disable checkout
+  credential persistence. Review Dependabot action updates as executable code.
+- Keep the PR zizmor and cargo-deny security gates passing. Any suppression or
+  dependency-policy exception needs a narrow inline explanation and review.
+- Keep RustSec, license, duplicate-version and registry-source policy in
+  [deny.toml](deny.toml) aligned with the actual dependency graph and legal notices.
+- Trusted Publishing requires the owner-reviewed `crates-io` environment and an
+  exact version tag. It supplements the existing manual release process; a tag
+  or green security check alone is not authorization to publish. See the
+  [publishing setup](docs/RELEASING.md#trusted-publishing).
+
 ## Git conventions
 
 **No tool attribution, anywhere.** Do not add `Co-Authored-By: Claude ...` trailers,
