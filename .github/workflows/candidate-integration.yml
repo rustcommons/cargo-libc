@@ -285,7 +285,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@92e73e19cbfb3981e63ef478a16f95f415e634d3 # 1.99.0
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.99.0
         with:
           components: rustfmt, clippy
       - run: cargo fetch --locked
@@ -416,7 +416,7 @@ jobs:
           ref: 9c248300f1e2ab20ce34dc4b227eb322e33e4c93
           path: consumer
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@263313d2989f864a2b8613f97277288638e7d8f8 # 1.99.1
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.99.1
         with:
           toolchain: 1.99.1
       - name: Prepare exact tools and record public source identities
