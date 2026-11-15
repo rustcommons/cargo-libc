@@ -8,6 +8,7 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+from urllib.parse import urlsplit
 
 spec = importlib.util.spec_from_file_location(
     "verifier", Path(__file__).with_name("verify-published-crate.py"))
@@ -53,14 +54,19 @@ class PublicationVerification(unittest.TestCase):
                  index_yanked=False, missing=False, official=b"official"):
         checksum = hashlib.sha256(b"official").hexdigest()
         def fetch(url):
-            if "/api/v1/" in url:
+            endpoint = urlsplit(url)
+            if endpoint.scheme != "https":
+                raise AssertionError("expected HTTPS registry request")
+            if endpoint.hostname == "crates.io":
                 return json.dumps({"version": {
                     "checksum": api_hash or checksum, "yanked": yanked}}).encode()
-            if "index.crates.io" in url:
+            if endpoint.hostname == "index.crates.io":
                 return b"" if missing else json.dumps({
                     "vers": "1.2.3", "cksum": index_hash or checksum,
                     "yanked": index_yanked}).encode()
-            return official
+            if endpoint.hostname == "static.crates.io":
+                return official
+            raise AssertionError("unexpected registry host")
         verifier.verify_registry("cargo-libc", "1.2.3", checksum, fetch)
 
     def test_matching_registry(self):
