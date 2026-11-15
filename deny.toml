@@ -1,0 +1,38 @@
+[graph]
+all-features = true
+
+[advisories]
+db-urls = ["https://github.com/RustSec/advisory-db"]
+# Known vulnerabilities fail by default. Unmaintained/notice advisories cover
+# the entire graph; warn so maintainers can assess first-party/data packages.
+unmaintained = "all"
+yanked = "deny"
+
+[licenses]
+allow = ["MIT"]
+# The embedded glibc input crates retain their existing upstream license
+# expressions (including Linux syscall exceptions). Scope these permissions to
+# the exact reviewed data/source releases, never future arbitrary dependencies.
+# Distribution duties and copied header/source notices remain in NOTICE.md.
+exceptions = [
+    { crate = "glibc-abilists@0.1.2", allow = ["LGPL-2.1-or-later"] },
+    { crate = "glibc-provider-sources@0.1.1", allow = [
+        "LGPL-2.1-or-later",
+        "GPL-2.0-only WITH Linux-syscall-note",
+        "GPL-2.0-or-later WITH Linux-syscall-note",
+        "LGPL-2.1-only WITH Linux-syscall-note",
+        "LGPL-2.1-or-later WITH Linux-syscall-note",
+        "BSD-3-Clause",
+        "MIT",
+    ] },
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
