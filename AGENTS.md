@@ -99,6 +99,9 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
   toolchain tag in a trailing comment. Keep workflow permissions read-only and
   grant additional permissions only to the job that needs them. Disable checkout
   credential persistence. Review Dependabot action updates as executable code.
+  Keep `dtolnay/rust-toolchain` excluded from Dependabot: its version-specific
+  commits select different Rust toolchains. Review pins/security fixes manually
+  while preserving both MSRV and current-toolchain coverage.
 - Schedule routine Dependabot version updates monthly, grouped with a seven-day
   cooldown and at most two open PRs per ecosystem. Security updates stay immediate.
 - Dependabot-authored PRs run core fmt/Clippy/tests, cargo-deny, zizmor, lf-only
