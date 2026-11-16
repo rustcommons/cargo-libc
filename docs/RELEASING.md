@@ -246,7 +246,10 @@ Release documentation and postpublication verification remain separate steps.
 PR security checks run zizmor and cargo-deny. Dependabot proposes monthly grouped
 minor/patch Cargo/action version updates, with a seven-day cooldown and at most
 two open PRs per ecosystem. Security updates remain immediate and are independent
-of this version-update schedule. Dependabot-authored PRs run core fmt/Clippy/tests,
+of this version-update schedule. `dtolnay/rust-toolchain` is the explicit manual
+exception: its pinned commits encode different Rust versions. Review updates,
+including security fixes, manually without collapsing MSRV/current coverage.
+Dependabot-authored PRs run core fmt/Clippy/tests,
 cargo-deny, zizmor, lf-only and managed CodeQL checks; expensive native matrices
 and qualification jobs are skipped, including on human reruns. Core green is not
 dependency compatibility or release qualification: maintainers must still review

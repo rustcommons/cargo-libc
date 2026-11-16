@@ -19,6 +19,10 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 2
+    # These commits encode different Rust versions. Updating them as one action
+    # can collapse MSRV/current coverage; review pins and security fixes manually.
+    ignore:
+      - dependency-name: dtolnay/rust-toolchain
     groups:
       minor-and-patch:
         update-types: [minor, patch]
