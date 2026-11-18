@@ -13,7 +13,6 @@ releases=("$@")
 if [ ${#releases[@]} -eq 0 ]; then
   mapfile -t releases < <(seq -f '2.%g' 17 44)
 fi
-maturin_version=1.15.0
 test_dir=$(mktemp -d /tmp/cargo-libc-python-ext.XXXXXXXX)
 trap 'chmod -R u+w "$test_dir"; rm -rf -- "$test_dir"' EXIT
 export CARGO_LIBC_PROVIDER_DIR=${CARGO_LIBC_PROVIDER_DIR:-$test_dir/providers}
@@ -23,7 +22,7 @@ cargo build --manifest-path "$repo_dir/Cargo.toml" --locked --offline --target-d
 cargo fetch --manifest-path "$example/Cargo.toml" --locked
 export PATH="$test_dir/tools/debug:$PATH"
 python3 -m venv "$test_dir/venv"
-"$test_dir/venv/bin/pip" install -q "maturin==$maturin_version"
+"$test_dir/venv/bin/pip" install -q --require-hashes --only-binary :all: -r "$repo_dir/scripts/requirements/maturin.txt"
 maturin="$test_dir/venv/bin/maturin"
 host_glibc=$(getconf GNU_LIBC_VERSION)
 host_glibc=${host_glibc#glibc }
@@ -64,7 +63,9 @@ done
 if [ "${PYTHON_EXT_CONTAINERS:-0}" = 1 ]; then
   engine=${CONTAINER_ENGINE:-podman}
   # manylinux images keep their Python builds under /opt/python.
-  for pair in "2.17 quay.io/pypa/manylinux2014_x86_64" "2.28 quay.io/pypa/manylinux_2_28_x86_64"; do
+  # Pinned by digest (quay.io :latest on 2026-11-18); refresh deliberately.
+  for pair in "2.17 quay.io/pypa/manylinux2014_x86_64@sha256:e6a785657009c612fe2a85fa933051d03a50ba62b1c5e47d62abcab546a2e423" \
+      "2.28 quay.io/pypa/manylinux_2_28_x86_64@sha256:d086f64cddcace250ef0f0073583c51b8298159303290a730c9f59bd91edfd2c"; do
     set -- $pair
     wheel=$(ls "$test_dir"/*-manylinux_2_${1#2.}_x86_64*.whl 2>/dev/null) || continue
     "$engine" run --rm -v "$wheel:/w/$(basename "$wheel"):ro" -v "$example/check.py:/w/check.py:ro" "$2" \

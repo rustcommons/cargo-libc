@@ -1,0 +1,2 @@
+#define __GLIBC__ 2
+# define __GLIBC_MINOR__ 22

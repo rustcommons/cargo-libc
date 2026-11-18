@@ -1,0 +1,1 @@
+"/usr/bin/ld" "-L/native with spaces" "raw-ÿ.o" "a\"b\\c" "--as-needed" "-lc"

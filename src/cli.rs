@@ -279,6 +279,12 @@ fn parse_version(value: OsString, flag: &str) -> Result<Version, String> {
         .validate_glibc_target()
 }
 
+/// Fuzz-only: parse without running anything.
+#[cfg(fuzzing)]
+pub(crate) fn fuzz_parse(args: Vec<OsString>) {
+    let _ = std::hint::black_box(parse(args));
+}
+
 fn parse(mut args: Vec<OsString>) -> Result<ParsedCommand, String> {
     // Cargo includes the external subcommand's name in argv.
     if args.first().is_some_and(|arg| arg == "libc") {

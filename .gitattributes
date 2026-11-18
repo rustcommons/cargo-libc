@@ -1,2 +1,4 @@
 * text=auto eol=lf
 *.png binary
+# Fuzz seeds are raw parser input bytes, never normalized.
+fuzz/seeds/** -text

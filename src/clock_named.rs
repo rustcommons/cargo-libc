@@ -54,7 +54,10 @@ fn quoted_args(line: &[u8]) -> Result<Vec<OsString>, String> {
     quoted_args_limit(line, false)
 }
 
-fn quoted_args_limit(mut line: &[u8], first_only: bool) -> Result<Vec<OsString>, String> {
+pub(crate) fn quoted_args_limit(
+    mut line: &[u8],
+    first_only: bool,
+) -> Result<Vec<OsString>, String> {
     let mut args = Vec::new();
     while !line.trim_ascii_start().is_empty() {
         line = line.trim_ascii_start();
@@ -348,7 +351,7 @@ fn expect(tokens: &[Vec<u8>], at: &mut usize, value: &[u8]) -> Result<(), String
     Ok(())
 }
 
-fn script_tokens(mut bytes: &[u8]) -> Result<Vec<Vec<u8>>, String> {
+pub(crate) fn script_tokens(mut bytes: &[u8]) -> Result<Vec<Vec<u8>>, String> {
     let mut tokens = Vec::new();
     while !bytes.is_empty() {
         bytes = bytes.trim_ascii_start();

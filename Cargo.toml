@@ -41,6 +41,10 @@ path = "src/bin/libc-runner.rs"
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
+# cargo-fuzz sets `--cfg fuzzing` to expose the fuzz-only parser entry points.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(fuzzing)"] }
+
 [profile.release]
 strip = true
 

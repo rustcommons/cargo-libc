@@ -115,10 +115,28 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
   dependency-policy exception needs a narrow inline explanation and review.
 - Keep RustSec, license, duplicate-version and registry-source policy in
   [deny.toml](deny.toml) aligned with the actual dependency graph and legal notices.
-- Trusted Publishing requires the owner-reviewed `crates-io` environment and an
-  exact version tag. It supplements the existing manual release process; a tag
-  or green security check alone is not authorization to publish. See the
-  [publishing setup](docs/RELEASING.md#trusted-publishing).
+- Pin every workflow install (OpenSSF Scorecard Pinned-Dependencies): actions by
+  SHA; pip only via hashed requirements files (`pip install --require-hashes -r`,
+  see [scripts/requirements](scripts/requirements)); `cargo install` with
+  `--locked` and an exact `--version` (or a local `--path`); container images by
+  digest; no `curl | sh` or download-then-run/trust unless the file's SHA-256 is
+  checked against a pinned value first. Product presets that name tagged images
+  are product behavior, not CI installs.
+- Never use `[skip ci]`/`[ci skip]` (or similar) in commit, merge or PR
+  messages: it skips CodeQL and CI and lowers the SAST/CI-Tests checks. CodeQL
+  stays on GitHub's managed default setup; do not replace it with a workflow.
+- Keep cargo-libc's own parsers of untrusted/external input fuzzed (see
+  [docs/FUZZING.md](docs/FUZZING.md)): add or update a `fuzz/` target when adding
+  such a parser. `fuzz/` stays an unpublished separate workspace; fuzz-only
+  crates (`libfuzzer-sys`, `arbitrary`) never enter the shipped graph. Every
+  fuzz crash is a real bug: fix it with a regression test, or escalate if it
+  needs a product decision.
+- Crate releases publish only through
+  [trusted-publishing.yml](.github/workflows/trusted-publishing.yml) with the
+  owner's approval of the `crates-io` environment and an exact version tag. The
+  owner-machine crates.io token was revoked on 2026-11-16; there is no local
+  publishing route. A tag or green security check alone is not authorization to
+  publish. See the [publishing setup](docs/RELEASING.md#trusted-publishing).
 
 ## Git conventions
 
