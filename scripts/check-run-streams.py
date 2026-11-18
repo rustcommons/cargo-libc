@@ -122,7 +122,8 @@ fn main() {
                     args = [str(bin_dir / 'cargo-libc'), command, '--target',
                             'x86_64-unknown-linux-gnu.2.17', '--cc', clang,
                             '--kernel', '4.12', '--runner', 'container', '--image',
-                            'registry.suse.com/suse/sles12sp5:latest', '--',
+                            # :latest manifest list, pinned 2026-11-18.
+                            'registry.suse.com/suse/sles12sp5@sha256:51280921c24d1aeb6fe2d396e92d43912ba5b03c006407de20ef21592425c21a', '--',
                             '--manifest-path', str(root / 'Cargo.toml'), '--locked', '--offline']
                     if command == 'test':
                         args += ['--test', 'stream-test']

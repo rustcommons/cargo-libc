@@ -11,7 +11,10 @@ esac
 sudo apt-get update
 sudo apt-get install -y curl gnupg gcc binutils
 key_dir=$(mktemp -d)
-curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor > "$key_dir/llvm-keyring.gpg"
+# Verify the downloaded signing key against a pinned SHA-256 before trusting it.
+curl -fsSL -o "$key_dir/llvm-snapshot.gpg.key" https://apt.llvm.org/llvm-snapshot.gpg.key
+echo "8b2a587ffd672c4687e7581dad4b2f6c1bb2ad6b480cd9771ba2ff48e0b8c75d  $key_dir/llvm-snapshot.gpg.key" | sha256sum -c --quiet
+gpg --dearmor < "$key_dir/llvm-snapshot.gpg.key" > "$key_dir/llvm-keyring.gpg"
 sudo install -m 644 "$key_dir/llvm-keyring.gpg" /usr/share/keyrings/llvm-provider.gpg
 echo "deb [signed-by=/usr/share/keyrings/llvm-provider.gpg] https://apt.llvm.org/noble/ $suite main" | sudo tee /etc/apt/sources.list.d/llvm-provider.list
 sudo apt-get update

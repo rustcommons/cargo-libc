@@ -15,6 +15,11 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
   Actions, monthly dependency version updates and owner-gated Trusted Publishing alongside
   the existing manual process. Scorecard publication starts after main adoption.
   No runtime, dependency, version or platform-support change.
+- Fuzz cargo-libc's own parsers (versions/targets, command line, provider
+  descriptors, SDK headers, Cargo JSON, ELF symbol versions, linker syntax) with
+  cargo-fuzz and ClusterFuzzLite; see [FUZZING.md](docs/FUZZING.md). Pin every CI
+  install by hash or digest. Crates now publish only through Trusted Publishing.
+  No runtime, shipped dependency or platform-support change.
 
 ## [0.7.0] - 2026-11-08
 

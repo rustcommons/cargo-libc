@@ -1,0 +1,7 @@
+libc-abi-provider-v1
+target	x86_64-unknown-linux-gnu
+glibc	2.17
+sysroot	/p/sysroot
+stubs	/p/sysroot/stubs
+gcc-startup	/p/sysroot/gcc
+compiler-runtime	/p/sysroot/runtime

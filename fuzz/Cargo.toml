@@ -1,0 +1,70 @@
+# Fuzz-only harnesses; never published. This is its own workspace with its own
+# lockfile, so libfuzzer-sys stays out of cargo-libc's dependency graph,
+# Cargo.lock and package. Build with cargo-fuzz (see docs/FUZZING.md).
+[package]
+name = "cargo-libc-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+license = "MIT"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4.13"
+cargo-libc = { path = ".." }
+
+[workspace]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "version"
+path = "fuzz_targets/version.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cli_args"
+path = "fuzz_targets/cli_args.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "provider_descriptor"
+path = "fuzz_targets/provider_descriptor.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "sdk_header"
+path = "fuzz_targets/sdk_header.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "cargo_message"
+path = "fuzz_targets/cargo_message.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "elf"
+path = "fuzz_targets/elf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "linker_syntax"
+path = "fuzz_targets/linker_syntax.rs"
+test = false
+doc = false
+bench = false

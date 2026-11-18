@@ -434,7 +434,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/clock-evidence"
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends clang-18 gcc binutils
-          python3 -m pip install --user ziglang==0.17.0
+          python3 -m pip install --user --require-hashes --only-binary :all: -r clock-tool/scripts/requirements/ziglang.txt
           cargo install --locked cargo-libc --version 0.2.4 --root "$RUNNER_TEMP/clock-old"
           CARGO_TARGET_DIR="$RUNNER_TEMP/clock-tool-target" cargo install --path clock-tool --locked --root "$RUNNER_TEMP/clock-new"
           cargo install --locked cargo-zigbuild --version 0.23.4 --root "$RUNNER_TEMP/clock-zigbuild"

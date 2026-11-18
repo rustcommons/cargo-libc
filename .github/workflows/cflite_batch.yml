@@ -1,0 +1,41 @@
+name: ClusterFuzzLite batch fuzzing
+on:
+  schedule:
+    - cron: '17 6 * * 2'
+  workflow_dispatch:
+# Scheduled and manual runs stay independent of each other.
+permissions:
+  contents: read
+jobs:
+  batch:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      # Reads and stores the corpus as workflow artifacts.
+      actions: read
+      # Uploads crash SARIF to code scanning.
+      security-events: write
+    steps:
+      - name: Build fuzzers (address)
+        id: build
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: rust
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          sanitizer: address
+      - name: Batch fuzz for 1800 s
+        id: run
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: 1800
+          mode: batch
+          sanitizer: address
+          output-sarif: true
+      - name: Upload crash SARIF
+        if: always() && steps.build.outcome == 'success'
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: cifuzz-sarif/results.sarif
+          checkout_path: cifuzz-sarif
+          category: clusterfuzzlite

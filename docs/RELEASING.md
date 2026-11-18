@@ -180,13 +180,15 @@ an existing registry archive.
    a clean Cargo home. Exercise all five executables and affected workflows.
 4. Review and merge the PR normally. Confirm the merged source, manifest, lock and
    package inputs match the validated revision; validate material differences.
-   Publish from the exact clean released commit. Distribution is the cargo-libc
-   package on crates.io only: no standalone binary assets without separate
-   instruction. Never replace a tag or published version.
+   Publish only through [Trusted Publishing](#trusted-publishing): push the
+   `vX.Y.Z` tag at the exact clean released commit and obtain the owner's
+   `crates-io` environment approval. Distribution is the cargo-libc package on
+   crates.io only: no standalone binary assets without separate instruction.
+   Never replace a tag or published version.
 5. Verify the official archive checksum against the registry, normalized manifest,
-   lock and source identity (`.cargo_vcs_info.json`), and non-yanked status. Create
-   `vX.Y.Z` at that exact immutable released commit. Verify docs.rs build/status
-   and the versioned documentation page.
+   lock and source identity (`.cargo_vcs_info.json`), and non-yanked status, and
+   that the tag names the published commit. Verify docs.rs build/status and the
+   versioned documentation page.
 6. In a clean Cargo home on a supported native host, run
    `cargo install cargo-libc --version X.Y.Z --locked` into an isolated root and
    exercise the installed helpers and affected workflows. Cargo's
@@ -213,10 +215,11 @@ unverified release complete.
 
 ## Trusted Publishing
 
-The [tag-triggered publishing workflow](../.github/workflows/trusted-publishing.yml) adds an
-OIDC route alongside the existing owner-local publication process. It does not
-publish any existing tag merely by being merged. Do not recreate/move tags or
-publish the same version through both routes. Future release authorization and
+The [tag-triggered publishing workflow](../.github/workflows/trusted-publishing.yml) is the
+only crate publication route: the owner revoked the owner-machine crates.io
+token on 2026-11-16, so local `cargo publish` is no longer available. The
+workflow does not publish any existing tag merely by being merged. Do not
+recreate/move tags. Future release authorization and
 qualification still precede tag creation and the owner's environment approval.
 The workflow checks tag/version agreement and release documentation, verifies a
 clean locked package, obtains a short-lived crates.io token, publishes the single
@@ -240,8 +243,8 @@ this publishing job receives publishing OIDC permission; Scorecard separately
 uses OIDC to authenticate public security results and cannot publish crates.
 No long-lived registry credential is stored in this workflow. See the
 [crates.io Trusted Publishing documentation](https://crates.io/docs/trusted-publishing).
-The manual local process remains available until explicitly retired. GitHub
-Release documentation and postpublication verification remain separate steps.
+GitHub Release documentation and postpublication verification remain separate
+steps.
 
 PR security checks run zizmor and cargo-deny. Dependabot proposes monthly grouped
 minor/patch Cargo/action version updates, with a seven-day cooldown and at most
@@ -261,6 +264,10 @@ embedded glibc/Linux input
 licenses and syscall exceptions, with permissions scoped to their reviewed crate
 versions; it does not waive NOTICE or redistribution duties. RustSec checks cannot
 establish the absence of unknown vulnerabilities or audit embedded native code.
+Every workflow install is pinned (actions by SHA, hashed pip requirements,
+locked exact `cargo install`, image digests, SHA-256-checked downloads); commit
+and merge messages never use `[skip ci]`. Parsers of external input are fuzzed
+per PR and weekly; see [FUZZING.md](FUZZING.md).
 Scorecard runs on main and weekly, publishes its public results and uploads SARIF.
 Its first live publication is pending this workflow's reviewed main merge. No
 SLSA level, binary provenance or reproducible-build claim is made: this repository

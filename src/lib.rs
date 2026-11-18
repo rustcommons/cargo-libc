@@ -40,6 +40,9 @@ pub mod cli;
 mod clock;
 mod clock_named;
 mod elf;
+#[cfg(all(fuzzing, unix))]
+#[doc(hidden)]
+pub mod fuzzing;
 mod gcc;
 mod output;
 mod provider;
