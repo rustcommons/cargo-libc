@@ -51,7 +51,7 @@ strip = true
 [dependencies]
 # First-party rustcommons crates for tier 1 binary scans (`inspect --distro`/`--kernel`).
 kernel-abi-tools = "0.3.3"
-linux-abi-scan = "0.3.3"
+linux-abi-scan = "0.6.0"
 linux-targets = "0.3.0"
 # Provider preparation (`cargo libc provider`, automatic providers). Its default
 # features compile in glibc's ABI lists (glibc-abilists) and recorded sources
