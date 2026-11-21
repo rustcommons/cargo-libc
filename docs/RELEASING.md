@@ -18,7 +18,9 @@ The exact [AGENTS release rule](../AGENTS.md#release-documentation) applies.
 Software release completion requires agreement among immutable source tag,
 registry package, changelog/notes, docs and applicable gates, including the live
 GitHub Release text/tag/links. GitHub notes provide documentation and source/registry
-links; distribution remains crates.io, with no new binary attachments authorized.
+links; distribution remains crates.io. Since 2026-11-21 the owner authorizes the
+pipeline to attach the `.crate` files, SBOM, `SHA256SUMS` and provenance bundle;
+no other binaries.
 
 The [release-documentation workflow](../.github/workflows/release-docs.yml) runs
 the stdlib-only [checker](../scripts/check-release-docs.py), covering current
@@ -175,34 +177,38 @@ an existing registry archive.
    update the real lockfile, preserving unrelated inputs and their checksums.
 3. Validate the registry-only dependency graph without path/git overrides or
    patches. Source-candidate tests with disposable patches are useful prerelease
-   evidence, not substitutes for registry validation. Run the applicable checks
-   above, inspect package contents, and install the unpacked proposed package with
-   `cargo install --path <unpacked-package> --locked` into an isolated root using
-   a clean Cargo home. Exercise all five executables and affected workflows.
-4. Review and merge the PR normally. Confirm the merged source, manifest, lock and
-   package inputs match the validated revision; validate material differences.
-   Publish only through [Trusted Publishing](#trusted-publishing): push the
-   `vX.Y.Z` tag at the exact clean released commit and obtain the owner's
-   `crates-io` environment approval. Distribution is the cargo-libc package on
-   crates.io only: no standalone binary assets without separate instruction.
-   Never replace a tag or published version.
-5. Verify the official archive checksum against the registry, normalized manifest,
-   lock and source identity (`.cargo_vcs_info.json`), and non-yanked status, and
-   that the tag names the published commit. Verify docs.rs build/status and the
-   versioned documentation page.
-6. In a clean Cargo home on a supported native host, run
-   `cargo install cargo-libc --version X.Y.Z --locked` into an isolated root and
-   exercise the installed helpers and affected workflows. Cargo's
-   [install documentation](https://doc.rust-lang.org/cargo/commands/cargo-install.html)
-   explains use of the packaged lock with `--locked`. The manual workflow's
-   `registry` and `installed` modes and [installed smoke script](../scripts/smoke-installed.sh)
-   provide the existing sequence; review their version-specific arguments before
-   each release (installed mode targets published 0.7.1). Record verified outcomes
-   and remaining coverage gaps in the release record and roadmap.
-7. Publish reviewed GitHub Release notes at the exact existing source tag and
-   verify live text, links and latest status with release-documentation CI. No
-   binary attachments without separate authorization; a crate upload/tag alone
-   does not complete release documentation.
+   evidence, not substitutes for registry validation. Update the
+   [package audit](../scripts/check-release-package.py) for the new version and
+   its expected delta from the previous official archive. The release PR
+   touches `CHANGELOG.md`, `docs/releases/` and the audit, so it gets a
+   [Trusted publishing](#trusted-publishing) dry run: `gate` and `build` run
+   the full release qualification (package audit, SBOM, checksums, portable
+   checks, native providers/C/CMake/commands/sysroot/streams/malformed scans and
+   a clean locked install of the packaged crate) with `publish=false`. That
+   dry run must be green before merge.
+4. Write `docs/releases/vX.Y.Z.md` in its final, published form before tagging:
+   the tagged file becomes the GitHub Release body unchanged, and the
+   release-documentation check compares the live body with it. Put
+   post-publication evidence in the release record (`docs/RELEASE-X.Y.Z.md`),
+   not in the notes.
+5. Review and merge the PR normally and wait for CI on the merge commit. Push an
+   annotated `vX.Y.Z` tag at that exact commit. The pipeline then runs:
+   **Release gate** (annotated tag equal to the version, commit reachable from
+   `main` with green CI, release crate set, dated changelog entry and notes) →
+   **Build** → **Checksums and attestations** → the owner approves the
+   `crates-io` environment → **Publish to crates.io** → **GitHub release**
+   (created automatically from the committed notes, with files attached) →
+   **Verify publication**. Distribution is the cargo-libc package on crates.io;
+   the release attachments document it. Never replace a tag or published version.
+6. The maintainer no longer creates the GitHub Release by hand. `verify` proves
+   that crates.io's checksum equals the attested `.crate`, the attached files
+   pass `gh attestation verify`, docs.rs built the version (a queue still
+   pending after its bounded wait is reported as pending, not passed) and a clean
+   `cargo install cargo-libc --version X.Y.Z --locked` passes the installed-helper
+   checks. Then run
+   `python3 scripts/check-release-docs.py --repo rustcommons/cargo-libc --published`
+   and record the run, identities, docs.rs state and any remaining gaps in the
+   release record through a normal PR.
 
 If a gate fails, stop the affected next step and correct or document the failure;
 do not bypass a failed gate to claim completion. If publication returns an
@@ -216,20 +222,45 @@ unverified release complete.
 
 ## Trusted Publishing
 
-The [tag-triggered publishing workflow](../.github/workflows/trusted-publishing.yml) is the
-only crate publication route: the owner revoked the owner-machine crates.io
-token on 2026-11-16, so local `cargo publish` is no longer available. The
-workflow does not publish any existing tag merely by being merged. Do not
-recreate/move tags. Future release authorization and
-qualification still precede tag creation and the owner's environment approval.
-The workflow checks tag/version agreement and release documentation, verifies a
-clean locked package, obtains a short-lived crates.io token, publishes the single
-`cargo-libc` crate, and checks the official archive against both API and sparse
-index checksums and the exact clean source commit. Upstream dependencies must
-already be published; this repository does not publish their workspace.
+[`trusted-publishing.yml`](../.github/workflows/trusted-publishing.yml) is the
+Rust Commons
+[standard release pipeline](https://github.com/rustcommons/.github/blob/main/docs/TRUSTED-PUBLISHING.md)
+(workflow `Trusted publishing`) and the only crate publication route: the owner
+revoked the owner-machine crates.io token on 2026-11-16, so local
+`cargo publish` is unavailable. cargo-libc adopted it as the pilot on
+2026-11-21; its first real use is the next authorized release, and no published
+version is re-tagged or re-released.
 
-Before enabling a future publication, the owner must configure a crates.io
-Trusted Publisher with these exact values:
+| Job | Display name | Runs | Extra permissions |
+| --- | --- | --- | --- |
+| `gate` | Release gate | every run | `actions: read` |
+| `build` | Build | every run | none |
+| `attest` | Checksums and attestations | tag runs | `id-token: write`, `attestations: write` |
+| `publish` | Publish to crates.io | tag runs, after owner approval | `id-token: write`, environment `crates-io` |
+| `github-release` | GitHub release | tag runs | `contents: write` |
+| `verify` | Verify publication | tag runs | none |
+
+[`release-gate.py`](../scripts/release-gate.py) holds the gate logic. On a tag
+it refuses unless the tag is annotated and equals `v` plus the version, the
+commit is reachable from `main` with a successful CI run, every crate at the
+release version is in the release set (others must already be on crates.io),
+`CHANGELOG.md` has a dated `## [X.Y.Z] - YYYY-MM-DD` entry and
+`docs/releases/vX.Y.Z.md` exists and passes the release-documentation check.
+Pull requests and manual runs report the same findings with `publish=false`.
+`build` packages with `--locked`, runs the package audit and the release
+qualification, generates a CycloneDX SBOM (`cargo-cyclonedx` 0.5.10,
+`--locked`), writes `SHA256SUMS` and uploads the `release-<version>` artifact.
+`attest` re-checks the sums and signs SLSA build provenance for the `.crate`
+and SBOM, saved as `cargo-libc-<version>.crates.intoto.jsonl`. `publish`
+re-checks the sums, publishes only bytes identical to the attested `.crate`,
+and skips a version crates.io already has, so a re-run is safe.
+`github-release` creates `vX.Y.Z` with `--verify-tag` from the committed notes
+(title: their first heading) and attaches the `.crate`, SBOM, `SHA256SUMS` and
+provenance bundle; a re-run uploads only missing files and never replaces an
+existing asset. A tag run is never cancelled.
+
+crates.io binds publication to this file name and the `crates-io` environment;
+never rename either. The registered Trusted Publisher is:
 
 | Field | Value |
 | --- | --- |
@@ -240,12 +271,10 @@ Trusted Publisher with these exact values:
 | Environment | `crates-io` |
 
 The environment must retain its owner reviewer and `v*` tag restrictions. Only
-this publishing job receives publishing OIDC permission; Scorecard separately
-uses OIDC to authenticate public security results and cannot publish crates.
-No long-lived registry credential is stored in this workflow. See the
+the `publish` job uses that environment, so only it can obtain a crates.io
+token; `attest` and Scorecard use OIDC only to sign or authenticate results.
+No long-lived registry credential is stored. See the
 [crates.io Trusted Publishing documentation](https://crates.io/docs/trusted-publishing).
-GitHub Release documentation and postpublication verification remain separate
-steps.
 
 PR security checks run zizmor and cargo-deny. Dependabot proposes monthly grouped
 minor/patch Cargo/action version updates, with a seven-day cooldown and at most

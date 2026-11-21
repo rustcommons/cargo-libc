@@ -86,8 +86,9 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
 ## Release documentation
 
 - For a repository that ships versioned software, maintain a root `CHANGELOG.md` with an `Unreleased` section and dated, user-facing entries for shipped versions. Record noteworthy changes and their user impact as work is completed; do not substitute a roadmap, Git tag, CI log or validation report for a changelog.
+- **Updating `CHANGELOG.md` is critical.** It is the source the release notes are written from, and the release gate refuses to publish without a dated `## [X.Y.Z] - YYYY-MM-DD` entry and `docs/releases/vX.Y.Z.md`. Add an `Unreleased` entry in the same PR as each noteworthy change, never later; a release PR only dates and moves those entries.
 - Before publishing a version, commit its release notes under `docs/releases/vX.Y.Z.md` and link them, the changelog, and the maintained release policy. Explain changes, upgrade or dependency impact, validation and known limits; distinguish software changes from documentation-only releases.
-- A software release is not complete until its immutable source tag, applicable registry archives, GitHub Release notes, changelog, documentation, and required verification agree. GitHub Releases document the release; do not attach standalone binaries or other new distribution artifacts without authorization.
+- A software release is not complete until its immutable source tag, applicable registry archives, GitHub Release notes, changelog, documentation, and required verification agree. GitHub Releases document the release. The owner authorized on 2026-11-21 that the release pipeline attaches the published `.crate` files, the CycloneDX SBOM, `SHA256SUMS` and the `cargo-libc-<version>.crates.intoto.jsonl` provenance bundle; attach no standalone binaries or other new distribution artifacts without further authorization.
 - Run the repository's release-documentation CI check before routine merges and release completion. For its first installation, review local checker/syntax evidence, register the workflow on the default branch, and require a green run before completing bootstrap or publishing notes. Verify the live GitHub Release and its tag, text and links after publication; a successful crate upload or tag alone is insufficient.
 - When backfilling history, reconstruct facts from existing tags, registry records and source/evidence. Preserve original source identities, distinguish original release dates from documentation backfill dates, and state unavailable historical validation. Never fabricate checks, move tags, republish versions, or imply that repository edits change immutable published archives.
 - For an organization profile, placeholder or project with no shipped version, record release verification as not applicable until its first authorized release. Do not invent versions, features, changelog history or GitHub Releases to satisfy this convention.
@@ -138,11 +139,23 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
   fuzz crash is a real bug: fix it with a regression test, or escalate if it
   needs a product decision.
 - Crate releases publish only through
-  [trusted-publishing.yml](.github/workflows/trusted-publishing.yml) with the
-  owner's approval of the `crates-io` environment and an exact version tag. The
-  owner-machine crates.io token was revoked on 2026-11-16; there is no local
-  publishing route. A tag or green security check alone is not authorization to
-  publish. See the [publishing setup](docs/RELEASING.md#trusted-publishing).
+  [trusted-publishing.yml](.github/workflows/trusted-publishing.yml), the Rust
+  Commons [standard release pipeline](https://github.com/rustcommons/.github/blob/main/docs/TRUSTED-PUBLISHING.md):
+  workflow `Trusted publishing` with jobs `gate` (Release gate), `build`
+  (Build), `attest` (Checksums and attestations), `publish` (Publish to
+  crates.io), `github-release` (GitHub release) and `verify` (Verify
+  publication). Keep the job ids, display names, order, conditions and per-job
+  permissions in step with the standard; never rename the file or the
+  `crates-io` environment (the crates.io registration depends on them). An
+  annotated `vX.Y.Z` tag on a `main` commit with green CI starts it; only the
+  owner's `crates-io` approval lets `publish` run. The pipeline creates the
+  GitHub Release from the committed notes, so write them in final form before
+  tagging and never create the release by hand. Release qualification that does
+  not need the published crate belongs in `build` (exercised by PR dry runs);
+  checks of the published crate belong in `verify`. The owner-machine crates.io
+  token was revoked on 2026-11-16; there is no local publishing route. A tag or
+  green security check alone is not authorization to publish. See the
+  [publishing setup](docs/RELEASING.md#trusted-publishing).
 
 ## Git conventions
 

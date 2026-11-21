@@ -11,7 +11,16 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ## [Unreleased]
 
-No additional changes assigned.
+### Repository
+
+- Adopt the Rust Commons standard release pipeline (pilot): `Trusted publishing`
+  now gates on an annotated tag, green CI on `main` and a dated changelog entry
+  with release notes; builds, audits and qualifies the package; signs SLSA
+  provenance; publishes after owner approval; creates the GitHub Release from
+  the committed notes with the `.crate`, SBOM, `SHA256SUMS` and provenance
+  bundle attached; and verifies crates.io, attestations, docs.rs and a clean
+  install. See [publishing setup](docs/RELEASING.md#trusted-publishing). No
+  crate or behavior change.
 
 ## [0.7.1] - 2026-11-21
 
