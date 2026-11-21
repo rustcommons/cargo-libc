@@ -17,7 +17,12 @@ prove whole-process safety.
   The entry points call pure parsers only: no SDK resolution, provider file
   access, tool probing, process execution or execution of parsed input.
 - `fuzz/seeds/<target>/` holds small committed seed corpora taken from the
-  existing unit-test fixtures. Generated corpora and crash artifacts are ignored.
+  existing unit-test fixtures. The `elf` seeds are not committed, so the
+  repository holds no binary artifacts:
+  [`fuzz/gen-elf-seeds.py`](../fuzz/gen-elf-seeds.py) (Python standard library
+  only) writes them byte-for-byte as the `src/elf.rs` and `src/elf/exact.rs`
+  test fixtures and refuses any output whose SHA-256 differs from the pinned
+  value. Generated seeds, corpora and crash artifacts are ignored.
 
 ## Targets
 
@@ -46,6 +51,8 @@ stays 1.90.
 rustup toolchain install nightly-2025-09-05
 cargo +nightly-2025-09-05 install cargo-fuzz --version 0.13.2 --locked
 cargo +nightly-2025-09-05 fuzz list
+# Generate the ELF seeds (also done by the ClusterFuzzLite build).
+python3 -I fuzz/gen-elf-seeds.py fuzz/seeds/elf
 # Fuzz one target for five minutes. New inputs go to fuzz/corpus/elf (ignored).
 cargo +nightly-2025-09-05 fuzz run --debug-assertions elf fuzz/corpus/elf fuzz/seeds/elf -- -max_total_time=300
 # Reproduce a crash artifact.
@@ -58,7 +65,8 @@ checks, as the ClusterFuzzLite build does.
 ## Continuous fuzzing
 
 [`.clusterfuzzlite/`](../.clusterfuzzlite) builds the targets in the OSS-Fuzz Rust
-builder, pinned by image digest, and packages each target's seeds.
+builder, pinned by image digest, generates the ELF seeds and packages each
+target's seeds.
 
 - [`cflite_pr.yml`](../.github/workflows/cflite_pr.yml) fuzzes code changes for
   300 s on pull requests that touch `src/`, `fuzz/`, the fuzzing build or the
