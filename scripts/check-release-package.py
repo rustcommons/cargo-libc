@@ -93,7 +93,12 @@ for name in ['Cargo.toml.orig', 'Cargo.toml']:
             assert dep['version'] == before, (crate, dep)
             dep['version'] = after
     # The only other manifest change declares the cargo-fuzz cfg.
-    assert current['lints'] == {'rust': {'unexpected_cfgs': {'level': 'warn', 'check-cfg': ['cfg(fuzzing)']}}}, current.get('lints')
+    # Cargo's normalized Cargo.toml adds the default `priority = 0`.
+    lint = dict(current['lints']['rust']['unexpected_cfgs'])
+    if name == 'Cargo.toml':
+        assert lint.pop('priority') == 0, lint
+    assert current['lints'] == {'rust': current['lints']['rust']} and len(current['lints']['rust']) == 1
+    assert lint == {'level': 'warn', 'check-cfg': ['cfg(fuzzing)']}, current['lints']
     assert 'lints' not in previous
     previous['lints'] = current['lints']
     assert previous == current, name
