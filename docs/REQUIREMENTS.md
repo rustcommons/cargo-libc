@@ -175,7 +175,7 @@ It is not a confirmed new runtime requirement or additional verification evidenc
 
 | Path / surface | Classification | Authority, scope and update rule |
 | --- | --- | --- |
-| [0.7.1 candidate](RELEASE-0.7.1.md), [user notes](releases/v0.7.1.md) | Release preparation and bounded evidence | Patch: linux-abi-tools 0.6.1 crate set with unchanged scan data/behavior; package audit against official 0.7.0, registry and publication gates tracked separately. |
+| [0.7.1 release](RELEASE-0.7.1.md), [user notes](releases/v0.7.1.md) | Release evidence | Published patch: linux-abi-tools 0.6.1 crate set with unchanged scan data/behavior; official identities, audited 0.7.0 delta, docs.rs and fresh registry installation. |
 | [0.7.0 release](RELEASE-0.7.0.md), [user notes](releases/v0.7.0.md) | Release evidence | Published provider-cache adoption; official identities, fresh registry installs and bounded source/container/helper checks; historical 0.6.0 is unchanged. |
 | [Provider-cache adoption](evals/2026-11-08-provider-cache-adoption.md) | Dated unreleased qualification | Real-registry minimum/lock adoption, permanent installed refresh gate, migration and qualification limits. |
 | [README](../README.md) | Maintained entry guide | Purpose, prerequisites, registry setup, guide/trace links; packaged, so excluded-doc links use absolute GitHub URLs. |
