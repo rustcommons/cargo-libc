@@ -1,41 +1,356 @@
-name: Publish crate
+# Rust Commons standard release pipeline; see
+# https://github.com/rustcommons/.github/blob/main/docs/TRUSTED-PUBLISHING.md
+# crates.io binds Trusted Publishing to this file name and the `crates-io`
+# environment; never rename either.
+name: Trusted publishing
 on:
   push:
     tags: ['v*']
+  # Dry runs: gate and build only, never publish.
+  pull_request:
+    paths:
+      - '.github/workflows/trusted-publishing.yml'
+      - 'scripts/release-gate.py'
+      - 'scripts/check-release-package.py'
+      - 'scripts/check-release-docs.py'
+      - 'scripts/verify-published-crate.py'
+      - 'CHANGELOG.md'
+      - 'docs/releases/**'
+  workflow_dispatch:
 permissions:
   contents: read
+# A tag run is never cancelled; only newer pushes to the same PR supersede.
+concurrency:
+  group: trusted-publishing-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
-  publish:
+  gate:
+    name: Release gate
     runs-on: ubuntu-24.04
-    environment: crates-io
+    timeout-minutes: 10
     permissions:
       contents: read
-      id-token: write
-    env:
-      CARGO_BUILD_JOBS: 2
-      RELEASE_TAG: ${{ github.ref_name }}
+      # Reads CI results for the tagged commit.
+      actions: read
+    outputs:
+      version: ${{ steps.gate.outputs.version }}
+      publish: ${{ steps.gate.outputs.publish }}
+      crates: ${{ steps.gate.outputs.crates }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
-      - name: Validate tag, release documentation and clean package
+      - name: Decide whether this run may publish
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python3 - <<'PY'
-          import os, tomllib
-          from pathlib import Path
-          package = tomllib.loads(Path('Cargo.toml').read_text())['package']
-          assert package['name'] == 'cargo-libc'
-          assert os.environ['RELEASE_TAG'] == 'v' + package['version']
-          PY
-          python3 scripts/check-release-docs.py --repo "$GITHUB_REPOSITORY"
-          test -z "$(git status --porcelain)"
-          cargo package --locked
+          python3 scripts/release-gate.py --event "$EVENT" --ref-name "$REF_NAME" \
+            --sha "$GITHUB_SHA" --repo "$GITHUB_REPOSITORY"
+
+  build:
+    name: Build
+    needs: gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.gate.outputs.version }}
+      CRATES: ${{ needs.gate.outputs.crates }}
+      CARGO_BUILD_JOBS: 2
+      RUST_TEST_THREADS: 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The same toolchain publishes the crate.
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
+        with:
+          components: rustfmt, clippy
+      - name: Package release crates
+        run: |
+          set -euo pipefail
+          dist="$RUNNER_TEMP/dist"
+          mkdir -p "$dist/qualification"
+          echo "DIST=$dist" >> "$GITHUB_ENV"
+          echo "EVIDENCE=$dist/qualification" >> "$GITHUB_ENV"
+          cargo fetch --locked
+          for crate in $(jq -r '.[]' <<<"$CRATES"); do
+            # Also builds the crate from its packaged source.
+            cargo package --locked -p "$crate"
+            cp "target/package/$crate-$VERSION.crate" "$dist/"
+          done
+      # Must run on the clean checkout, before anything else writes to it.
+      - name: Package audit against the previous release
+        run: python3 scripts/check-release-package.py "$DIST/cargo-libc-$VERSION.crate" "$EVIDENCE/package-audit"
+      - name: SBOM and SHA256SUMS
+        run: |
+          set -euo pipefail
+          cargo install cargo-cyclonedx --version 0.5.10 --locked --root "$RUNNER_TEMP/tools"
+          "$RUNNER_TEMP/tools/bin/cargo-cyclonedx" cyclonedx --format json --spec-version 1.5 \
+            --target x86_64-unknown-linux-gnu --override-filename "cargo-libc-$VERSION.cdx"
+          mv "cargo-libc-$VERSION.cdx.json" "$DIST/"
+          (cd "$DIST" && sha256sum ./*.crate ./*.cdx.json | sed 's| \./| |' > SHA256SUMS && cat SHA256SUMS)
+      # Release qualification that does not need the published crate (formerly
+      # candidate-integration registry mode); installs of the published crate
+      # run in `verify`.
+      - name: Portable checks
+        run: |
+          set -euo pipefail
+          {
+            cargo fmt --all -- --check
+            cargo check --all-targets --locked --offline
+            cargo test --all-targets --locked --offline
+            cargo test --doc --locked --offline
+            cargo clippy --all-targets --locked --offline -- -D warnings
+            RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --locked --offline
+          } 2>&1 | tee "$EVIDENCE/portable.log"
+      - name: Native tools and fixture dependencies
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = x86_64
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang-18 lld-18 gcc g++ binutils cmake podman
+          bash scripts/install-crun.sh "$RUNNER_TEMP/crun"
+          { /usr/bin/clang-18 --version; gcc --version; ld.bfd --version; cmake --version; getconf GNU_LIBC_VERSION; } > "$EVIDENCE/native-tools.txt"
+          cargo fetch --manifest-path examples/hello/Cargo.toml --locked
+          cargo fetch --manifest-path examples/too-new/Cargo.toml --locked
+          cargo fetch --manifest-path examples/c-deps/Cargo.toml --locked
+      - name: Provider stdout, streams and malformed scans
+        run: |
+          set -euo pipefail
+          python3 scripts/check-provider-stdout.py target/debug/cargo-libc 2>&1 | tee "$EVIDENCE/provider-stdout.log"
+          python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$EVIDENCE/run-streams.log"
+          python3 scripts/check-malformed-scan.py target/debug/cargo-libc 2>&1 | tee "$EVIDENCE/malformed-scan.log"
+          CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py target/debug /usr/bin/clang-18 2>&1 | tee "$EVIDENCE/container-streams.log"
+      - name: Providers, C dependencies, Cargo commands and sysroot
+        env:
+          CARGO_LIBC_SMOKE_CC: /usr/bin/clang-18
+        run: |
+          set -euo pipefail
+          bash scripts/smoke-providers.sh /usr/bin/clang-18 2.17 2.28 2>&1 | tee "$EVIDENCE/providers.log"
+          bash scripts/smoke-c-deps.sh /usr/bin/clang-18 2.17 2.28 2>&1 | tee "$EVIDENCE/c-deps.log"
+          bash scripts/smoke-commands.sh /usr/bin/clang-18 2.17 2.28 2>&1 | tee "$EVIDENCE/commands.log"
+          bash scripts/smoke-linux.sh 2>&1 | tee "$EVIDENCE/sysroot.log"
+      - name: Clean locked install of the packaged crate
+        run: |
+          set -euo pipefail
+          unpacked="$RUNNER_TEMP/unpacked"
+          mkdir -p "$unpacked"
+          tar -xzf "$DIST/cargo-libc-$VERSION.crate" -C "$unpacked"
+          package="$unpacked/cargo-libc-$VERSION"
+          {
+            export CARGO_HOME="$RUNNER_TEMP/package-cargo-home"
+            cargo fetch --manifest-path "$package/Cargo.toml" --locked
+            cargo install --path "$package" --locked --offline --root "$RUNNER_TEMP/package-install"
+            CHECK_PROVIDER_CACHE_GENERATIONS=1 PROVIDER_CACHE_EVIDENCE_DIR="$EVIDENCE/provider-cache" \
+              bash scripts/smoke-installed.sh "$RUNNER_TEMP/package-install" /usr/bin/clang-18 "$VERSION"
+            python3 scripts/check-cli-options.py "$RUNNER_TEMP/package-install/bin/cargo-libc" "$EVIDENCE/cli-options"
+            CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$RUNNER_TEMP/package-install/bin" /usr/bin/clang-18
+          } 2>&1 | tee "$EVIDENCE/package-install.log"
+      - name: Re-check SHA256SUMS
+        run: cd "$DIST" && sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: release-${{ needs.gate.outputs.version }}
+          path: ${{ runner.temp }}/dist
+          if-no-files-found: error
+
+  attest:
+    name: Checksums and attestations
+    # `gate` is listed only so the condition can read its output.
+    needs: [gate, build]
+    if: needs.gate.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.gate.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-${{ needs.gate.outputs.version }}
+          path: ${{ runner.temp }}/dist
+      - name: Re-check SHA256SUMS
+        run: cd "$RUNNER_TEMP/dist" && sha256sum -c SHA256SUMS
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        id: attest
+        with:
+          subject-path: |
+            ${{ runner.temp }}/dist/*.crate
+            ${{ runner.temp }}/dist/*.cdx.json
+      - name: Save the provenance bundle
+        env:
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: cp "$BUNDLE" "$RUNNER_TEMP/dist/cargo-libc-$VERSION.crates.intoto.jsonl"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-${{ needs.gate.outputs.version }}
+          path: ${{ runner.temp }}/dist
+          if-no-files-found: error
+          overwrite: true
+
+  publish:
+    name: Publish to crates.io
+    needs: [gate, build, attest]
+    if: needs.gate.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # The owner's approval click.
+    environment: crates-io
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.gate.outputs.version }}
+      CRATES: ${{ needs.gate.outputs.crates }}
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-${{ needs.gate.outputs.version }}
+          path: ${{ runner.temp }}/dist
+      - name: Re-check SHA256SUMS
+        run: cd "$RUNNER_TEMP/dist" && sha256sum -c SHA256SUMS
       - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         id: auth
-      - name: Publish cargo-libc
+      - name: Publish release crates in dependency order
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-        run: cargo publish --locked
-      - name: Verify official checksum, index and source identity
-        run: python3 scripts/verify-published-crate.py --archive target/package/cargo-libc-${RELEASE_TAG#v}.crate --commit "$GITHUB_SHA"
+        run: |
+          set -euo pipefail
+          for crate in $(jq -r '.[]' <<<"$CRATES"); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' -A 'rustcommons-release' \
+              "https://crates.io/api/v1/crates/$crate/$VERSION")
+            if [ "$status" = 200 ]; then
+              echo "$crate $VERSION is already on crates.io; skipping."
+              continue
+            fi
+            # Publish only bytes identical to the checksummed, attested file.
+            cargo package --locked -p "$crate"
+            cmp "target/package/$crate-$VERSION.crate" "$RUNNER_TEMP/dist/$crate-$VERSION.crate"
+            cargo publish --locked -p "$crate"
+          done
+
+  github-release:
+    name: GitHub release
+    needs: [gate, publish]
+    if: needs.gate.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.gate.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-${{ needs.gate.outputs.version }}
+          path: ${{ runner.temp }}/dist
+      - name: Create the release from the committed notes; add only missing files
+        run: |
+          set -euo pipefail
+          dist="$RUNNER_TEMP/dist"
+          (cd "$dist" && sha256sum -c SHA256SUMS)
+          notes="docs/releases/v$VERSION.md"
+          title=$(grep -m1 '^# ' "$notes" | sed 's/^# //')
+          test -n "$title"
+          files=("$dist"/*.crate "$dist"/*.cdx.json "$dist/SHA256SUMS" "$dist/cargo-libc-$VERSION.crates.intoto.jsonl")
+          for f in "${files[@]}"; do test -f "$f"; done
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            existing=$(gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+            for f in "${files[@]}"; do
+              if grep -Fxq "$(basename "$f")" <<<"$existing"; then
+                echo "Keeping existing asset $(basename "$f")"
+              else
+                gh release upload "v$VERSION" "$f" --repo "$GITHUB_REPOSITORY"
+              fi
+            done
+          else
+            gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --verify-tag \
+              --title "$title" --notes-file "$notes" "${files[@]}"
+          fi
+
+  verify:
+    name: Verify publication
+    needs: [gate, github-release]
+    if: needs.gate.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.gate.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@547f64eaa184fd62768e02b77019e5408713ca53 # 1.90.0
+      - name: Download the attached release files
+        run: |
+          set -euo pipefail
+          assets="$RUNNER_TEMP/assets"
+          mkdir -p "$assets"
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" --dir "$assets"
+          (cd "$assets" && sha256sum -c SHA256SUMS)
+          echo "ASSETS=$assets" >> "$GITHUB_ENV"
+      - name: Live release body equals the committed notes
+        run: python3 scripts/check-release-docs.py --repo "$GITHUB_REPOSITORY" --published-tag "v$VERSION"
+      - name: crates.io checksum equals the attested crate
+        run: python3 scripts/verify-published-crate.py --archive "$ASSETS/cargo-libc-$VERSION.crate" --commit "$GITHUB_SHA"
+      - name: Verify attestations of the attached files
+        run: |
+          set -euo pipefail
+          for f in "$ASSETS"/*.crate "$ASSETS"/*.cdx.json; do
+            gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/trusted-publishing.yml" \
+              --bundle "$ASSETS/cargo-libc-$VERSION.crates.intoto.jsonl"
+          done
+      - name: docs.rs build (pending is reported as pending)
+        run: |
+          set -euo pipefail
+          url="https://docs.rs/crate/cargo-libc/$VERSION/status.json"
+          for attempt in $(seq 1 40); do
+            body=$(curl -s -A 'rustcommons-release' -w '\n%{http_code}' "$url")
+            code=$(tail -n1 <<<"$body")
+            if [ "$code" = 200 ]; then
+              status=$(head -n -1 <<<"$body" | jq -r '.doc_status')
+              if [ "$status" = true ]; then echo "docs.rs built cargo-libc $VERSION."; exit 0; fi
+              if [ "$status" = false ]; then echo "::error::docs.rs build failed for cargo-libc $VERSION"; exit 1; fi
+            fi
+            sleep 30
+          done
+          echo "::warning::docs.rs build for cargo-libc $VERSION is still pending after 20 minutes; not a pass."
+          echo "docs.rs: PENDING" >> "$GITHUB_STEP_SUMMARY"
+      - name: Clean locked install and installed-helper checks
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = x86_64
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang-18 gcc g++ binutils cmake podman
+          bash scripts/install-crun.sh "$RUNNER_TEMP/crun"
+          export CARGO_HOME="$RUNNER_TEMP/published-cargo-home"
+          root="$RUNNER_TEMP/published-install"
+          cargo install cargo-libc --version "$VERSION" --locked --root "$root"
+          test "$("$root/bin/cargo-libc" --version)" = "cargo-libc $VERSION"
+          CHECK_PROVIDER_CACHE_GENERATIONS=1 bash scripts/smoke-installed.sh "$root" /usr/bin/clang-18 "$VERSION"
+          python3 scripts/check-cli-options.py "$root/bin/cargo-libc" "$RUNNER_TEMP/cli-options"
+          CHECK_STREAM_CONTAINERS="$RUNNER_TEMP/crun" python3 scripts/check-run-streams.py "$root/bin" /usr/bin/clang-18

@@ -1,5 +1,34 @@
 # Roadmap
 
+## Standard release pipeline (pilot)
+
+cargo-libc adopted the Rust Commons
+[standard release pipeline](https://github.com/rustcommons/.github/blob/main/docs/TRUSTED-PUBLISHING.md)
+on 2026-11-21 as the pilot ([publishing setup](RELEASING.md#trusted-publishing)).
+The PR dry run exercised `gate` and `build` with `publish=false`, and the gate
+logic was checked against the existing `v0.7.1` tag. Deferred, not lost:
+
+- **First tag run.** `attest`, `publish`, `github-release` and `verify` run only
+  on a tag; their first real use is the next authorized release. Watch
+  attestation signing and bundle naming, `gh attestation verify --bundle` under
+  the job's read-only token, the docs.rs bounded wait and asset upload on
+  re-runs, and record the outcome before other repositories copy the pipeline.
+- **Spec clarification.** GitHub only exposes outputs of direct `needs`, so
+  `attest`, `github-release` and `verify` also list `gate` to read
+  `needs.gate.outputs.publish`. The dependency order is unchanged; the
+  standard's `needs` table should say so for the other adoptions.
+- **Package audit per release.** `check-release-package.py` encodes the exact
+  delta from the previous official archive and must be updated in every release
+  PR (the dry run then proves it). Deriving the baseline from the registry
+  automatically is possible later.
+- **Candidate-integration overlap.** `build` now runs the former `registry`
+  mode and `verify` the `installed` mode. The manual workflow keeps its
+  `source`, `package`, `portable`, `streams` and `consumer-clock` modes;
+  retiring or sharing the duplicated `registry`/`installed` steps is a later
+  cleanup.
+- **Already-published versions.** 0.7.1 and earlier keep their existing
+  hand-created releases without attachments; none is re-tagged or re-released.
+
 ## Tool dependency set 0.6.1
 
 The [published 0.7.1 release](RELEASE-0.7.1.md) moves `kernel-abi-tools`,
