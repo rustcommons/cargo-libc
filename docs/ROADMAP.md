@@ -1,5 +1,11 @@
 # Roadmap
 
+## Tool dependency set 0.6.1
+
+The [0.7.1 candidate](RELEASE-0.7.1.md) moves `kernel-abi-tools`,
+`linux-abi-scan` and `linux-targets` to 0.6.1 together, with unchanged scan
+data and behavior. Publication and post-publication verification are pending.
+
 ## Provider-cache dependency adoption
 
 The [published 0.7.0 release](RELEASE-0.7.0.md) delivers the
