@@ -13,6 +13,9 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ### Repository
 
+- Fix the release gate's CI lookup: it now reads every CI run for the tagged
+  commit and checks their conclusions, because GitHub's `status=success` filter
+  can miss a successful run and would have refused a valid release.
 - Adopt the Rust Commons standard release pipeline (pilot): `Trusted publishing`
   now gates on an annotated tag, green CI on `main` and a dated changelog entry
   with release notes; builds, audits and qualifies the package; signs SLSA
