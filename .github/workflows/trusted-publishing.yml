@@ -228,7 +228,9 @@ jobs:
           path: ${{ runner.temp }}/dist
       - name: Re-check SHA256SUMS
         run: cd "$RUNNER_TEMP/dist" && sha256sum -c SHA256SUMS
-      # No registry token exists yet: packaging runs dependency build scripts.
+      # Nothing compiles anywhere in this job: it holds id-token and the
+      # crates-io environment. `build` already built the packaged source;
+      # `--no-verify` only writes the archive, and `cmp` checks its bytes.
       - name: Package and compare with the attested crates (no token)
         id: pending
         run: |
@@ -242,7 +244,7 @@ jobs:
               continue
             fi
             # Publish only bytes identical to the checksummed, attested file.
-            cargo package --locked -p "$crate"
+            cargo package --locked --no-verify -p "$crate"
             cmp "target/package/$crate-$VERSION.crate" "$RUNNER_TEMP/dist/$crate-$VERSION.crate"
             pending+=("$crate")
           done
@@ -250,8 +252,7 @@ jobs:
       - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         if: steps.pending.outputs.crates != ''
         id: auth
-      # The token exists only in this step, which builds nothing: the crates
-      # were already packaged and verified above.
+      # The registry token exists only in this upload-only step.
       - name: Publish release crates in dependency order
         if: steps.pending.outputs.crates != ''
         env:
