@@ -11,6 +11,8 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ## [Unreleased]
 
+- Update `kernel-abi-tools`, `linux-abi-scan` and `linux-targets` from 0.3 to
+  0.6.1 together; they share one data model, so they move as a set.
 - Add maintainer security gates (zizmor, RustSec/license/source checks), pinned
   Actions, monthly dependency version updates and owner-gated Trusted Publishing alongside
   the existing manual process. Scorecard publication starts after main adoption.

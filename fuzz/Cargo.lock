@@ -85,9 +85,9 @@ dependencies = [
 
 [[package]]
 name = "kernel-abi-tools"
-version = "0.3.3"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0feddf7e5e33b15df1b279e3ba99c6a0743aae7edb91dd654e3a69ac01234dd3"
+checksum = "c9b45684cc8e511bce6cc2faeeedbb2bc61ea83999af084996eeaaf46731410e"
 dependencies = [
  "linux-targets",
 ]
@@ -120,9 +120,9 @@ dependencies = [
 
 [[package]]
 name = "linux-abi-scan"
-version = "0.3.3"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eedffc57c88f27dee9bd28c3f177f39a457a694ddbe2678d9ba9e6078702028e"
+checksum = "24731c0b81bd30c6c78e58d51e5f7454dd5131fb42c6243df01a36f93b01e468"
 dependencies = [
  "kernel-abi-tools",
  "linux-targets",
@@ -130,9 +130,9 @@ dependencies = [
 
 [[package]]
 name = "linux-targets"
-version = "0.3.3"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9138ccb80a4467c37c805b9ed7bfab8a574bd749a52fe42c4e00921e24affcb1"
+checksum = "56e731b038e838d441d01f141330c5569ca44c34e04c0780a90d6a54e1270792"
 
 [[package]]
 name = "r-efi"
