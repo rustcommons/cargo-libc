@@ -102,6 +102,12 @@ and an explicit coverage gap, not unavailable old-system infrastructure.
   Keep `dtolnay/rust-toolchain` excluded from Dependabot: its version-specific
   commits select different Rust toolchains. Review pins/security fixes manually
   while preserving both MSRV and current-toolchain coverage.
+- Use explicit runner images (`ubuntu-24.04`, `windows-2025`), never moving
+  `*-latest` labels. Moving to Ubuntu 26.04 (or a newer Windows image) is a
+  deliberate, reviewed change with its own CI evidence. Pin
+  `dtolnay/rust-toolchain` to the commit of the branch named for the exact
+  toolchain (e.g. `1.90.0`) without a `toolchain:` input; with a SHA pin that
+  input is ignored.
 - Schedule routine Dependabot version updates monthly, grouped with a seven-day
   cooldown and at most two open PRs per ecosystem. Security updates stay immediate.
 - Dependabot-authored PRs run core fmt/Clippy/tests, cargo-deny, zizmor, lf-only
