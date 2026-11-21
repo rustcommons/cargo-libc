@@ -252,8 +252,12 @@ qualification, generates a CycloneDX SBOM (`cargo-cyclonedx` 0.5.10,
 `--locked`), writes `SHA256SUMS` and uploads the `release-<version>` artifact.
 `attest` re-checks the sums and signs SLSA build provenance for the `.crate`
 and SBOM, saved as `cargo-libc-<version>.crates.intoto.jsonl`. `publish`
-re-checks the sums, publishes only bytes identical to the attested `.crate`,
-and skips a version crates.io already has, so a re-run is safe.
+re-checks the sums, then, before any registry token exists, packages each
+release crate and compares it with the attested `.crate`. Only afterwards does
+it obtain the token, which a single step uses for `cargo publish --locked
+--no-verify` in dependency order; no build runs while the token is present. It
+skips a version crates.io already has, so a re-run is safe. Pull requests from
+forks skip the dry run.
 `github-release` creates `vX.Y.Z` with `--verify-tag` from the committed notes
 (title: their first heading) and attaches the `.crate`, SBOM, `SHA256SUMS` and
 provenance bundle; a re-run uploads only missing files and never replaces an

@@ -13,6 +13,10 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ### Repository
 
+- Narrow the release pipeline's crates.io token: the publish job packages and
+  compares the crates with the attested files before minting the token, and
+  uses it in one `cargo publish --no-verify` step that builds nothing. Pull
+  requests from forks skip the release dry run. No crate or behavior change.
 - Fix the release gate's CI lookup: it now reads every CI run for the tagged
   commit and checks their conclusions, because GitHub's `status=success` filter
   can miss a successful run and would have refused a valid release.
