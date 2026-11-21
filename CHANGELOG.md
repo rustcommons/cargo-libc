@@ -11,17 +11,33 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ## [Unreleased]
 
+No additional changes assigned.
+
+## [0.7.1] - 2026-11-21
+
+**Release candidate; not published.** [Notes](docs/releases/v0.7.1.md) and
+[qualification record](docs/RELEASE-0.7.1.md). Date is the UTC preparation date.
+
+### Changed
+
 - Update `kernel-abi-tools`, `linux-abi-scan` and `linux-targets` from 0.3 to
-  0.6.1 together; they share one data model, so they move as a set.
-- Add maintainer security gates (zizmor, RustSec/license/source checks), pinned
-  Actions, monthly dependency version updates and owner-gated Trusted Publishing alongside
-  the existing manual process. Scorecard publication starts after main adoption.
-  No runtime, dependency, version or platform-support change.
+  0.6.1 together; they share one data model, so they move as a set. Their
+  published `linux-abi-scan`/`linux-targets` sources and the kernel ABI data are
+  byte-identical to 0.3.3; `kernel-abi-tools` only replaces a panic on a
+  malformed embedded table row with an error, returning the same results for
+  the bundled data. `inspect`, `build`, `test` and `run` scan results are
+  unchanged. `libc-abi-tools` stays 0.6.0, so provider caches are unaffected.
+
+### Repository
+
 - Fuzz cargo-libc's own parsers (versions/targets, command line, provider
   descriptors, SDK headers, Cargo JSON, ELF symbol versions, linker syntax) with
-  cargo-fuzz and ClusterFuzzLite; see [FUZZING.md](docs/FUZZING.md). Pin every CI
-  install by hash or digest. Crates now publish only through Trusted Publishing.
-  No runtime, shipped dependency or platform-support change.
+  cargo-fuzz and ClusterFuzzLite; see [FUZZING.md](docs/FUZZING.md). The fuzz
+  entry points compile only under `--cfg fuzzing`, never in installed binaries.
+- Add maintainer security gates (zizmor, RustSec/license/source checks),
+  hash/digest-pinned CI installs, explicit runner images, monthly dependency
+  version updates and Scorecard reporting. Crates now publish only through
+  owner-approved Trusted Publishing.
 
 ## [0.7.0] - 2026-11-08
 
