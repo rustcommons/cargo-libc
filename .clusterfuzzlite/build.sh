@@ -6,6 +6,8 @@ cd "$SRC/cargo-libc"
 # Resolve exactly fuzz/Cargo.lock; fail instead of updating it.
 cargo fetch --locked --manifest-path fuzz/Cargo.toml
 cargo fuzz build -O --debug-assertions
+# ELF seeds are generated (and SHA-256 checked) rather than committed.
+python3 -I fuzz/gen-elf-seeds.py fuzz/seeds/elf
 release=fuzz/target/x86_64-unknown-linux-gnu/release
 for target in $(cargo fuzz list); do
   cp "$release/$target" "$OUT/"
