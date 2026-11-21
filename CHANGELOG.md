@@ -15,8 +15,8 @@ No additional changes assigned.
 
 ## [0.7.1] - 2026-11-21
 
-**Release candidate; not published.** [Notes](docs/releases/v0.7.1.md) and
-[qualification record](docs/RELEASE-0.7.1.md). Date is the UTC preparation date.
+**Published 2026-11-21.** [Notes](docs/releases/v0.7.1.md) and
+[qualification record](docs/RELEASE-0.7.1.md).
 
 ### Changed
 
