@@ -275,7 +275,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-latest]
+        os: [ubuntu-24.04, windows-2025]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     env:
@@ -417,8 +417,6 @@ jobs:
           path: consumer
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@263313d2989f864a2b8613f97277288638e7d8f8 # 1.99.1
-        with:
-          toolchain: 1.99.1
       - name: Prepare exact tools and record public source identities
         shell: bash
         run: |
