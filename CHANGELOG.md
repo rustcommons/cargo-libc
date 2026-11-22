@@ -13,6 +13,8 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ### Repository
 
+- Use the unified `actions/attest` action for release provenance, preserving
+  the subject files, bundle collection and workflow signer verification.
 - Nothing compiles in the release pipeline's publish job: it re-archives each
   crate with `cargo package --no-verify`, compares it with the attested file,
   and only then obtains the crates.io token for one upload-only
