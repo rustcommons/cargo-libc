@@ -27,14 +27,15 @@ verify_with_key() (
     test "$primary" = "$fingerprint"
     status=$(gpg --homedir "$home" --batch --no-auto-key-retrieve --no-auto-key-import --status-fd 1 \
         --verify "$dist/SHA256SUMS.asc" "$dist/SHA256SUMS" || true)
-    # Match rustcommons/.github tools/release-signing/ci-verify.sh (PR #26).
+    # Match rustcommons/.github tools/release-signing/ci-verify.sh (PR #27).
     # VALIDSIG alone also occurs for revoked or expired signing keys.
     bad=$(awk '$1=="[GNUPG:]" && $2 ~ /^(REVKEYSIG|KEYREVOKED|EXPSIG|BADSIG|ERRSIG|NO_PUBKEY)$/ {print $2}' <<<"$status")
     if [[ -n $bad ]]; then
         echo "Signature refused: $bad" >&2
         exit 1
     fi
-    if awk '$1=="[GNUPG:]" && ($2=="EXPKEYSIG" || $2=="KEYEXPIRED") {expired=1} END {exit !expired}' <<<"$status"; then
+    # KEYEXPIRED may describe a sibling subkey rather than this signature.
+    if awk '$1=="[GNUPG:]" && $2=="EXPKEYSIG" {expired=1} END {exit !expired}' <<<"$status"; then
         sigkey=$(awk '$1=="[GNUPG:]" && $2=="VALIDSIG" {print $3; exit}' <<<"$status")
         sigtime=$(awk '$1=="[GNUPG:]" && $2=="VALIDSIG" {print $5; exit}' <<<"$status")
         keyexp=$(gpg --homedir "$home" --batch --with-colons --list-keys |
