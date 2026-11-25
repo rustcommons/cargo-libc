@@ -268,6 +268,7 @@ jobs:
           name: release-signature-${{ needs.gate.outputs.version }}
           path: ${{ runner.temp }}/dist/SHA256SUMS.asc
           if-no-files-found: error
+          overwrite: true
       - uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
         if: steps.pending.outputs.crates != ''
         id: auth
