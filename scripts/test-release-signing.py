@@ -112,21 +112,33 @@ class SigningTests(unittest.TestCase):
                 # Shorten the subkey lifetime after producing the two signatures.
                 gpg(epoch + 120, '--pinentry-mode', 'loopback', '--passphrase-fd', '0',
                     '--quick-set-expire', primary, '1d', subkey, input=b'\n')
+                # A newer signing subkey has no expiry; its expired sibling
+                # still causes GnuPG to emit KEYEXPIRED when checking it.
+                gpg(epoch + 200, '--pinentry-mode', 'loopback', '--passphrase-fd', '0',
+                    '--quick-add-key', primary, 'rsa2048', 'sign', '0', input=b'\n')
+                listing = gpg(epoch + 200, '--with-colons', '--list-keys').stdout.decode()
+                newer = listing.split('fpr:::::::::')[3].split(':')[0]
+                new_signature = gpg(epoch + 3 * 86400, '--local-user', newer + '!', '--armor',
+                    '--detach-sign', '--output', '-', str(root / 'SHA256SUMS')).stdout
                 public = root / 'test.asc'
                 def export():
                     public.write_bytes(gpg(epoch + 360, '--armor', '--export', primary).stdout)
                 export()
-                def verify(signature, expected, status_word):
+                def verify(signature, expected, status_word, sibling_expired=False):
                     (root / 'SHA256SUMS.asc').write_bytes(signature)
                     status = subprocess.run(['gpg', '--homedir', str(home), '--batch',
                         '--status-fd', '1', '--verify', str(root / 'SHA256SUMS.asc'),
                         str(root / 'SHA256SUMS')], capture_output=True).stdout.decode()
                     self.assertIn('[GNUPG:] ' + status_word, status)
                     self.assertIn('[GNUPG:] VALIDSIG ', status)
+                    if sibling_expired:
+                        self.assertIn('[GNUPG:] KEYEXPIRED ', status)
+                        self.assertNotIn('[GNUPG:] EXPKEYSIG ', status)
                     result = subprocess.run(['bash', '-c',
                         'source "$1"; verify_with_key "$2" "$3" "$4"', 'test',
                         str(SCRIPT), str(public), primary, str(root)], capture_output=True)
                     self.assertEqual(result.returncode == 0, expected, result.stderr.decode())
+                verify(new_signature, True, 'GOODSIG', sibling_expired=True)
                 verify(before, True, 'EXPKEYSIG')
                 verify(after, False, 'EXPKEYSIG')
                 verify(before + before, False, 'EXPKEYSIG')

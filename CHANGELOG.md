@@ -13,6 +13,9 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ### Repository
 
+- Accept release signatures from a non-expiring signing subkey when an older
+  sibling subkey has expired. Apply signing-time expiry checks only to
+  `EXPKEYSIG`; retain verification of older signatures made before expiry.
 - Sign release checksums with the pinned Rust Commons OpenPGP key before
   publishing, attach `SHA256SUMS.asc`, and verify the signature and asset
   checksums after publication. Create GitHub Releases as drafts, check each
