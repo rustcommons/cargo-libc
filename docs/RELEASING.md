@@ -255,15 +255,70 @@ and SBOM, saved as `cargo-libc-<version>.crates.intoto.jsonl`. `publish`
 re-checks the sums. Nothing compiles in the publish job, because it holds
 OIDC and the `crates-io` environment: `build` already built the packaged
 source. Each release crate is archived again with `cargo package --locked
---no-verify` and compared byte-for-byte with the attested `.crate`; then the
-token is obtained, and a single step uses it only for `cargo publish --locked
+--no-verify` and compared byte-for-byte with the attested `.crate`. Before the
+token is obtained, `SHA256SUMS` is signed and verified as described below. The
+token is then obtained, and a single step uses it only for `cargo publish --locked
 --no-verify` in dependency order. It
 skips a version crates.io already has, so a re-run is safe. Pull requests from
 forks skip the dry run.
 `github-release` creates `vX.Y.Z` with `--verify-tag` from the committed notes
-(title: their first heading) and attaches the `.crate`, SBOM, `SHA256SUMS` and
-provenance bundle; a re-run uploads only missing files and never replaces an
-existing asset. A tag run is never cancelled.
+(title: their first heading) and attaches the `.crate`, SBOM, `SHA256SUMS`,
+`SHA256SUMS.asc` and provenance bundle. It creates a draft, checks its tag,
+title, body and state, uploads missing assets, and checks every asset by name,
+size and SHA-256 digest before publishing and again afterwards. A re-run
+resumes a draft without replacing assets; a published release must already
+match and is never modified. A regenerated OpenPGP signature may have a
+different signing time; an existing signature asset is retained only after
+downloading it, checking its size/digest and verifying it against the pinned
+key and the exact checksum file. A tag run is never cancelled.
+
+### OpenPGP release signatures
+
+The owner authorized `SHA256SUMS.asc` on 2026-11-25 for future releases
+(after 0.7.1); earlier releases keep their existing assets and verification.
+The committed [public key](../.github/release-signing-key.asc) has primary
+fingerprint `B281C3010A76A11737B4D066C7396F6EA7647CC6` and signing subkey
+`248DFD639B75D1EFF2A87289D7C7DE7BBCCF35EC`.
+
+Configure `RELEASE_SIGNING_KEY` (the armored signing secret subkey) and
+`RELEASE_SIGNING_PASSPHRASE` only as `crates-io` environment secrets. The
+primary secret key stays offline. The publish step passes the passphrase only
+on stdin using loopback pinentry. It imports the subkey in a temporary mode-700
+GnuPG home, signs with the exact subkey, and immediately verifies in a second
+home containing only the committed public key. Both the imported primary key
+and the signature's `VALIDSIG` primary fingerprint must match the constant in
+[`release-signing.sh`](../scripts/release-signing.sh). It kills the agents and
+removes both homes on success or failure. Signing and artifact upload run even
+if every crate version is already published; either must succeed before token
+minting or publishing.
+
+The GitHub release and publication verification jobs use the same pinned
+verification command, followed by `sha256sum --check --strict` over every
+listed file. To verify downloaded assets from a trusted repository checkout:
+
+```sh
+bash scripts/release-signing.sh verify /path/to/downloaded-assets
+```
+
+For manual verification, download the public key and all listed assets, inspect
+its primary fingerprint against the pin above, then run:
+
+```sh
+gpg --show-keys --with-fingerprint release-signing-key.asc
+gpg --import release-signing-key.asc
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum --check SHA256SUMS
+```
+
+Require both verification commands to succeed. The PR build runs
+[`test-release-signing.py`](../scripts/test-release-signing.py) with an ephemeral,
+passphrase-protected signing subkey, and
+[`test-create-github-release.py`](../scripts/test-create-github-release.py) with
+mocked GitHub responses. They cover success, tampering, wrong keys/passphrases,
+cleanup, draft resume and refusal to replace mismatched published assets.
+The production CLI has no key or fingerprint override; the throwaway key is
+also tested against that CLI and must be rejected. Real signing remains
+untested until the next owner-approved tag run.
 
 crates.io binds publication to this file name and the `crates-io` environment;
 never rename either. The registered Trusted Publisher is:
