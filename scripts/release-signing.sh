@@ -4,7 +4,8 @@ set -euo pipefail
 set +x
 readonly RELEASE_PRIMARY_FINGERPRINT=B281C3010A76A11737B4D066C7396F6EA7647CC6
 readonly RELEASE_SIGNING_SUBKEY=248DFD639B75D1EFF2A87289D7C7DE7BBCCF35EC
-readonly RELEASE_PUBLIC_KEY="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/.github/release-signing-key.asc"
+RELEASE_PUBLIC_KEY="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/.github/release-signing-key.asc"
+readonly RELEASE_PUBLIC_KEY
 
 cleanup_home() {
     local result=$?
