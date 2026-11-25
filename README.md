@@ -45,8 +45,10 @@ gpg --verify SHA256SUMS.asc SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
 
-Both verification commands must succeed. Earlier releases are unchanged; see
-[release verification](https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md#openpgp-release-signatures).
+Both verification commands must succeed. GnuPG can also return success for a
+revoked or expired signing key; use the pinned verification script described in
+[release verification](https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md#openpgp-release-signatures)
+for the full key-status and signing-time checks. Earlier releases are unchanged.
 
 ## What it does
 

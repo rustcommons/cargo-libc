@@ -315,7 +315,9 @@ gpg --verify SHA256SUMS.asc SHA256SUMS
 sha256sum --check SHA256SUMS
 ```
 
-Require both verification commands to succeed. The PR build runs
+Both commands must succeed, but a zero GnuPG exit status alone does not reject
+revoked or expired signing keys. Use the pinned script above for the full
+status/count/signing-time rules. The PR build runs
 [`test-release-signing.py`](../scripts/test-release-signing.py) with an ephemeral,
 passphrase-protected signing subkey, and
 [`test-create-github-release.py`](../scripts/test-create-github-release.py) with
