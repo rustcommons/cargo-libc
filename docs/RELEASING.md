@@ -281,14 +281,19 @@ fingerprint `B281C3010A76A11737B4D066C7396F6EA7647CC6` and signing subkey
 `248DFD639B75D1EFF2A87289D7C7DE7BBCCF35EC`.
 
 Configure `RELEASE_SIGNING_KEY` (the armored signing secret subkey) and
-`RELEASE_SIGNING_PASSPHRASE` only as `crates-io` environment secrets. The
-primary secret key stays offline. The publish step passes the passphrase only
+`RELEASE_SIGNING_PASSPHRASE` only as `crates-io` environment secrets. The publish job installs Rust using the
+runner's own `rustup`, so no third-party action runs before signing secrets are
+used; nothing compiles in this job. The primary secret key stays offline. The publish step passes the passphrase only
 on stdin using loopback pinentry. It imports the subkey in a temporary mode-700
 GnuPG home, signs with the exact subkey, and immediately verifies in a second
 home containing only the committed public key. Both the imported primary key
-and the signature's `VALIDSIG` primary fingerprint must match the constant in
+and exactly one signature's `VALIDSIG` primary fingerprint must match the constant in
 [`release-signing.sh`](../scripts/release-signing.sh). It kills the agents and
-removes both homes on success or failure. Signing and artifact upload run even
+removes both homes on success or failure. Verification rejects revoked, bad,
+unknown-key and expired-signature statuses. A signature from a now-expired
+subkey remains valid only if its recorded signing timestamp precedes that
+subkey's expiry. Exactly one `GOODSIG` (or eligible `EXPKEYSIG`) and one
+`VALIDSIG` are required. Signing and artifact upload run even
 if every crate version is already published; either must succeed before token
 minting or publishing.
 
@@ -315,7 +320,7 @@ Require both verification commands to succeed. The PR build runs
 passphrase-protected signing subkey, and
 [`test-create-github-release.py`](../scripts/test-create-github-release.py) with
 mocked GitHub responses. They cover success, tampering, wrong keys/passphrases,
-cleanup, draft resume and refusal to replace mismatched published assets.
+revoked and expired signing subkeys, duplicate signatures, cleanup, draft resume and refusal to replace mismatched published assets.
 The production CLI has no key or fingerprint override; the throwaway key is
 also tested against that CLI and must be rejected. Real signing remains
 untested until the next owner-approved tag run.

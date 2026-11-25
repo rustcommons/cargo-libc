@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -79,6 +80,64 @@ class SigningTests(unittest.TestCase):
                 helper('sign_with_key', signing=True, ok=False,
                        extra_env=dict(env, RELEASE_SIGNING_PASSPHRASE='wrong'))
                 self.assertEqual(list(homes.iterdir()), [])
+            finally:
+                subprocess.run(['gpgconf', '--homedir', str(home), '--kill', 'gpg-agent'], check=True)
+
+    def test_revoked_and_expired_subkeys(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            home = root / 'keygen'
+            home.mkdir(mode=0o700)
+            epoch = int(time.time()) - 10 * 86400
+            def gpg(at, *args, **kwargs):
+                return run(['gpg', '--homedir', str(home), '--batch',
+                            '--faked-system-time', str(at), *args], **kwargs)
+            try:
+                gpg(epoch, '--pinentry-mode', 'loopback', '--passphrase-fd', '0',
+                    '--quick-generate-key', 'Expiry test <expiry@example.invalid>',
+                    'rsa2048', 'cert', '0', input=b'\n')
+                listing = gpg(epoch, '--with-colons', '--list-keys').stdout.decode()
+                primary = listing.split('fpr:::::::::')[1].split(':')[0]
+                gpg(epoch, '--pinentry-mode', 'loopback', '--passphrase-fd', '0',
+                    '--quick-add-key', primary, 'rsa2048', 'sign', '0', input=b'\n')
+                listing = gpg(epoch, '--with-colons', '--list-keys').stdout.decode()
+                subkey = listing.split('fpr:::::::::')[2].split(':')[0]
+                (root / 'asset').write_text('release bytes\n')
+                (root / 'SHA256SUMS').write_bytes(run(['sha256sum', 'asset'], cwd=root).stdout)
+                def sign(at):
+                    return gpg(at, '--local-user', subkey + '!', '--armor',
+                               '--detach-sign', '--output', '-', str(root / 'SHA256SUMS')).stdout
+                before = sign(epoch + 60)
+                after = sign(epoch + 2 * 86400)
+                # Shorten the subkey lifetime after producing the two signatures.
+                gpg(epoch + 120, '--pinentry-mode', 'loopback', '--passphrase-fd', '0',
+                    '--quick-set-expire', primary, '1d', subkey, input=b'\n')
+                public = root / 'test.asc'
+                def export():
+                    public.write_bytes(gpg(epoch + 360, '--armor', '--export', primary).stdout)
+                export()
+                def verify(signature, expected, status_word):
+                    (root / 'SHA256SUMS.asc').write_bytes(signature)
+                    status = subprocess.run(['gpg', '--homedir', str(home), '--batch',
+                        '--status-fd', '1', '--verify', str(root / 'SHA256SUMS.asc'),
+                        str(root / 'SHA256SUMS')], capture_output=True).stdout.decode()
+                    self.assertIn('[GNUPG:] ' + status_word, status)
+                    self.assertIn('[GNUPG:] VALIDSIG ', status)
+                    result = subprocess.run(['bash', '-c',
+                        'source "$1"; verify_with_key "$2" "$3" "$4"', 'test',
+                        str(SCRIPT), str(public), primary, str(root)], capture_output=True)
+                    self.assertEqual(result.returncode == 0, expected, result.stderr.decode())
+                verify(before, True, 'EXPKEYSIG')
+                verify(after, False, 'EXPKEYSIG')
+                verify(before + before, False, 'EXPKEYSIG')
+                # Remove expiry to exercise revocation independently.
+                gpg(epoch + 240, '--pinentry-mode', 'loopback', '--passphrase-fd', '0',
+                    '--quick-set-expire', primary, '0', subkey, input=b'\n')
+                # Revoke only the signing subkey, using the throwaway certify key.
+                gpg(epoch + 300, '--yes', '--command-fd', '0', '--edit-key', primary,
+                    input=b'key 1\nrevkey\ny\n0\nTest revocation\n\ny\nsave\n')
+                export()
+                verify(before, False, 'REVKEYSIG')
             finally:
                 subprocess.run(['gpgconf', '--homedir', str(home), '--kill', 'gpg-agent'], check=True)
 

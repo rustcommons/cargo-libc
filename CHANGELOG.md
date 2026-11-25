@@ -16,7 +16,9 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 - Sign release checksums with the pinned Rust Commons OpenPGP key before
   publishing, attach `SHA256SUMS.asc`, and verify the signature and asset
   checksums after publication. Create GitHub Releases as drafts, check each
-  asset's name, size and digest, and never replace an existing asset.
+  asset's name, size and digest, and never replace an existing asset. Refuse
+  revoked signing keys while retaining signatures made before a subkey expired;
+  use the runner's rustup in the publish job before accessing signing secrets.
 - Use the unified `actions/attest` action for release provenance, preserving
   the subject files, bundle collection and workflow signer verification.
 - Nothing compiles in the release pipeline's publish job: it re-archives each

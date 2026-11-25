@@ -17,7 +17,7 @@ cleanup_home() {
 # Internal helpers also exercise the same operations with throwaway test keys.
 verify_with_key() (
     set -euo pipefail
-    local public_key=$1 fingerprint=$2 dist=$3 home status primary
+    local public_key=$1 fingerprint=$2 dist=$3 home status primary bad sigkey sigtime keyexp good valids valid
     home=$(mktemp -d)
     trap 'cleanup_home "$home"' EXIT
     chmod 700 "$home"
@@ -26,9 +26,30 @@ verify_with_key() (
         awk -F: '$1 == "pub" { primary=1; next } primary && $1 == "fpr" { print $10; primary=0 }')
     test "$primary" = "$fingerprint"
     status=$(gpg --homedir "$home" --batch --no-auto-key-retrieve --no-auto-key-import --status-fd 1 \
-        --verify "$dist/SHA256SUMS.asc" "$dist/SHA256SUMS")
-    # VALIDSIG's final field is the primary fingerprint, including subkey signatures.
-    awk -v pin="$fingerprint" '$1 == "[GNUPG:]" && $2 == "VALIDSIG" && $NF == pin { valid=1 } END { exit !valid }' <<<"$status"
+        --verify "$dist/SHA256SUMS.asc" "$dist/SHA256SUMS" || true)
+    # Match rustcommons/.github tools/release-signing/ci-verify.sh (PR #26).
+    # VALIDSIG alone also occurs for revoked or expired signing keys.
+    bad=$(awk '$1=="[GNUPG:]" && $2 ~ /^(REVKEYSIG|KEYREVOKED|EXPSIG|BADSIG|ERRSIG|NO_PUBKEY)$/ {print $2}' <<<"$status")
+    if [[ -n $bad ]]; then
+        echo "Signature refused: $bad" >&2
+        exit 1
+    fi
+    if awk '$1=="[GNUPG:]" && ($2=="EXPKEYSIG" || $2=="KEYEXPIRED") {expired=1} END {exit !expired}' <<<"$status"; then
+        sigkey=$(awk '$1=="[GNUPG:]" && $2=="VALIDSIG" {print $3; exit}' <<<"$status")
+        sigtime=$(awk '$1=="[GNUPG:]" && $2=="VALIDSIG" {print $5; exit}' <<<"$status")
+        keyexp=$(gpg --homedir "$home" --batch --with-colons --list-keys |
+            awk -F: -v k="$sigkey" '($1=="pub" || $1=="sub") {e=$7} $1=="fpr" && $10==k {print e; exit}')
+        if [[ ! $sigtime =~ ^[0-9]+$ || ! $keyexp =~ ^[0-9]+$ ]] || (( sigtime >= keyexp )); then
+            echo 'Signature refused: signing time is not before signing-key expiry' >&2
+            exit 1
+        fi
+    fi
+    good=$(awk '$1=="[GNUPG:]" && ($2=="GOODSIG" || $2=="EXPKEYSIG") {n++} END {print n+0}' <<<"$status")
+    valids=$(awk '$1=="[GNUPG:]" && $2=="VALIDSIG" {n++} END {print n+0}' <<<"$status")
+    [[ $good == 1 && $valids == 1 ]]
+    # VALIDSIG's final field identifies the primary key, including subkey signatures.
+    valid=$(awk '$1=="[GNUPG:]" && $2=="VALIDSIG" {print $NF}' <<<"$status")
+    [[ $valid == "$fingerprint" ]]
     (cd -- "$dist" && sha256sum --check --strict SHA256SUMS)
 )
 
