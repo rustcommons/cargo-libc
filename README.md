@@ -31,6 +31,25 @@ cargo install cargo-libc --locked
 **Continue with the [user guide](https://github.com/rustcommons/cargo-libc/blob/main/docs/USER-GUIDE.md)** for the quick start, target
 selection, every command, C dependencies, Python extensions, CI and troubleshooting.
 
+### Verify release downloads
+
+Releases after 0.7.1 include `SHA256SUMS.asc`. Download it, `SHA256SUMS`, the
+listed assets and the [public key](https://raw.githubusercontent.com/rustcommons/cargo-libc/main/.github/release-signing-key.asc).
+Check that the key's primary fingerprint is
+`B281C3010A76A11737B4D066C7396F6EA7647CC6` before importing it:
+
+```sh
+gpg --show-keys --with-fingerprint release-signing-key.asc
+gpg --import release-signing-key.asc
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum --check SHA256SUMS
+```
+
+Both verification commands must succeed. GnuPG can also return success for a
+revoked or expired signing key; use the pinned verification script described in
+[release verification](https://github.com/rustcommons/cargo-libc/blob/main/docs/RELEASING.md#openpgp-release-signatures)
+for the full key-status and signing-time checks. Earlier releases are unchanged.
+
 ## What it does
 
 - **Links for one glibc release.** The provider for a release has its headers and

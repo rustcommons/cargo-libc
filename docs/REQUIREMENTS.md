@@ -120,6 +120,20 @@ Evidence shorthand used below:
   run or added real-container/musl/static/oldOS/LLVM/runtime-safety qualification.
 
 
+## Release checksum signing
+
+Owner authorization 2026-11-25: future releases attach `SHA256SUMS.asc`, signed
+and verified before crates.io publication against primary fingerprint
+`B281C3010A76A11737B4D066C7396F6EA7647CC6`. Implementation and manual verification:
+[release policy](RELEASING.md#openpgp-release-signatures),
+[signing script](../scripts/release-signing.sh),
+[draft publication](../scripts/create-github-release.py).
+[Throwaway-key tests](../scripts/test-release-signing.py) and
+[draft/immutable-asset tests](../scripts/test-create-github-release.py) run in the
+PR dry run. Earlier releases retain their historical verification. Real signing
+with the environment secrets awaits the next authorized release; no publication
+is claimed by these tests.
+
 ## Requirements
 
 | ID | Requirement and source | Implementation / documentation | Verification evidence | Status and gaps |
