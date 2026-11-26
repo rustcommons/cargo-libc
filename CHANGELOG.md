@@ -13,6 +13,9 @@ Historical GitHub Release backfill is complete for the eight tags through 0.3.0;
 
 ### Repository
 
+- Disable cross-run cache access in manual candidate integration so source
+  candidates cannot write cache entries consumed by trusted runs. Record the
+  per-alert CodeQL triage, including mode-exclusive false-positive paths.
 - Accept release signatures from a non-expiring signing subkey when an older
   sibling subkey has expired. Apply signing-time expiry checks only to
   `EXPKEYSIG`; retain verification of older signatures made before expiry.

@@ -12,6 +12,9 @@ on:
         description: Exact 40-character commit SHA in rustcommons/linux-abi-tools
         required: false
         type: string
+# Source candidates execute unreviewed revisions, including on main dispatches.
+# Deny cache reads and writes at the token level; permissions alone do not do so.
+cache-mode: none
 permissions:
   contents: read
 jobs:
